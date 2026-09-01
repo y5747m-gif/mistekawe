@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سلة المشتريات | ننجاوي</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a href="index.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
+    <nav class="main-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html">المتجر</a>
+      <a href="shop.html?cat=بخور%20وعود">البخور والعود</a>
+      <a href="shop.html?cat=هدايا%20تراثية">الهدايا</a>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="icon-btn" title="حسابي">👤</a>
+      <a href="cart.html" class="icon-btn" title="السلة">
+        🛍️
+        <span class="cart-count" data-cart-count>0</span>
+      </a>
+      <button class="nav-toggle" aria-label="القائمة">☰</button>
+    </div>
+  </div>
+</header>
+
+<div class="page-head">
+  <div class="container">
+    <p class="breadcrumb"><a href="index.html">الرئيسية</a> / سلة المشتريات</p>
+    <h1>سلة المشتريات</h1>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container" id="cart-wrap"></div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 ننجاوي. جميع الحقوق محفوظة.</span>
+      <span>صُنع بحب من قلب نجد</span>
+    </div>
+  </div>
+</footer>
+
+<script src="products.js"></script>
+<script src="script.js"></script>
+<script>
+  function cartItemHTML(item){
+    return `
+      <div class="cart-item">
+        <div class="cart-thumb">${item.icon || '🛍️'}</div>
+        <div>
+          <h3>${item.name}</h3>
+          <span class="product-cat">${item.category || ''}</span>
+          <div style="margin-top:10px;">
+            <div class="qty-control" style="display:inline-flex;">
+              <button data-plus="${item.id}">+</button>
+              <span>${item.qty}</span>
+              <button data-minus="${item.id}">−</button>
+            </div>
+          </div>
+        </div>
+        <span class="price">${formatPrice(item.price * item.qty)} ر.س</span>
+        <div>
+          <button class="remove-btn" data-remove="${item.id}">إزالة</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCartPage(){
+    const cart = getCart();
+    const wrap = document.getElementById('cart-wrap');
+
+    if(cart.length === 0){
+      wrap.innerHTML = `
+        <div class="cart-empty">
+          <div class="emoji">🛍️</div>
+          <h3 class="kufi" style="margin-bottom:10px;">سلتك فارغة حالياً</h3>
+          <p>لم تُضف أي منتج بعد، تصفّح المتجر لاختيار ما يناسبك</p>
+          <a href="shop.html" class="btn btn-primary" style="margin-top:24px;">تصفّح المتجر</a>
+        </div>`;
+      return;
+    }
+
+    const subtotal = cartTotal();
+    const shipping = subtotal > 300 ? 0 : 25;
+    const total = subtotal + shipping;
+
+    wrap.innerHTML = `
+      <div class="cart-grid">
+        <div class="cart-list">${cart.map(cartItemHTML).join('')}</div>
+        <div class="summary-box">
+          <h3>ملخص الطلب</h3>
+          <div class="summary-row"><span>المجموع الفرعي</span><span>${formatPrice(subtotal)} ر.س</span></div>
+          <div class="summary-row"><span>الشحن</span><span>${shipping === 0 ? 'مجاني' : formatPrice(shipping) + ' ر.س'}</span></div>
+          <div class="promo-row">
+            <input type="text" placeholder="كود الخصم">
+            <button class="btn btn-outline">تطبيق</button>
+          </div>
+          <div class="summary-row total"><span>الإجمالي</span><span class="price">${formatPrice(total)} ر.س</span></div>
+          <button class="btn btn-primary btn-block" style="margin-top:20px;" onclick="showToast('سيتم تحويلك لصفحة الدفع قريباً')">إتمام الشراء</button>
+          <a href="shop.html" class="btn btn-outline btn-block" style="margin-top:12px;">متابعة التسوّق</a>
+        </div>
+      </div>
+    `;
+
+    wrap.querySelectorAll('[data-plus]').forEach(btn => btn.addEventListener('click', () => {
+      const item = getCart().find(i => i.id === btn.dataset.plus);
+      updateQty(btn.dataset.plus, item.qty + 1);
+      renderCartPage();
+    }));
+    wrap.querySelectorAll('[data-minus]').forEach(btn => btn.addEventListener('click', () => {
+      const item = getCart().find(i => i.id === btn.dataset.minus);
+      if(item.qty <= 1){ removeFromCart(btn.dataset.minus); }
+      else{ updateQty(btn.dataset.minus, item.qty - 1); }
+      renderCartPage();
+    }));
+    wrap.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
+      removeFromCart(btn.dataset.remove);
+      renderCartPage();
+    }));
+  }
+
+  renderCartPage();
+</script>
+</body>
+</html>

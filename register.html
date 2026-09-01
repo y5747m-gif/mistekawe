@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إنشاء حساب | ننجاوي</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div class="auth-panel">
+    <a href="index.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
+    <div class="auth-quote">
+      <p class="big">"انضم إلى مجتمع محبي التراث، واحصل على عروض تصلك أولاً بأول."</p>
+      <p class="by">— فريق ننجاوي</p>
+    </div>
+    <div></div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-box">
+      <h1>إنشاء حساب جديد</h1>
+      <p class="sub">انضم إلينا في دقيقة واحدة وابدأ رحلتك مع ننجاوي</p>
+
+      <form id="register-form" novalidate>
+        <div class="field" id="reg-name-field">
+          <label for="reg-name">الاسم الكامل</label>
+          <input type="text" id="reg-name" placeholder="اسمك الثلاثي" required>
+          <span class="field-error">الاسم يجب ألا يقل عن 3 أحرف</span>
+        </div>
+
+        <div class="field" id="reg-email-field">
+          <label for="reg-email">البريد الإلكتروني</label>
+          <input type="email" id="reg-email" placeholder="example@nanjawi.com" required>
+          <span class="field-error">يرجى إدخال بريد إلكتروني صحيح</span>
+        </div>
+
+        <div class="field" id="reg-password-field">
+          <label for="reg-password">كلمة المرور</label>
+          <input type="password" id="reg-password" placeholder="••••••••" required>
+          <span class="field-error">كلمة المرور يجب ألا تقل عن 6 أحرف</span>
+        </div>
+
+        <div class="field" id="reg-confirm-field">
+          <label for="reg-confirm">تأكيد كلمة المرور</label>
+          <input type="password" id="reg-confirm" placeholder="••••••••" required>
+          <span class="field-error">كلمتا المرور غير متطابقتين</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">إنشاء الحساب</button>
+      </form>
+
+      <div class="divider">أو سجّل عبر</div>
+      <div class="social-row">
+        <button class="social-btn">Google</button>
+        <button class="social-btn">Apple</button>
+      </div>
+
+      <p class="auth-switch">لديك حساب بالفعل؟ <a href="login.html" class="link-muted">تسجيل الدخول</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

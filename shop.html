@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المتجر | ننجاوي</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a href="index.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
+    <nav class="main-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html" class="active">المتجر</a>
+      <a href="shop.html?cat=بخور%20وعود">البخور والعود</a>
+      <a href="shop.html?cat=هدايا%20تراثية">الهدايا</a>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="icon-btn" title="حسابي">👤</a>
+      <a href="cart.html" class="icon-btn" title="السلة">
+        🛍️
+        <span class="cart-count" data-cart-count>0</span>
+      </a>
+      <button class="nav-toggle" aria-label="القائمة">☰</button>
+    </div>
+  </div>
+</header>
+
+<div class="page-head">
+  <div class="container">
+    <p class="breadcrumb"><a href="index.html">الرئيسية</a> / المتجر</p>
+    <h1>كل المنتجات</h1>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="filters-bar" id="filters-bar"></div>
+    <div class="product-grid" id="shop-product-grid"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 ننجاوي. جميع الحقوق محفوظة.</span>
+      <span>صُنع بحب من قلب نجد</span>
+    </div>
+  </div>
+</footer>
+
+<script src="products.js"></script>
+<script src="script.js"></script>
+<script>
+  const categories = ['الكل', ...new Set(NANJAWI_PRODUCTS.map(p => p.category))];
+  const params = new URLSearchParams(window.location.search);
+  let activeCat = params.get('cat') || 'الكل';
+
+  function renderFilters(){
+    const bar = document.getElementById('filters-bar');
+    bar.innerHTML = categories.map(cat =>
+      `<button class="filter-chip ${cat === activeCat ? 'active' : ''}" data-cat="${cat}">${cat}</button>`
+    ).join('');
+    bar.querySelectorAll('.filter-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeCat = btn.dataset.cat;
+        renderFilters();
+        renderShopGrid();
+      });
+    });
+  }
+
+  function renderShopGrid(){
+    const list = activeCat === 'الكل' ? NANJAWI_PRODUCTS : NANJAWI_PRODUCTS.filter(p => p.category === activeCat);
+    renderProductGrid(document.getElementById('shop-product-grid'), list);
+  }
+
+  renderFilters();
+  renderShopGrid();
+</script>
+</body>
+</html>

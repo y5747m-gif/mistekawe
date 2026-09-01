@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تفاصيل المنتج | ننجاوي</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a href="index.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
+    <nav class="main-nav">
+      <a href="index.html">الرئيسية</a>
+      <a href="shop.html" class="active">المتجر</a>
+      <a href="shop.html?cat=بخور%20وعود">البخور والعود</a>
+      <a href="shop.html?cat=هدايا%20تراثية">الهدايا</a>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="icon-btn" title="حسابي">👤</a>
+      <a href="cart.html" class="icon-btn" title="السلة">
+        🛍️
+        <span class="cart-count" data-cart-count>0</span>
+      </a>
+      <button class="nav-toggle" aria-label="القائمة">☰</button>
+    </div>
+  </div>
+</header>
+
+<div class="page-head">
+  <div class="container">
+    <p class="breadcrumb" id="breadcrumb"><a href="index.html">الرئيسية</a> / <a href="shop.html">المتجر</a> / ...</p>
+  </div>
+</div>
+
+<section class="section" style="padding-top:20px;">
+  <div class="container pd-grid" id="pd-container">
+    <!-- تُملأ عبر JS -->
+  </div>
+</section>
+
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2>قد يعجبك أيضاً</h2>
+        <p>منتجات مشابهة من نفس الفئة</p>
+      </div>
+    </div>
+    <div class="product-grid" id="related-grid"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 ننجاوي. جميع الحقوق محفوظة.</span>
+      <span>صُنع بحب من قلب نجد</span>
+    </div>
+  </div>
+</footer>
+
+<script src="products.js"></script>
+<script src="script.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id') || NANJAWI_PRODUCTS[0].id;
+  const product = getProductById(id) || NANJAWI_PRODUCTS[0];
+  let qty = 1;
+
+  document.title = `${product.name} | ننجاوي`;
+  document.getElementById('breadcrumb').innerHTML =
+    `<a href="index.html">الرئيسية</a> / <a href="shop.html">المتجر</a> / ${product.name}`;
+
+  document.getElementById('pd-container').innerHTML = `
+    <div class="pd-gallery">
+      <div class="pd-gallery-main">${product.icon}</div>
+      <div class="pd-thumbs">
+        <div class="active">${product.icon}</div>
+        <div>🌿</div>
+        <div>📦</div>
+      </div>
+    </div>
+    <div class="pd-info">
+      <span class="product-cat">${product.category}</span>
+      <h1>${product.name}</h1>
+      <div class="pd-rating">★★★★★ <span style="color:var(--muted)">(128 تقييم)</span></div>
+      <div class="pd-price">${formatPrice(product.price)} ر.س</div>
+      <p class="pd-desc">${product.desc}</p>
+
+      <div class="qty-row">
+        <div class="qty-control">
+          <button id="qty-plus">+</button>
+          <span id="qty-value">1</span>
+          <button id="qty-minus">−</button>
+        </div>
+        <span style="color:var(--muted); font-size:14px;">الكمية المتوفرة: 24 قطعة</span>
+      </div>
+
+      <div class="pd-actions">
+        <button class="btn btn-primary" id="add-to-cart-btn" style="flex:1;">أضف إلى السلة</button>
+        <a href="cart.html" class="btn btn-outline">عرض السلة</a>
+      </div>
+
+      <div class="pd-meta">
+        <div><span>الفئة</span><span>${product.category}</span></div>
+        <div><span>الشحن</span><span>يصل خلال 2-4 أيام عمل</span></div>
+        <div><span>الإرجاع</span><span>خلال 7 أيام من الاستلام</span></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('qty-plus').addEventListener('click', () => {
+    qty += 1;
+    document.getElementById('qty-value').textContent = qty;
+  });
+  document.getElementById('qty-minus').addEventListener('click', () => {
+    qty = Math.max(1, qty - 1);
+    document.getElementById('qty-value').textContent = qty;
+  });
+  document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+    addToCart({ id: product.id, name: product.name, price: product.price, icon: product.icon, category: product.category }, qty);
+  });
+
+  const related = NANJAWI_PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  renderProductGrid(document.getElementById('related-grid'), related.length ? related : NANJAWI_PRODUCTS.slice(0, 4));
+</script>
+</body>
+</html>
