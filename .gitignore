@@ -1,0 +1,24 @@
+# نماذج وأوزان محلية (تُحمّل يدويًا، لا تُرفع إلى Git)
+models/*.onnx
+models/*.bin
+models/*.safetensors
+models/*.pt
+models/*.pth
+models/*.npz
+models/*.weights
+
+# بيئات ومجلدات بناء
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+build/
+.venv/
+venv/
+
+# ملفات النظام والمحرر
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
