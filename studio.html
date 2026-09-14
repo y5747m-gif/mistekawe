@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>استوديو AI 3D — حوّل صورك إلى نماذج ثلاثية الأبعاد</title>
+<meta name="description" content="أداة ذكاء اصطناعي مستقلة تعمل محليًا لتحويل الصور إلى نماذج 3D قابلة للعرض والتعديل والتصدير.">
+<link rel="stylesheet" href="ai3d/css/studio.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="studio.html">
+      <span class="brand-cube">◈</span>
+      <span>AI 3D استوديو<small>MISTEKAWE • محرك محلي مستقل</small></span>
+    </a>
+    <nav class="top-nav">
+      <a href="#uploadSec">رفع</a>
+      <a href="#setupSec">الإعدادات</a>
+      <a href="#resultSec">العارض</a>
+      <a href="#projectsSec">مشاريعي</a>
+      <a href="#privacySec">الخصوصية</a>
+      <a href="index.html">← المتجر</a>
+    </nav>
+    <div class="top-acts">
+      <span class="badge-local">● يعمل محليًا 100%</span>
+      <button class="icobtn" id="themeBtn" title="الوضع الليلي/النهاري">☀️</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>AI IMAGE TO <span class="g">3D</span></h1>
+    <p>حوّل صورك إلى نماذج ثلاثية الأبعاد بالذكاء الاصطناعي — تحليل، عزل، عمق، هندسة، خامات وتصدير… كل ذلك داخل متصفحك دون إرسال صورك لأي خدمة خارجية.</p>
+    <div class="hero-tags">
+      <span class="tag">بدون API خارجي</span><span class="tag">عزل تلقائي</span><span class="tag">خريطة عمق</span>
+      <span class="tag">عارض WebGL</span><span class="tag">تصدير GLB / OBJ / STL / PLY</span><span class="tag">وضع صور متعددة</span>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- 1) الرفع -->
+  <section class="sec" id="uploadSec">
+    <div class="sec-title"><span class="n">1</span><h2>رفع الصورة</h2></div>
+    <div class="card">
+      <div class="drop" id="drop">
+        <div class="big">🖼️</div>
+        <h3>Drop your image here</h3>
+        <p>اسحب الصورة وأفلتها هنا أو اضغط للاختيار — <b>Browse Files</b></p>
+        <p class="fmts">JPG • JPEG • PNG • WEBP • BMP • TIFF — منتجات، سيارات، أثاث، أشخاص، حيوانات والمزيد</p>
+        <div class="row-btns" style="justify-content:center">
+          <button class="btn btn-pri btn-sm" data-act="browse" onclick="document.getElementById('fileInput').click();event.stopPropagation();">📁 اختيار ملف</button>
+          <button class="btn btn-ghost btn-sm" data-act="s1" id="sampleBtn1">🧪 صورة تجريبية: منتج</button>
+          <button class="btn btn-ghost btn-sm" data-act="s2" id="sampleBtn2">🚗 صورة تجريبية: سيارة</button>
+          <button class="btn btn-ghost btn-sm" data-act="c" id="clearBtn">🗑️ مسح</button>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*,.tif,.tiff,.bmp" class="hidden">
+      <div class="thumbs" id="thumbs"></div>
+      <div id="preWarn"></div>
+    </div>
+  </section>
+
+  <!-- 2) الإعدادات + التحليل -->
+  <section class="sec" id="setupSec">
+    <div class="sec-title"><span class="n">2</span><h2>إعدادات التحويل وتحليل الصورة</h2></div>
+    <div class="grid2">
+      <div class="card">
+        <h2>⚙️ الإعدادات</h2>
+        <p class="sub">اختر الوضع والجودة قبل بدء المعالجة</p>
+        <div class="setgrid">
+          <div class="set"><label>وضع إعادة البناء</label>
+            <select id="modeSel"><option value="single">صورة واحدة</option><option value="multi">صور متعددة (حتى 5)</option></select>
+          </div>
+          <div class="set"><label>الجودة</label>
+            <select id="qualitySel"><option value="low">Low — سريع</option><option value="medium" selected>Medium — متوازن</option><option value="high">High — مفصّل</option><option value="ultra">Ultra — أقصى دقة</option></select>
+          </div>
+          <div class="set"><label>الـ Texture</label>
+            <select id="texSel"><option value="standard">Standard</option><option value="high" selected>High</option><option value="ultra">Ultra</option></select>
+          </div>
+          <div class="set"><label>الهندسة</label>
+            <select id="geoSel"><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="detailed">Detailed</option></select>
+          </div>
+          <div class="set"><label>صيغة الإخراج</label>
+            <select id="outSel"><option value="glb">GLB</option><option value="obj">OBJ + MTL</option><option value="stl">STL</option><option value="ply">PLY</option></select>
+          </div>
+          <div class="set"><label>قوة البروز (العمق)</label>
+            <input type="number" id="depthRange" value="0.55" min="0.15" max="1.2" step="0.05">
+          </div>
+        </div>
+        <div class="setgrid" style="margin-top:12px">
+          <div class="switchrow"><span>✨ تحسين الصورة تلقائيًا</span><input type="checkbox" id="enhanceSw"></div>
+          <div class="switchrow"><span>📐 تصحيح المنظور</span><input type="checkbox" id="perspSw" checked></div>
+        </div>
+        <div class="setgrid" style="margin-top:12px">
+          <div class="set"><label>جسم مرجعي (عرضه بالسم — اختياري)</label><input type="number" id="refInput" placeholder="مثال: 8.5 لبطاقة بنكية" min="0" step="0.1"></div>
+          <div class="set"><label>أبعاد مخصصة (وحدة)</label>
+            <div style="display:flex;gap:6px">
+              <input type="number" id="dimW" placeholder="عرض" step="0.01" style="width:100%">
+              <input type="number" id="dimH" placeholder="ارتفاع" step="0.01" style="width:100%">
+              <input type="number" id="dimD" placeholder="عمق" step="0.01" style="width:100%">
+            </div>
+          </div>
+        </div>
+        <p class="hint">⚠️ الأبعاد المستخرجة من صورة واحدة تقديرية ما لم توجد مرجعية حقيقية داخل الصورة.</p>
+        <div class="row-btns">
+          <button class="btn btn-pri" id="startBtn" disabled>🚀 بدء التحويل إلى 3D</button>
+          <button class="btn btn-ghost" id="reDimBtn">📏 تحديث الأبعاد</button>
+        </div>
+        <div class="errbox hidden" id="errBox"></div>
+      </div>
+
+      <div class="card" id="preBox">
+        <h2>🔍 تحليل الصورة</h2>
+        <p class="sub">اضغط على أي جسم لاختياره — أو حوّل الكل</p>
+        <div class="tabs" id="previewTabs">
+          <button class="tab on" data-tab="objects">الأجسام</button>
+          <button class="tab" data-tab="original">الأصلية</button>
+          <button class="tab hidden" data-tab="mask">القناع</button>
+          <button class="tab hidden" data-tab="depth">العمق</button>
+        </div>
+        <div class="preview-box" id="previewWrap">
+          <div id="previewCanvasBox" style="display:flex"></div>
+          <div id="bboxLayer"></div>
+        </div>
+        <div class="objlist" id="objList"></div>
+        <div class="row-btns">
+          <button class="btn btn-ghost btn-sm hidden" id="allObjBtn">تحويل الكل</button>
+        </div>
+        <dl class="kv" id="kvBox"></dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3) المعالجة -->
+  <section class="sec" id="pipeSec">
+    <div class="sec-title"><span class="n">3</span><h2>مراحل المعالجة</h2></div>
+    <div class="card" id="pipeCard">
+      <div class="stages" id="stages"></div>
+      <div class="pbar"><i id="pbarFill"></i></div>
+    </div>
+  </section>
+
+  <!-- 4) النتائج -->
+  <section class="sec hidden" id="resultSec">
+    <div class="sec-title"><span class="n">4</span><h2>النتيجة: النموذج ثلاثي الأبعاد</h2></div>
+
+    <div class="card" style="margin-bottom:18px">
+      <h2>🏆 تقييم النموذج</h2>
+      <p class="sub">3D Reconstruction Complete</p>
+      <div class="scores" id="scores"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>🌀 العارض ثلاثي الأبعاد</h2>
+        <p class="sub">اسحب للتدوير • العجلة/القرص للتقريب • Shift+سحب للتحريك • نقرة مزدوجة لإعادة الضبط</p>
+        <div class="viewer-shell">
+          <canvas id="gl"></canvas>
+          <div class="v-toolbar">
+            <button class="vbtn on" id="mTex">Texture</button>
+            <button class="vbtn" id="mSolid">Solid</button>
+            <button class="vbtn" id="mWire">Wireframe</button>
+            <button class="vbtn" id="mXray">X-Ray</button>
+          </div>
+          <div class="est-legend" id="estLegend">🟧 المناطق البرتقالية = هندسة مُستنتَجة بالذكاء الاصطناعي</div>
+          <div class="v-toolbar2">
+            <button class="vbtn" data-view="front">أمام</button>
+            <button class="vbtn" data-view="back">خلف</button>
+            <button class="vbtn" data-view="left">يسار</button>
+            <button class="vbtn" data-view="right">يمين</button>
+            <button class="vbtn" data-view="top">أعلى</button>
+            <button class="vbtn" id="rotBtn">⟳ تدوير</button>
+            <button class="vbtn" id="resetBtn">⌂ ضبط</button>
+            <button class="vbtn" id="estBtn">مُستنتَج</button>
+            <button class="vbtn" id="shotBtn">📸 لقطة</button>
+          </div>
+          <div class="v-hint">💡 على الجوال: سحبة = تدوير • قرصة = تقريب • إصبعان = تحريك</div>
+        </div>
+        <div class="row-btns">
+          <button class="vbtn on" id="lStudio" style="color:var(--text);background:var(--surface2)">إضاءة: استوديو</button>
+          <button class="vbtn" id="lSoft" style="color:var(--text);background:var(--surface2)">ناعمة</button>
+          <button class="vbtn" id="lDrama" style="color:var(--text);background:var(--surface2)">درامية</button>
+          <button class="vbtn" id="lTop" style="color:var(--text);background:var(--surface2)">علوية</button>
+        </div>
+        <div class="row-btns">
+          <button class="vbtn on" id="bDark" style="color:var(--text);background:var(--surface2)">خلفية: داكنة</button>
+          <button class="vbtn" id="bLight" style="color:var(--text);background:var(--surface2)">فاتحة</button>
+          <button class="vbtn" id="bBlue" style="color:var(--text);background:var(--surface2)">زرقاء</button>
+          <button class="vbtn" id="bWarm" style="color:var(--text);background:var(--surface2)">دافئة</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:18px">
+          <h2>📊 معلومات النموذج</h2>
+          <p class="sub">تفاصيل الشبكة والخامة والمعالجة</p>
+          <dl class="kv" id="infoBox"></dl>
+        </div>
+        <div class="card">
+          <h2>⚖️ قبل / بعد</h2>
+          <p class="sub">حرّك الشريط لمقارنة الصورة الأصلية بالنموذج</p>
+          <div class="compare">
+            <span class="cmp-label cmp-before">الأصلية</span>
+            <span class="cmp-label cmp-after">النموذج 3D</span>
+            <img id="cmpBefore" alt="before">
+            <div class="after" id="cmpAfter"><img id="cmpAfterImg" alt="after"></div>
+            <input type="range" id="cmpRange" min="0" max="100" value="50">
+          </div>
+          <div class="row-btns"><button class="btn btn-ghost btn-sm" id="cmpRefresh">🔄 تحديث لقطة النموذج</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:18px">
+      <div class="card">
+        <h2>🛠️ تعديل النموذج</h2>
+        <p class="sub">أدوات سريعة بعد الإنشاء</p>
+        <div class="tools">
+          <div class="tool"><label>التحجيم <span class="val" id="scaleVal">1×</span></label><input type="range" id="scaleRange" min="0.2" max="3" step="0.05" value="1"></div>
+          <div class="tool"><label>تدوير أفقي <span class="val" id="rotYVal">0°</span></label><input type="range" id="rotYRange" min="-180" max="180" step="5" value="0"></div>
+          <div class="tool"><label>التبسيط</label>
+            <select id="decimateSel"><option value="0.7">احتفاظ 70%</option><option value="0.5" selected>احتفاظ 50%</option><option value="0.3">احتفاظ 30%</option><option value="0.15">احتفاظ 15%</option></select>
+          </div>
+        </div>
+        <div class="row-btns">
+          <button class="btn btn-ghost btn-sm" id="centerBtn">◎ توسيط</button>
+          <button class="btn btn-ghost btn-sm" id="normalsBtn">↗ إعادة Normals</button>
+          <button class="btn btn-ghost btn-sm" id="smoothBtn">🌊 تنعيم</button>
+          <button class="btn btn-ghost btn-sm" id="decimateBtn">🔻 تبسيط</button>
+          <button class="btn btn-ghost btn-sm" id="repairBtn">🔧 إصلاح الشبكة</button>
+          <button class="btn btn-ghost btn-sm" id="delEstBtn">✂️ حذف المُستنتَج</button>
+          <button class="btn btn-ghost btn-sm" id="delIsoBtn">🧹 حذف المنفصل</button>
+        </div>
+        <div class="row-btns"><button class="btn btn-pri btn-sm" id="improveBtn">✨ تحسين النموذج (إعادة بناء بجودة أعلى)</button></div>
+      </div>
+
+      <div class="card">
+        <h2>💾 التصدير والحفظ</h2>
+        <p class="sub">نزّل النموذج والخامات والمشروع الكامل</p>
+        <div class="row-btns">
+          <button class="btn btn-pri" id="expMain">⬇️ تنزيل النموذج</button>
+          <button class="btn btn-ghost" id="expTex">🖼️ تنزيل Texture</button>
+          <button class="btn btn-ghost" id="expZip">📦 تنزيل المشروع ZIP</button>
+        </div>
+        <div class="setgrid" style="margin-top:14px">
+          <div class="set"><label>اسم المشروع للحفظ المحلي</label><input type="text" id="projName" placeholder="مثال: سيارة حمراء"></div>
+        </div>
+        <div class="row-btns"><button class="btn btn-ok btn-sm" id="saveProjBtn">💾 حفظ في مشاريعي</button></div>
+        <p class="hint">صيغة التنزيل الرئيسية تُحدَّد من الإعدادات (GLB / OBJ / STL / PLY) — وحزمة ZIP تشمل النموذج والخامات والبيانات.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5) المشاريع -->
+  <section class="sec" id="projectsSec">
+    <div class="sec-title"><span class="n">5</span><h2>مشاريعي</h2></div>
+    <div class="card">
+      <p class="sub">تُحفظ المشاريع على جهازك فقط (localStorage) — لا تُرفع لأي خادم.</p>
+      <div class="proj-grid" id="projGrid"></div>
+    </div>
+  </section>
+
+  <!-- 6) الخصوصية -->
+  <section class="sec" id="privacySec">
+    <div class="sec-title"><span class="n">6</span><h2>الخصوصية وآلية العمل</h2></div>
+    <div class="grid2">
+      <div class="card privacy">
+        <h2>🔒 الخصوصية أولًا</h2>
+        <ul>
+          <li>✅ كل المعالجة تتم <b>داخل متصفحك</b> — الصور لا تُرسل لأي خادم أو خدمة AI خارجية.</li>
+          <li>✅ لا يوجد حفظ تلقائي للصور الأصلية — فقط مصغّرات المشاريع التي تحفظها بنفسك.</li>
+          <li>✅ لا تُستخدم صورك في أي تدريب — المحرك يعمل بقواعد وخوارزميات محلية.</li>
+          <li>✅ حذف المشروع من "مشاريعي" يزيله نهائيًا من جهازك.</li>
+          <li>✅ يمكنك العمل دون اتصال بالإنترنت بعد تحميل الصفحة أول مرة.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>❓ أسئلة شائعة</h2>
+        <details class="faq"><summary>هل تعتمد الأداة على ChatGPT أو API خارجي؟</summary>
+          <p>لا. المحرك (تحليل، عزل، عمق، هندسة، خامات) يعمل بالكامل داخل المشروع على جهازك. البنية تسمح مستقبلًا بإضافة نماذج أقوى تعمل محليًا أو على خادمك الخاص دون تغيير الواجهة.</p>
+        </details>
+        <details class="faq"><summary>ما دقة الأجزاء الخلفية للنموذج؟</summary>
+          <p>الصورة الواحدة لا تُظهر الظهر — لذا يقدّر المحرك الأجزاء المخفية (AI Estimated Geometry) ويمكنك تمييزها بالزر "مُستنتَج" في العارض. وضع الصور المتعددة يعطي نتائج أفضل.</p>
+        </details>
+        <details class="faq"><summary>ما أفضل صورة للحصول على نتيجة جيدة؟</summary>
+          <p>جسم واحد واضح، خلفية بسيطة متباينة، إضاءة متوازنة، دقة 800px فأعلى، وزاوية أمامية قدر الإمكان.</p>
+        </details>
+        <details class="faq"><summary>كيف أطوّر المحرك مستقبلًا؟</summary>
+          <p>كل مرحلة مسجّلة في <span class="mono">AI3D.Models</span> — يمكنك حقن نموذجك الخاص (مثل ONNX محلي) عبر <span class="mono">AI3D.Models.register('depth', fn)</span> دون المساس بالواجهة أو باقي المراحل.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <span>© 2026 MISTEKAWE — استوديو AI 3D • محرك محلي مستقل v1.0</span>
+    <span>صُنع ليعمل دون أي خدمة ذكاء اصطناعي خارجية</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="ai3d/engine/core.js"></script>
+<script src="ai3d/engine/analysis.js"></script>
+<script src="ai3d/engine/detection.js"></script>
+<script src="ai3d/engine/depth.js"></script>
+<script src="ai3d/engine/geometry.js"></script>
+<script src="ai3d/engine/texture.js"></script>
+<script src="ai3d/engine/exporters.js"></script>
+<script src="ai3d/engine/pipeline.js"></script>
+<script src="ai3d/app/viewer.js"></script>
+<script src="ai3d/app/studio.js"></script>
+</body>
+</html>
