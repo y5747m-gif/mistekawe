@@ -36,6 +36,14 @@ EXTRA_TYPES = {
     ".jpg": "image/jpeg",
     ".webp": "image/webp",
     ".svg": "image/svg+xml",
+    ".webmanifest": "application/manifest+json",
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/ogg",
+    ".flac": "audio/flac",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
 }
 
 
@@ -53,6 +61,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         # السماح بتشغيل مسارات العمل (إن أُضيف WebGPU/Threads لاحقًا)
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header(
+            "Permissions-Policy",
+            "bluetooth=(self), microphone=(self), speaker-selection=(self), autoplay=(self)",
+        )
         super().end_headers()
 
     def log_message(self, fmt, *args):  # سجلّ مختصر
