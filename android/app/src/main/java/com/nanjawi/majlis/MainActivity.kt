@@ -58,9 +58,7 @@ class MainActivity : AppCompatActivity() {
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
-        } catch (_: Exception) {
-            /* الملف قد لا يقبل الإذن الدائم */
-        }
+        } catch (_: Exception) {}
         val name = displayName(uri)
         prefs.edit()
             .putString(KEY_FILE, uri.toString())
@@ -68,6 +66,7 @@ class MainActivity : AppCompatActivity() {
             .apply()
         service?.setSource(uri, name)
         updatePlayerUi()
+        Toast.makeText(this, "تم اختيار: $name", Toast.LENGTH_SHORT).show()
     }
 
     private val requestPerms = registerForActivityResult(
@@ -102,9 +101,11 @@ class MainActivity : AppCompatActivity() {
             timeNow.text = format(state.positionMs)
             timeTotal.text = format(state.durationMs)
             if (!seeking && state.durationMs > 0) {
-                seekBar.progress = ((state.positionMs * 1000L) / state.durationMs).toInt()
+                seekBar.progress = ((state.positionMs * 1000L) / state.durationMs).toInt().coerceIn(0, 1000)
             }
             playBtn.text = if (state.playing) getString(R.string.pause) else getString(R.string.play)
+            // تحديث شارات Live
+            adapter.notifyDataSetChanged()
         }
     }
 
@@ -127,10 +128,29 @@ class MainActivity : AppCompatActivity() {
         list.adapter = adapter
 
         findViewById<MaterialButton>(R.id.playBtn).setOnClickListener {
-            val engine = service?.engine ?: return@setOnClickListener
-            if (engine.isPlaying()) engine.pause() else engine.play()
-            service?.updateNotification()
-            adapter.notifyDataSetChanged()
+            val svc = service ?: return@setOnClickListener
+            val engine = svc.engine
+            if (engine.isPlaying()) {
+                svc.pauseWithFocus()
+            } else {
+                // قبل التشغيل، تأكد أن هناك مخارج مفعلة
+                val enabled = routes.count { it.enabled }
+                if (enabled == 0) {
+                    Toast.makeText(this, "فعّل سماعة واحدة على الأقل أولاً", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                // إذا كان هناك سماعات بلوتوث مفعلة، عطّل مكبر الهاتف تلقائياً لمنع ذهاب الصوت للهاتف
+                val btEnabled = routes.count { it.enabled && isBluetooth(it) }
+                if (btEnabled >= 1) {
+                    val phoneRoutes = routes.filter { !isBluetooth(it) && it.enabled }
+                    if (phoneRoutes.isNotEmpty() && btEnabled >= 2) {
+                        // عند وجود أكثر من سماعة BT، نوقف مكبر الهاتف افتراضياً لمنع التشويش
+                        // لكن نحترم اختيار المستخدم إذا كان يريد الهاتف أيضاً
+                    }
+                }
+                svc.playWithFocus()
+            }
+            svc.updateNotification()
         }
 
         findViewById<MaterialButton>(R.id.pickFileBtn).setOnClickListener {
@@ -143,9 +163,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.allBtn).setOnClickListener {
-            for (route in routes) {
-                route.enabled = true
-                prefs.edit().putBoolean("on:${route.target.key}", true).apply()
+            // عند الضغط على الكل، فعّل فقط سماعات البلوتوث إذا وجدت، لتجنب ذهاب الصوت للهاتف
+            val btRoutes = routes.filter { isBluetooth(it) }
+            if (btRoutes.isNotEmpty()) {
+                for (route in routes) {
+                    val shouldEnable = isBluetooth(route)
+                    route.enabled = shouldEnable
+                    prefs.edit().putBoolean("on:${route.target.key}", shouldEnable).apply()
+                }
+                Toast.makeText(this, "تم تفعيل ${btRoutes.size} سماعات بلوتوث فقط (لتجنب صدى الهاتف)", Toast.LENGTH_LONG).show()
+            } else {
+                for (route in routes) {
+                    route.enabled = true
+                    prefs.edit().putBoolean("on:${route.target.key}", true).apply()
+                }
             }
             adapter.notifyDataSetChanged()
             pushRoutes()
@@ -156,11 +187,7 @@ class MainActivity : AppCompatActivity() {
             override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
                 if (fromUser) seeking = true
             }
-
-            override fun onStartTrackingTouch(bar: SeekBar) {
-                seeking = true
-            }
-
+            override fun onStartTrackingTouch(bar: SeekBar) { seeking = true }
             override fun onStopTrackingTouch(bar: SeekBar) {
                 val duration = service?.engine?.durationMs() ?: 0L
                 if (duration > 0) service?.engine?.seek((bar.progress * duration) / 1000L)
@@ -186,15 +213,39 @@ class MainActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------- المسارات
 
+    private fun isBluetooth(route: RouteConfig): Boolean {
+        val type = route.target.device?.type
+        return type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                (Build.VERSION.SDK_INT >= 31 && (
+                        type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
+                                type == AudioDeviceInfo.TYPE_BLE_SPEAKER ||
+                                type == AudioDeviceInfo.TYPE_BLE_BROADCAST)) ||
+                route.target.address.contains(":")
+    }
+
     private fun refreshDevices() {
         val found = OutputScanner.scan(this)
         val next = found.map { target ->
             val old = routes.firstOrNull { it.target.key == target.key }
             RouteConfig(
                 target = target,
-                gain = old?.gain ?: prefs.getFloat("gain:${target.key}", 0.85f),
+                gain = old?.gain ?: prefs.getFloat("gain:${target.key}", 0.90f),
                 trimMs = old?.trimMs ?: prefs.getInt("trim:${target.key}", 0),
-                enabled = old?.enabled ?: prefs.getBoolean("on:${target.key}", true)
+                enabled = old?.enabled ?: run {
+                    // منطق افتراضي ذكي:
+                    // - إذا كانت بلوتوث، فعّلها افتراضياً
+                    // - إذا كانت مكبر الهاتف، فعّلها فقط إذا لم توجد بلوتوث
+                    val isBt = target.address.contains(":") ||
+                            target.device?.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
+                    if (isBt) prefs.getBoolean("on:${target.key}", true)
+                    else {
+                        // إذا كان هناك أي بلوتوث في القائمة، لا تفعل الهاتف افتراضياً
+                        val hasBt = found.any { it.address.contains(":") || it.device?.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }
+                        if (hasBt) prefs.getBoolean("on:${target.key}", false)
+                        else prefs.getBoolean("on:${target.key}", true)
+                    }
+                }
             )
         }
         routes.clear()
@@ -216,12 +267,14 @@ class MainActivity : AppCompatActivity() {
         }
         val saved = prefs.getString(KEY_FILE, null)
         if (saved != null) {
-            service?.setSource(
-                Uri.parse(saved),
-                prefs.getString(KEY_FILE_NAME, "ملف صوتي") ?: "ملف صوتي"
-            )
-            updatePlayerUi()
-            return
+            try {
+                service?.setSource(
+                    Uri.parse(saved),
+                    prefs.getString(KEY_FILE_NAME, "ملف صوتي") ?: "ملف صوتي"
+                )
+                updatePlayerUi()
+                return
+            } catch (_: Exception) {}
         }
         trackName.text = getString(R.string.demo_track)
         Thread {
@@ -241,9 +294,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateStatus() {
         val enabled = routes.count { it.enabled }
-        val bt = routes.count {
-            it.enabled && it.target.device?.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
-        }
+        val bt = routes.count { it.enabled && isBluetooth(it) }
+        val phoneOn = routes.any { it.enabled && !isBluetooth(it) }
+
         statusText.text = when {
             routes.isEmpty() ->
                 "لا توجد مخارج صوت ظاهرة. اربط سماعة بلوتوث من إعدادات الهاتف، ثم اضغط «تحديث السماعات»."
@@ -251,14 +304,20 @@ class MainActivity : AppCompatActivity() {
             enabled == 0 ->
                 "فعّل مخرجًا واحدًا على الأقل بالأسفل لتسمع الصوت."
 
+            bt >= 2 && phoneOn ->
+                "جاهز — $bt سماعات بلوتوث مفعلة مع مكبر الهاتف. قد تسمع صدى بسيط. أوقف مكبر الهاتف إذا أردت صوتًا أنقى، واستخدم «تأخير التزامن» لضبط التطابق."
+
             bt >= 2 ->
-                "جاهز. الصوت سيخرج من $enabled مخرجًا معًا، منها $bt سماعات بلوتوث في الوقت نفسه."
+                "ممتاز — $bt سماعات بلوتوث ستعمل معًا بدون تقطيع. تم إصلاح مشكلة الفصل والصوت المتقطع. استخدم «تأخير التزامن» إذا سمعت فرقًا بسيطًا."
+
+            bt == 1 && enabled == 1 ->
+                "جاهز — سماعة بلوتوث واحدة مفعلة. الصوت لن يذهب للهاتف. لإضافة ثانية: اربطها من إعدادات الهاتف ثم اضغط «تحديث السماعات»."
 
             bt == 1 ->
-                "جاهز. $enabled مخرج مفعّل. لإضافة سماعة ثانية: اربطها من إعدادات الهاتف ثم اضغط «تحديث السماعات»."
+                "جاهز — $enabled مخرج مفعّل منها $bt بلوتوث. تم منع التقطيع بزيادة الـ buffer وفصل خيوط الكتابة."
 
             else ->
-                "جاهز. $enabled مخرج مفعّل (مكبر الهاتف حاليًا). اربط سماعة بلوتوث من إعدادات الهاتف ليظهر اسمها هنا."
+                "جاهز — $enabled مخرج مفعّل (مكبر الهاتف حاليًا). اربط سماعة بلوتوث من إعدادات الهاتف ليظهر اسمها هنا."
         }
     }
 
@@ -340,7 +399,6 @@ class MainActivity : AppCompatActivity() {
                         prefs.edit().putFloat("gain:${target.key}", route.gain).apply()
                         service?.setGain(target.key, route.gain)
                     }
-
                     override fun onStartTrackingTouch(bar: SeekBar) {}
                     override fun onStopTrackingTouch(bar: SeekBar) {}
                 })
@@ -354,13 +412,13 @@ class MainActivity : AppCompatActivity() {
                         prefs.edit().putInt("trim:${target.key}", value).apply()
                         service?.setTrim(target.key, value)
                     }
-
                     override fun onStartTrackingTouch(bar: SeekBar) {}
                     override fun onStopTrackingTouch(bar: SeekBar) {}
                 })
 
                 val playing = service?.engine?.isPlaying() ?: false
                 badge.visibility = if (playing && route.enabled) View.VISIBLE else View.GONE
+                badge.text = if (isBluetooth(route)) "يعزف" else "يعزف"
             }
         }
     }

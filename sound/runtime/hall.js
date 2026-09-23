@@ -9,8 +9,8 @@ import { nextAutoTrim } from '../engine/drift.js';
 import { normalizeDelays, effectiveGain, profileForLabel } from '../engine/mix.js';
 import { makeClick } from '../engine/correlate.js';
 
-const LOOKAHEAD = 0.08;
-const HORIZON = 20;
+const LOOKAHEAD = 0.18;
+const HORIZON = 24;
 
 function nowMs() {
   return globalThis.performance?.now?.() ?? Date.now();
