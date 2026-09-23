@@ -36,7 +36,7 @@ async function guard(work) {
   try {
     await work();
   } catch (err) {
-    if (err?.name === 'NotFoundError' || err?.code === 'NO_OUTPUT_PICKER' && !err.message) return;
+    if (err?.name === 'NotFoundError' || err?.name === 'NotAllowedError') return;
     toast(session.explain(err));
   }
 }

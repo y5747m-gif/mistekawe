@@ -210,13 +210,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreSource() {
+        if (service?.engine?.hasSource() == true) {
+            updatePlayerUi()
+            return
+        }
         val saved = prefs.getString(KEY_FILE, null)
         if (saved != null) {
-            service?.setSource(Uri.parse(saved), prefs.getString(KEY_FILE_NAME, "ملف صوتي") ?: "ملف صوتي")
-        } else {
-            service?.setSource(Uri.fromFile(DemoTrack.file(this)), getString(R.string.demo_track))
+            service?.setSource(
+                Uri.parse(saved),
+                prefs.getString(KEY_FILE_NAME, "ملف صوتي") ?: "ملف صوتي"
+            )
+            updatePlayerUi()
+            return
         }
-        updatePlayerUi()
+        trackName.text = getString(R.string.demo_track)
+        Thread {
+            val demo = DemoTrack.file(applicationContext)
+            handler.post {
+                service?.setSource(Uri.fromFile(demo), getString(R.string.demo_track))
+                updatePlayerUi()
+            }
+        }.start()
     }
 
     private fun updatePlayerUi() {
