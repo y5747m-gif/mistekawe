@@ -105,8 +105,8 @@ class MultiAudioEngine(private val appContext: Context) {
                 val format = probe.getTrackFormat(i)
                 val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
                 if (mime.startsWith("audio/")) {
-                    durationUs = if (format.containsKey(MediaFormat.KEY_DURATION_US)) {
-                        format.getLong(MediaFormat.KEY_DURATION_US)
+                    durationUs = if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                        format.getLong(MediaFormat.KEY_DURATION)
                     } else {
                         0L
                     }
@@ -357,8 +357,8 @@ class MultiAudioEngine(private val appContext: Context) {
         }
         val format = extractor.getTrackFormat(trackIndex)
         val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
-        if (format.containsKey(MediaFormat.KEY_DURATION_US)) {
-            durationUs = format.getLong(MediaFormat.KEY_DURATION_US)
+        if (format.containsKey(MediaFormat.KEY_DURATION)) {
+            durationUs = format.getLong(MediaFormat.KEY_DURATION)
         }
         extractor.selectTrack(trackIndex)
         if (atUs > 0) extractor.seekTo(atUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
