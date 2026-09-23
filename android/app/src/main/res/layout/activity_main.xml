@@ -156,6 +156,148 @@
                 app:cornerRadius="12dp" />
         </LinearLayout>
 
+        <!-- مكتبة الصوت - جميع MP3 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/library_title"
+            android:textColor="@color/gold"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/libraryCountText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="لم يتم الفحص بعد"
+                android:textColor="@color/muted"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/scanLibraryBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:text="@string/scan_library"
+                    android:textColor="#1A1208"
+                    app:backgroundTint="@color/gold"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/refreshLibraryBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:text="@string/refresh_library"
+                    android:textColor="@color/cream"
+                    app:backgroundTint="@color/card_line"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/grantPermissionBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/grant_permission"
+                android:textColor="@color/gold_soft"
+                android:visibility="gone"
+                app:backgroundTint="@color/card_line"
+                app:cornerRadius="12dp" />
+
+            <EditText
+                android:id="@+id/searchEdit"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:backgroundTint="@color/card_line"
+                android:hint="@string/search_hint"
+                android:padding="12dp"
+                android:textColor="@color/cream"
+                android:textColorHint="@color/muted"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sortTitleBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/sort_title"
+                    android:textColor="@color/cream"
+                    android:textSize="11sp"
+                    app:backgroundTint="@color/card_line"
+                    app:cornerRadius="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sortArtistBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/sort_artist"
+                    android:textColor="@color/cream"
+                    android:textSize="11sp"
+                    app:backgroundTint="@color/card_line"
+                    app:cornerRadius="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sortDateBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/sort_date"
+                    android:textColor="@color/cream"
+                    android:textSize="11sp"
+                    app:backgroundTint="@color/card_line"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/audioList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <TextView
+            android:id="@+id/libraryEmptyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:padding="14dp"
+            android:text="@string/library_empty"
+            android:textColor="@color/muted"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <!-- السماعات -->
         <TextView
             android:layout_width="wrap_content"
@@ -235,7 +377,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:lineSpacingExtra="4dp"
-                android:text="إن سمعت فرقًا بسيطًا بين سماعتين، حرّك «تأخير التزامن» للسماعة الأسرع حتى يتطابقا."
+                android:text="إن سمعت فرقًا بسيطًا بين سماعتين، حرّك «تأخير التزامن» للسماعة الأسرع حتى يتطابقا. الآن يمكنك الوصول لجميع ملفات MP3 على هاتفك من المكتبة أعلاه."
                 android:textColor="@color/muted"
                 android:textSize="12sp" />
         </LinearLayout>

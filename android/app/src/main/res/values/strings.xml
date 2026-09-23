@@ -18,4 +18,18 @@
     <string name="demo_track">مقطع تجريبي (مجلس الذهب)</string>
     <string name="volume_label">المستوى</string>
     <string name="delay_label">تأخير التزامن</string>
+
+    <string name="library_title">مكتبة الصوت — جميع ملفات MP3 على الهاتف</string>
+    <string name="scan_library">فحص كل الـ MP3</string>
+    <string name="refresh_library">تحديث المكتبة</string>
+    <string name="search_hint">ابحث في المكتبة...</string>
+    <string name="library_empty">لا توجد ملفات صوت. امنح الإذن للوصول إلى الملفات ثم اضغط «فحص كل الـ MP3».</string>
+    <string name="library_count">%1$d ملف صوتي</string>
+    <string name="library_mp3_count">%1$d ملف MP3 من أصل %2$d</string>
+    <string name="grant_permission">منح إذن الوصول للملفات</string>
+    <string name="permission_needed">يحتاج التطبيق إلى إذن قراءة الملفات الصوتية لعرض جميع الـ MP3 على هاتفك</string>
+    <string name="sort_title">حسب الاسم</string>
+    <string name="sort_artist">حسب الفنان</string>
+    <string name="sort_date">حسب التاريخ</string>
+    <string name="sort_duration">حسب المدة</string>
 </resources>
