@@ -2,187 +2,121 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ننجاوي | عبق التراث في كل تفصيلة</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#110e0b">
+<meta name="description" content="مجلس الصوت — اربط عدة سماعات بلوتوث وشغّل عليها معًا دون انقطاع. وكلاء محليون يحافظون على التزامن والمسار.">
+<title>مجلس الصوت | ننجاوي</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="sound/css/hall.css">
 </head>
 <body>
-
-<header class="site-header">
-  <div class="container header-row">
-    <a href="index.html" class="brand">
-      <span class="brand-mark"></span>
-      <span class="kufi">ننجاوي</span>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="index.html">
+      <img src="icons/icon-192.png" alt="" width="46" height="46">
+      <span>
+        <strong>مجلس الصوت</strong>
+        <small>ننجاوي · عدة سماعات، مسار واحد لا ينقطع</small>
+      </span>
     </a>
-    <nav class="main-nav">
-      <a href="index.html" class="active">الرئيسية</a>
+    <div class="pills" id="pills" aria-label="حالة الأذونات"></div>
+    <nav id="nav">
       <a href="shop.html">المتجر</a>
-      <a href="studio.html">استوديو 3D 🤖</a>
-      <a href="shop.html?cat=بخور%20وعود">البخور والعود</a>
-      <a href="shop.html?cat=هدايا%20تراثية">الهدايا</a>
+      <a href="heritage.html">التراث</a>
+      <a href="studio.html">استوديو 3D</a>
     </nav>
-    <div class="header-actions">
-      <a href="login.html" class="icon-btn" title="حسابي">👤</a>
-      <a href="cart.html" class="icon-btn" title="السلة">
-        🛍️
-        <span class="cart-count" data-cart-count>0</span>
-      </a>
-      <button class="nav-toggle" aria-label="القائمة">☰</button>
-    </div>
-  </div>
-</header>
+    <button id="installBtn" hidden>تثبيت</button>
+    <button class="icon-btn" id="menuBtn" aria-label="القائمة" aria-expanded="false">القائمة</button>
+  </header>
 
-<section class="hero">
-  <div class="container hero-grid">
-    <div>
-      <p class="hero-eyebrow">تراث الجزيرة، بلمسة اليوم</p>
-      <h1>عبق أصيل يُروى<br>من قلب <span>نجد</span></h1>
-      <p class="lead">ننجاوي متجر متخصص في العود والبخور والعطور والهدايا التراثية، منتقاة يدوياً من حرفيين محليين لتصلك بجودتها الأصلية.</p>
-      <div class="hero-cta">
-        <a href="shop.html" class="btn btn-primary">تسوّق المجموعة</a>
-        <a href="#story" class="btn btn-outline">تعرّف على قصتنا</a>
-      </div>
-    </div>
-    <div class="hero-art">
-      <div class="smoke"></div>
-      <div class="hero-stats">
-        <div><strong>+12</strong><span>سنة خبرة</span></div>
-        <div><strong>+40</strong><span>منتج أصيل</span></div>
-        <div><strong>+9,000</strong><span>عميل راضٍ</span></div>
-      </div>
-    </div>
+  <div id="embedBar" class="embed-bar" hidden>
+    <span>أذونات البلوتوث ومخارج الصوت تعمل في نافذة كاملة، لا داخل إطار.</span>
+    <a href="index.html" target="_blank" rel="noopener">فتح التطبيق</a>
   </div>
-</section>
 
-<section class="section">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <h2>تسوّق حسب الفئة</h2>
-        <p>كل فئة تحمل حكاية مختلفة من تراث الجزيرة العربية</p>
+  <main class="layout">
+    <section class="stage" id="stage" aria-label="المشغّل">
+      <div class="orb">
+        <canvas id="viz" width="640" height="640" aria-hidden="true"></canvas>
+        <button id="playBtn" class="play-btn" aria-label="تشغيل">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <path class="icon-play" d="M8 5v14l11-7z"/>
+            <path class="icon-pause" d="M6 5h4v14H6zm8 0h4v14h-4z"/>
+          </svg>
+        </button>
       </div>
-      <a href="shop.html" class="section-link">عرض كل المنتجات ←</a>
-    </div>
-    <div class="cat-grid">
-      <a class="cat-card" href="shop.html?cat=بخور%20وعود">
-        <div class="cat-icon">🪵</div>
-        <h3>البخور والعود</h3>
-        <span>عود، عنبر، معمول</span>
-      </a>
-      <a class="cat-card" href="shop.html?cat=عطور">
-        <div class="cat-icon">🧴</div>
-        <h3>العطور</h3>
-        <span>دهن عود، مسك، عنبر</span>
-      </a>
-      <a class="cat-card" href="shop.html?cat=تمور">
-        <div class="cat-icon">🌴</div>
-        <h3>التمور</h3>
-        <span>سكري، عجوة، صفري</span>
-      </a>
-      <a class="cat-card" href="shop.html?cat=هدايا%20تراثية">
-        <div class="cat-icon">🎁</div>
-        <h3>الهدايا التراثية</h3>
-        <span>مباخر، مسابح، صناديق</span>
-      </a>
-    </div>
-  </div>
-</section>
-
-<section class="section" style="padding-top:0;">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <h2>الأكثر طلباً</h2>
-        <p>منتجات اختارها عملاؤنا مراراً لجودتها وعبقها المميز</p>
+      <p class="eyebrow" id="artist">وكلاء ننجاوي</p>
+      <h1 id="title">مجلس الذهب</h1>
+      <p class="sub" id="routeHint">اضغط التشغيل ليبدأ الصوت فورًا. أضف سماعةً فلا يُعاد تشغيل الأخريات.</p>
+      <div class="seek-row">
+        <span id="timeNow">0:00</span>
+        <input id="seek" type="range" min="0" max="1000" value="0" aria-label="موضع التشغيل">
+        <span id="timeDur">0:00</span>
       </div>
-      <a href="shop.html" class="section-link">تصفّح المتجر ←</a>
-    </div>
-    <div class="product-grid" id="home-product-grid"></div>
-  </div>
-</section>
-
-<section class="section" id="story" style="padding-top:0;">
-  <div class="container split">
-    <div class="split-art"></div>
-    <div>
-      <p class="hero-eyebrow">قصتنا</p>
-      <h2 style="font-size:32px;">من مجالس نجد إلى بيتك</h2>
-      <p style="color:var(--muted); margin-top:16px; max-width:50ch;">بدأت ننجاوي كمشروع عائلي صغير لتوثيق عبق البخور والعطور النجدية الأصيلة، واليوم نعمل مع أكثر من 30 حرفياً محلياً لنقدّم لك منتجات حقيقية بلا وسطاء.</p>
-      <div class="feature-list">
-        <div class="feature-item">
-          <span class="feature-dot"></span>
-          <div><h4>مصدر موثوق</h4><p>كل منتج يأتي من حرفي أو مزرعة معروفة الهوية.</p></div>
-        </div>
-        <div class="feature-item">
-          <span class="feature-dot"></span>
-          <div><h4>تغليف يليق بالهدية</h4><p>تغليف تراثي أنيق مناسب للإهداء المباشر.</p></div>
-        </div>
-        <div class="feature-item">
-          <span class="feature-dot"></span>
-          <div><h4>شحن لجميع مناطق المملكة</h4><p>توصيل خلال 2-4 أيام عمل مع إمكانية الدفع عند الاستلام.</p></div>
+      <div class="transport">
+        <button id="prevBtn" type="button">السابق</button>
+        <button id="pingBtn" type="button">نقرة تزامن</button>
+        <button id="nextBtn" type="button">التالي</button>
+      </div>
+      <div class="master">
+        <label for="master">المستوى العام</label>
+        <input id="master" type="range" min="0" max="100" value="85" aria-label="المستوى العام">
+        <div class="loop" role="group" aria-label="وضع التكرار">
+          <button type="button" data-loop="one" class="on">تكرار المقطع</button>
+          <button type="button" data-loop="queue">طابور متصل</button>
+          <button type="button" data-loop="off">مرة واحدة</button>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<section class="band">
-  <div class="container band-row">
-    <div>
-      <h2>كن أول من يعرف عن إصداراتنا الجديدة</h2>
-      <p>اشترك في نشرتنا البريدية ولا تفوّت العروض الموسمية</p>
-    </div>
-    <form class="band-form" onsubmit="event.preventDefault(); showToast('تم تسجيل اشتراكك بنجاح');">
-      <input type="email" placeholder="بريدك الإلكتروني" required>
-      <button class="btn btn-primary" type="submit">اشترك الآن</button>
-    </form>
-  </div>
-</section>
+    <aside class="rack" aria-label="السماعات">
+      <header>
+        <h2>السماعات</h2>
+        <p>كل جهاز مسار مستقل. تعطل واحد لا يقطع البقية.</p>
+      </header>
+      <div class="add-row">
+        <button id="btBtn" class="btn gold" type="button">ربط بلوتوث</button>
+        <button id="outBtn" class="btn ghost" type="button">إضافة مخرج صوت</button>
+        <button id="allBtn" class="btn ghost" type="button">كل المخارج الظاهرة</button>
+        <button id="fileBtn" class="btn ghost" type="button">ملف صوتي</button>
+      </div>
+      <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac,.webm,.opus" multiple hidden>
+      <div id="rack" class="cards"></div>
+    </aside>
+  </main>
 
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-about">
-        <a href="index.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
-        <p>متجر إلكتروني سعودي متخصص في العود والبخور والعطور والهدايا التراثية الأصيلة.</p>
-      </div>
-      <div>
-        <h5>تسوّق</h5>
-        <ul>
-          <li><a href="shop.html?cat=بخور%20وعود">البخور والعود</a></li>
-          <li><a href="shop.html?cat=عطور">العطور</a></li>
-          <li><a href="shop.html?cat=تمور">التمور</a></li>
-          <li><a href="shop.html?cat=هدايا%20تراثية">الهدايا التراثية</a></li>
-        </ul>
-      </div>
-      <div>
-        <h5>الحساب</h5>
-        <ul>
-          <li><a href="login.html">تسجيل الدخول</a></li>
-          <li><a href="register.html">إنشاء حساب</a></li>
-          <li><a href="cart.html">سلة المشتريات</a></li>
-        </ul>
-      </div>
-      <div>
-        <h5>تواصل معنا</h5>
-        <ul>
-          <li><a href="#">الأسئلة الشائعة</a></li>
-          <li><a href="#">سياسة الإرجاع</a></li>
-          <li><a href="#">واتساب: 966500000000</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2026 ننجاوي. جميع الحقوق محفوظة.</span>
-      <span>صُنع بحب من قلب نجد</span>
-    </div>
-  </div>
-</footer>
+  <section class="agents" aria-label="وكلاء المجلس">
+    <h2>وكلاء المجلس</h2>
+    <div id="agentRow" class="agent-row"></div>
+    <ol id="notes" class="notes"></ol>
+  </section>
 
-<script src="products.js"></script>
-<script src="script.js"></script>
-<script>
-  renderProductGrid(document.getElementById('home-product-grid'), NANJAWI_PRODUCTS.slice(0, 8));
-</script>
+  <section class="lower">
+    <div class="library">
+      <h2>المكتبة</h2>
+      <p>المقاطع تُفك قبل أن تُعزف، والتسليم يُجدول عند الحد لا بعده.</p>
+      <ul id="queue" class="queue"></ul>
+    </div>
+    <div class="guide">
+      <h2>كيف يبقى الصوت متصلًا</h2>
+      <ol>
+        <li><b>تشغيل:</b> «مجلس الذهب» يبدأ على مخرج النظام. إن كانت سماعة البلوتوث هي مخرج النظام فستسمعها فورًا.</li>
+        <li><b>ربط بلوتوث:</b> إذن المتصفح، ثم الاسم والبطارية. هذا الرابط للمراقبة — سقوطه لا يمرّ الصوت منه أصلًا، فلا يقطعه.</li>
+        <li><b>مخرج لكل سماعة:</b> Chrome يوجّه مسارًا مستقلًا إلى كل جهاز. بعض الهواتف لا تسمح إلا بسماعة بلوتوث واحدة؛ عندها يبقى الصوت على المتاحة دون إعادة تشغيل.</li>
+        <li><b>الوكلاء:</b> الساعة تمتص الانحراف بتأخير ناعم، والحارس يوقظ مسارًا نائمًا وحده، وأمين المكتبة يمهّد المقطع التالي قبل الصمت.</li>
+      </ol>
+      <p>لا يُرسل صوت ولا اسم جهاز إلى أي خادم. الحساب كله على جهازك.</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>مجلس الصوت · ننجاوي · وكلاء محليون بلا خدمة خارجية</span>
+    <span>البلوتوث يعرّف الجهاز، ومخرج النظام يحمل الصوت</span>
+  </footer>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script type="module" src="sound/app/main.js"></script>
 </body>
 </html>
