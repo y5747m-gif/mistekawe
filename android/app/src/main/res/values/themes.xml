@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:layoutDirection">rtl</item>
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorPrimaryDark">@color/ink</item>
+        <item name="colorAccent">@color/gold</item>
+        <item name="android:windowBackground">@color/ink</item>
+        <item name="android:textColorPrimary">@color/cream</item>
+        <item name="android:statusBarColor">@color/ink</item>
+        <item name="android:navigationBarColor">@color/ink</item>
+    </style>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مجلس الصوت</string>
+    <string name="app_subtitle">ننجاوي · عدة سماعات بلوتوث بصوت واحد</string>
+
+    <string name="step_1">١. شغّل البلوتوث واربط السماعات من إعدادات الهاتف.</string>
+    <string name="step_2">٢. فعّل السماعات التي تريدها من القائمة بالأسفل.</string>
+    <string name="step_3">٣. اضغط تشغيل — سيخرج الصوت من كل السماعات المفعّلة معًا.</string>
+
+    <string name="pick_file">اختيار ملف صوتي</string>
+    <string name="refresh">تحديث السماعات</string>
+    <string name="select_all">تفعيل الكل</string>
+    <string name="play">تشغيل</string>
+    <string name="pause">إيقاف مؤقت</string>
+    <string name="outputs_title">السماعات والمخارج</string>
+    <string name="notif_channel">تشغيل مجلس الصوت</string>
+    <string name="no_file">لم تختر ملفًا بعد</string>
+    <string name="demo_track">مقطع تجريبي (مجلس الذهب)</string>
+    <string name="volume_label">المستوى</string>
+    <string name="delay_label">تأخير التزامن</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ink">#110E0B</color>
+    <color name="ink_2">#1A1410</color>
+    <color name="card">#241B14</color>
+    <color name="card_line">#3A2C20</color>
+    <color name="gold">#E0B15A</color>
+    <color name="gold_soft">#F0D7A2</color>
+    <color name="cream">#F6EFE4</color>
+    <color name="muted">#B5A89A</color>
+    <color name="teal">#3EC6C0</color>
+</resources>
