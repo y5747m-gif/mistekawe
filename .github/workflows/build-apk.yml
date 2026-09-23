@@ -6,8 +6,9 @@ on:
     branches:
       - main
       - 'arena/**'
-    paths-ignore:
-      - '**.md'
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
 
 permissions:
   contents: write
@@ -71,15 +72,24 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Copy APK into the repo
+      - name: Publish APK in the repo (downloadable link)
         if: success()
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk dist/majlis-debug.apk
           ls -la dist
+          git config user.name "arena-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f dist/majlis-debug.apk
+          if git diff --cached --quiet; then
+            echo "الملف لم يتغير"
+          else
+            git commit -m "ci: تحديث ملف APK [skip ci]"
+            git push origin "HEAD:$GITHUB_REF_NAME" || echo "تعذّر الدفع"
+          fi
 
-      - name: Save build log on the branch
-        if: always()
+      - name: Save build log on the branch (on failure only)
+        if: failure()
         continue-on-error: true
         run: |
           mkdir -p ci

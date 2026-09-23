@@ -22,3 +22,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# مخرجات البناء والتشخيص
+ci/
