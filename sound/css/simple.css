@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+:root {
+  --bg: #110e0b;
+  --panel: #1c1510;
+  --panel-2: #241b14;
+  --line: rgba(232, 208, 164, 0.16);
+  --ivory: #f6efe4;
+  --muted: #b5a89a;
+  --gold: #e0b15a;
+  --gold-2: #f0d7a2;
+  --ink: #1a1208;
+  --teal: #3ec6c0;
+  --danger: #e07a68;
+  --radius: 20px;
+  --font: "Cairo", "Segoe UI", Tahoma, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: var(--font);
+  line-height: 1.7;
+  padding: 0 0 60px;
+}
+button, input { font-family: inherit; }
+button { cursor: pointer; }
+a { color: var(--gold-2); }
+:focus-visible { outline: 2px solid var(--gold-2); outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+/* ---- الترويسة ---- */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 18px;
+  flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand img { width: 44px; height: 44px; border-radius: 13px; }
+.brand strong { display: block; font-size: 21px; }
+.brand small { color: var(--muted); font-size: 12px; }
+.top .links { margin-inline-start: auto; display: flex; gap: 14px; font-size: 14px; }
+.top .links a { color: var(--muted); text-decoration: none; }
+.top .links a:hover { color: var(--gold-2); }
+
+/* ---- البطاقات ---- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.card h2 { margin: 0 0 4px; font-size: 18px; color: var(--gold); }
+.card p.hint { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+
+/* ---- المشغّل ---- */
+.player { text-align: center; }
+.orb {
+  width: 132px; height: 132px; margin: 6px auto 10px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 30% 25%, #3a2c1d, #191210 70%);
+  border: 1px solid rgba(224, 177, 90, .35);
+}
+.play {
+  width: 92px; height: 92px; border-radius: 50%;
+  border: none; background: var(--gold); color: var(--ink);
+  font-size: 15px; font-weight: 700;
+  display: grid; place-items: center;
+  box-shadow: 0 12px 30px rgba(224, 177, 90, .25);
+}
+.play.on { background: var(--teal); }
+.track-title { font-size: 19px; font-weight: 700; margin: 4px 0 2px; }
+.track-sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.seek-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.seek-row input[type=range] { flex: 1; }
+input[type=range] { accent-color: var(--gold); }
+.master-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+.master-row input { flex: 1; }
+
+/* ---- الأزرار ---- */
+.btn {
+  border: none; border-radius: 14px; padding: 12px 16px;
+  font-size: 15px; font-weight: 700; background: var(--gold); color: var(--ink);
+}
+.btn.ghost { background: var(--panel-2); color: var(--ivory); border: 1px solid var(--line); font-weight: 600; }
+.btn.big { width: 100%; padding: 15px; font-size: 16px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 140px; }
+
+/* ---- قائمة السماعات ---- */
+.speaker {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.speaker.off { opacity: .55; }
+.speaker .head { display: flex; align-items: center; gap: 10px; }
+.speaker .name { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; }
+.speaker .meta { color: var(--muted); font-size: 12px; }
+.speaker .led { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); flex: none; }
+.speaker.live .led { background: var(--teal); box-shadow: 0 0 10px var(--teal); }
+.speaker .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.speaker .row input[type=range] { flex: 1; }
+.mini {
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  border-radius: 10px; padding: 6px 10px; font-size: 12px;
+}
+.mini.on { border-color: var(--gold); color: var(--gold); }
+.mini.danger { border-color: transparent; color: var(--danger); }
+.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 14px; border: 1px dashed var(--line); border-radius: 14px; }
+
+/* ---- الشرح ---- */
+.steps { margin: 0; padding-inline-start: 20px; color: var(--ivory); font-size: 14px; }
+.steps li { margin-bottom: 8px; }
+.steps b { color: var(--gold-2); }
+
+/* ---- شريط APK ---- */
+.apk {
+  background: linear-gradient(100deg, rgba(224,177,90,.16), rgba(62,198,192,.10));
+  border: 1px solid rgba(224,177,90,.4);
+}
+.apk .btn { margin-top: 12px; }
+
+/* ---- قائمة التشغيل ---- */
+.queue { list-style: none; margin: 0; padding: 0; }
+.queue button {
+  width: 100%; text-align: start; background: transparent; border: none;
+  color: var(--ivory); padding: 10px 12px; border-radius: 12px; font-size: 14px;
+}
+.queue button.active { background: rgba(224,177,90,.14); color: var(--gold-2); }
+.queue small { display: block; color: var(--muted); font-size: 12px; }
+
+/* ---- رسالة ---- */
+.toast {
+  position: fixed; inset-inline: 0; bottom: 18px; margin: auto; width: max-content; max-width: 88%;
+  background: #2b2018; color: var(--ivory); border: 1px solid var(--line);
+  padding: 12px 18px; border-radius: 14px; font-size: 14px;
+  opacity: 0; transform: translateY(12px); transition: .25s; pointer-events: none; z-index: 40;
+}
+.toast.show { opacity: 1; transform: none; }
