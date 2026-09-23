@@ -1,0 +1,109 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare Android SDK
+        run: |
+          set -x
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "sdk.dir=$SDK" >> android/local.properties
+          ls -la "$SDK" || true
+          ls "$SDK/platforms" || true
+          ls "$SDK/build-tools" || true
+          if [ -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+            "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0" || true
+          fi
+          ls "$SDK/platforms" || true
+          ls "$SDK/build-tools" || true
+
+      - name: Install Gradle 8.7
+        run: |
+          curl -sSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          sudo unzip -q -o -d /opt /tmp/gradle.zip
+          echo "/opt/gradle-8.7/bin" >> "$GITHUB_PATH"
+          gradle --version
+
+      - name: Build debug APK
+        id: gradle
+        working-directory: android
+        run: |
+          gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ../build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: majlis-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish APK in the repo (downloadable link)
+        if: success()
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/majlis-debug.apk
+          ls -la dist
+          git config user.name "arena-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f dist/majlis-debug.apk
+          if git diff --cached --quiet; then
+            echo "الملف لم يتغير"
+          else
+            git commit -m "ci: تحديث ملف APK [skip ci]"
+            git push origin "HEAD:$GITHUB_REF_NAME" || echo "تعذّر الدفع"
+          fi
+
+      - name: Save build log on the branch (on failure only)
+        if: failure()
+        continue-on-error: true
+        run: |
+          mkdir -p ci
+          if [ -f build.log ]; then cp build.log ci/build.log; fi
+          if [ -f android/build.log ]; then cp android/build.log ci/build.log; fi
+          ls -la ci || true
+          git config user.name "arena-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f ci/build.log 2>/dev/null || true
+          if [ -f dist/majlis-debug.apk ]; then git add -f dist/majlis-debug.apk || true; fi
+          git status --short
+          if git diff --cached --quiet; then
+            echo "لا جديد في السجل"
+          else
+            git commit -m "ci: سجل البناء وملف APK [skip ci]"
+            git push origin "HEAD:$GITHUB_REF_NAME" || echo "تعذّر الدفع"
+          fi

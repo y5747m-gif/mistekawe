@@ -1,10 +1,13 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v1';
+const CACHE = 'majlis-shell-v2';
 const SHELL = [
   './',
   './index.html',
+  './hall.html',
   './sound/css/hall.css',
+  './sound/css/simple.css',
   './sound/app/main.js',
+  './sound/app/simple.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'

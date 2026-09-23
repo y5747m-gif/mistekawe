@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#110e0b">
+<meta name="description" content="مجلس الصوت — اربط عدة سماعات بلوتوث وشغّل عليها معًا دون انقطاع. وكلاء محليون يحافظون على التزامن والمسار.">
+<title>مجلس الصوت | ننجاوي</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="sound/css/hall.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="index.html">
+      <img src="icons/icon-192.png" alt="" width="46" height="46">
+      <span>
+        <strong>مجلس الصوت</strong>
+        <small>ننجاوي · عدة سماعات، مسار واحد لا ينقطع</small>
+      </span>
+    </a>
+    <div class="pills" id="pills" aria-label="حالة الأذونات"></div>
+    <nav id="nav">
+      <a href="shop.html">المتجر</a>
+      <a href="heritage.html">التراث</a>
+      <a href="studio.html">استوديو 3D</a>
+    </nav>
+    <button id="installBtn" hidden>تثبيت</button>
+    <button class="icon-btn" id="menuBtn" aria-label="القائمة" aria-expanded="false">القائمة</button>
+  </header>
+
+  <div id="embedBar" class="embed-bar" hidden>
+    <span>أذونات البلوتوث ومخارج الصوت تعمل في نافذة كاملة، لا داخل إطار.</span>
+    <a href="index.html" target="_blank" rel="noopener">فتح التطبيق</a>
+  </div>
+
+  <main class="layout">
+    <section class="stage" id="stage" aria-label="المشغّل">
+      <div class="orb">
+        <canvas id="viz" width="640" height="640" aria-hidden="true"></canvas>
+        <button id="playBtn" class="play-btn" aria-label="تشغيل">
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+            <path class="icon-play" d="M8 5v14l11-7z"/>
+            <path class="icon-pause" d="M6 5h4v14H6zm8 0h4v14h-4z"/>
+          </svg>
+        </button>
+      </div>
+      <p class="eyebrow" id="artist">وكلاء ننجاوي</p>
+      <h1 id="title">مجلس الذهب</h1>
+      <p class="sub" id="routeHint">اضغط التشغيل ليبدأ الصوت فورًا. أضف سماعةً فلا يُعاد تشغيل الأخريات.</p>
+      <div class="seek-row">
+        <span id="timeNow">0:00</span>
+        <input id="seek" type="range" min="0" max="1000" value="0" aria-label="موضع التشغيل">
+        <span id="timeDur">0:00</span>
+      </div>
+      <div class="transport">
+        <button id="prevBtn" type="button">السابق</button>
+        <button id="pingBtn" type="button">نقرة تزامن</button>
+        <button id="nextBtn" type="button">التالي</button>
+      </div>
+      <div class="master">
+        <label for="master">المستوى العام</label>
+        <input id="master" type="range" min="0" max="100" value="85" aria-label="المستوى العام">
+        <div class="loop" role="group" aria-label="وضع التكرار">
+          <button type="button" data-loop="one" class="on">تكرار المقطع</button>
+          <button type="button" data-loop="queue">طابور متصل</button>
+          <button type="button" data-loop="off">مرة واحدة</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="rack" aria-label="السماعات">
+      <header>
+        <h2>السماعات</h2>
+        <p>كل جهاز مسار مستقل. تعطل واحد لا يقطع البقية.</p>
+      </header>
+      <div class="add-row">
+        <button id="btBtn" class="btn gold" type="button">ربط بلوتوث</button>
+        <button id="outBtn" class="btn ghost" type="button">إضافة مخرج صوت</button>
+        <button id="allBtn" class="btn ghost" type="button">كل المخارج الظاهرة</button>
+        <button id="fileBtn" class="btn ghost" type="button">ملف صوتي</button>
+      </div>
+      <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac,.webm,.opus" multiple hidden>
+      <div id="rack" class="cards"></div>
+    </aside>
+  </main>
+
+  <section class="agents" aria-label="وكلاء المجلس">
+    <h2>وكلاء المجلس</h2>
+    <div id="agentRow" class="agent-row"></div>
+    <ol id="notes" class="notes"></ol>
+  </section>
+
+  <section class="lower">
+    <div class="library">
+      <h2>المكتبة</h2>
+      <p>المقاطع تُفك قبل أن تُعزف، والتسليم يُجدول عند الحد لا بعده.</p>
+      <ul id="queue" class="queue"></ul>
+    </div>
+    <div class="guide">
+      <h2>كيف يبقى الصوت متصلًا</h2>
+      <ol>
+        <li><b>تشغيل:</b> «مجلس الذهب» يبدأ على مخرج النظام. إن كانت سماعة البلوتوث هي مخرج النظام فستسمعها فورًا.</li>
+        <li><b>ربط بلوتوث:</b> إذن المتصفح، ثم الاسم والبطارية. هذا الرابط للمراقبة — سقوطه لا يمرّ الصوت منه أصلًا، فلا يقطعه.</li>
+        <li><b>مخرج لكل سماعة:</b> Chrome يوجّه مسارًا مستقلًا إلى كل جهاز. بعض الهواتف لا تسمح إلا بسماعة بلوتوث واحدة؛ عندها يبقى الصوت على المتاحة دون إعادة تشغيل.</li>
+        <li><b>الوكلاء:</b> الساعة تمتص الانحراف بتأخير ناعم، والحارس يوقظ مسارًا نائمًا وحده، وأمين المكتبة يمهّد المقطع التالي قبل الصمت.</li>
+      </ol>
+      <p>لا يُرسل صوت ولا اسم جهاز إلى أي خادم. الحساب كله على جهازك.</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>مجلس الصوت · ننجاوي · وكلاء محليون بلا خدمة خارجية</span>
+    <span>البلوتوث يعرّف الجهاز، ومخرج النظام يحمل الصوت</span>
+  </footer>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script type="module" src="sound/app/main.js"></script>
+</body>
+</html>
