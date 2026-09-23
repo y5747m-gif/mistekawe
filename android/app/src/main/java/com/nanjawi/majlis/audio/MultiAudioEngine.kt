@@ -20,8 +20,11 @@ import kotlin.math.min
  * محرك صوت محسّن ومتين:
  * - كل مخرج له طابور مستقل وخيط كتابة مستقل حتى لا تعرقل سماعة بطيئة البقية.
  * - Buffer كبير للبلوتوث (600ms) لتجنب التقطيع.
- * - كتابة غير متزامنة بين المخارج لمنع انقطاع الصوت عند تعدد السماعات.
- * - معالجة صحيحة لإعادة التوجيه، والـ seek، والـ trim.
+ * - ضغط عكسي (backpressure): فك الترميز ينتظر حتى تستهلك السماعات،
+ *   ولا يُحذف أي مقطع صوتي إطلاقًا — هذا ما يمنع «قفز» الأغنية للأمام.
+ * - الموضع الظاهر يُحسب من الصوت المسموع فعلًا (المكتوب ناقص ما لم يُسمع بعد)،
+ *   لا من سرعة فك الترميز.
+ * - الإيقاف المؤقت والاستئناف والانتقال يتمون بلا قفز ولا تداخل صوت قديم.
  */
 class MultiAudioEngine(private val appContext: Context) {
 
@@ -48,11 +51,12 @@ class MultiAudioEngine(private val appContext: Context) {
     @Volatile private var running = false
     @Volatile private var audioBytesWritten = 0L
     @Volatile private var maxLatencyFrames = 0
+    @Volatile private var playBaseUs = 0L
 
     private var eosReached = false
     private var sawInputEos = false
-    private var pendingRestartUs: Long? = null
-    private var pendingRecreate = false
+    @Volatile private var pendingRestartUs: Long? = null
+    @Volatile private var pendingRecreate = false
 
     private var uri: Uri? = null
     private var sourceName = ""
@@ -71,9 +75,11 @@ class MultiAudioEngine(private val appContext: Context) {
         var padFrames: Int = 0
         var aligned: Boolean = false
 
-        // طابور مستقل لكل مخرج
+        // طابور مستقل لكل مخرج — محدود بالبايتات، ولا يُحذف منه شيء أبدًا
         val queue: ArrayDeque<ByteArray> = ArrayDeque()
         val queueLock = Object()
+        var pendingBytes: Int = 0          // بايتات ما زالت في الطابور تنتظر الكتابة
+        var capacityBytes: Int = 256 * 1024 // تُضبط لاحقًا ≈ 1.5 ثانية من الصوت
         var leftover: ByteArray? = null
         var leftoverOffset: Int = 0
 
@@ -86,11 +92,13 @@ class MultiAudioEngine(private val appContext: Context) {
                 queue.clear()
                 leftover = null
                 leftoverOffset = 0
+                pendingBytes = 0
+                queueLock.notifyAll() // أيقظ المنتج إن كان ينتظر مكانًا
             }
         }
 
-        fun queueSize(): Int {
-            synchronized(queueLock) { return queue.size }
+        fun hasPendingAudio(): Boolean {
+            synchronized(queueLock) { return queue.isNotEmpty() || leftover != null }
         }
     }
 
@@ -115,6 +123,7 @@ class MultiAudioEngine(private val appContext: Context) {
         uri = next
         sourceName = name
         startUs = 0L
+        playBaseUs = 0L
         durationUs = 0L
         audioBytesWritten = 0L
         probeDuration()
@@ -211,17 +220,24 @@ class MultiAudioEngine(private val appContext: Context) {
         synchronized(lock) {
             for (slot in slots) {
                 if (slot.route.target.key == key) {
+                    val oldTrim = slot.route.trimMs
                     slot.route.trimMs = trimMs
-                    // إعادة حساب الـ pad فقط إذا لم يكن قد تمت مواءمته بعد، أو أعد المواءمة
-                    if (!slot.aligned) {
-                        slot.padFrames = basePad(slot) + (trimMs * sampleRate) / 1000
+                    if (running) {
+                        // أثناء التشغيل طبّق الفرق فقط. إعادة إدخال صمت المحاذاة
+                        // كاملًا كانت تُسكت السماعة ثم تعيدها فجأة (قفزة مسموعة).
+                        val deltaFrames = ((trimMs - oldTrim) * sampleRate) / 1000
+                        if (slot.aligned) {
+                            slot.padFrames = max(0, slot.padFrames + deltaFrames)
+                        } else {
+                            alignPads()
+                        }
                     } else {
-                        // إعادة مواءمة كاملة
+                        slot.padFrames = basePad(slot) + (trimMs * sampleRate) / 1000
                         slot.aligned = false
                     }
                 }
             }
-            if (slots.any { !it.aligned }) alignPads()
+            if (!running && slots.any { !it.aligned }) alignPads()
         }
     }
 
@@ -245,6 +261,8 @@ class MultiAudioEngine(private val appContext: Context) {
             listener?.onError("فعّل مخرجًا واحدًا على الأقل من قائمة السماعات.")
             return
         }
+        // بعد نهاية طبيعية، زر التشغيل يعيد من البداية لا من النهاية
+        if (durationUs > 0 && startUs >= durationUs - 50_000L) startUs = 0L
         running = true
         eosReached = false
         audioBytesWritten = 0L
@@ -263,11 +281,18 @@ class MultiAudioEngine(private val appContext: Context) {
 
     fun pause() {
         if (!running) return
-        startUs = state().positionMs * 1000L
+        // انتقال لم يُنفّذ بعد؟ خذ هدفه موضعًا للإيقاف بدل الموضع القديم
+        val pending = pendingRestartUs
+        pendingRestartUs = null
+        pendingRecreate = false
+        // والا فالتقط الموضع المسموع الفعلي قبل الإيقاف — لا بعده ولا من عدّاد فك الترميز.
+        val playedMs = if (pending != null) pending / 1000L else currentPositionMs()
         running = false
         joinThread()
         synchronized(lock) { stopAllTracksKeepSlots() }
         releaseCodec()
+        startUs = max(0L, playedMs) * 1000L
+        playBaseUs = startUs
         audioBytesWritten = 0L
     }
 
@@ -278,7 +303,10 @@ class MultiAudioEngine(private val appContext: Context) {
         synchronized(lock) { stopAllTracksKeepSlots() }
         releaseCodec()
         startUs = 0L
+        playBaseUs = 0L
         audioBytesWritten = 0L
+        pendingRestartUs = null
+        pendingRecreate = false
     }
 
     // نسخة stop تحافظ على الـ slots (تُستخدم من pause)
@@ -286,11 +314,13 @@ class MultiAudioEngine(private val appContext: Context) {
         val copy: List<Slot>
         synchronized(lock) { copy = ArrayList(slots) }
         for (slot in copy) {
-            // إيقاف الكاتب وإبقاء الـ slot
-            stopWriter(slot)
+            // أوقف الصوت أولًا: ذلك يفكّ أي كتابة محجوبة فيكمل الكاتب الخروج بسرعة
             val track = slot.track
             if (track != null) {
                 try { if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.pause() } catch (_: Exception) {}
+            }
+            stopWriter(slot)
+            if (track != null) {
                 try { track.flush() } catch (_: Exception) {}
                 try { track.stop() } catch (_: Exception) {}
                 try { track.release() } catch (_: Exception) {}
@@ -306,7 +336,10 @@ class MultiAudioEngine(private val appContext: Context) {
         val target = positionMs.coerceIn(0L, max(durationMs(), 0L))
         if (!running) {
             startUs = target * 1000L
+            playBaseUs = startUs
             audioBytesWritten = 0L
+            pendingRestartUs = null
+            pendingRecreate = false
             // امسح طوابير
             synchronized(lock) { for (s in slots) s.clearQueue() }
             return
@@ -318,7 +351,7 @@ class MultiAudioEngine(private val appContext: Context) {
 
     fun state(): State {
         val duration = max(durationMs(), 0L)
-        val position = if (running || audioBytesWritten > 0L) {
+        val position = if (running) {
             currentPositionMs()
         } else {
             startUs / 1000L
@@ -328,10 +361,35 @@ class MultiAudioEngine(private val appContext: Context) {
         return State(running, position.coerceIn(0L, duration), duration, active, sourceName)
     }
 
+    /**
+     * الموضع = نقطة البدء + (الصوت الذي سُلّم للسماعات − ما لم يُسمع بعد).
+     * «ما لم يُسمع بعد» = الطوابير + بقايا المقاطع + مخازن الصوت الداخلية،
+     * ونأخذ أكبر تراكم بين السماعات حتى لا يتقدم العدّاد على أبطأ سماعة.
+     * سماعة التحقت متأخرًا أو ميت كاتبها لا تُدخل في الحساب فلا تسحب الموضع للخلف.
+     */
     private fun currentPositionMs(): Long {
-        val frames = audioBytesWritten / max(1, frameBytes) - maxLatencyFrames
-        if (frames <= 0L) return 0L
-        return (frames * 1000L) / max(1, sampleRate)
+        val baseMs = max(0L, playBaseUs / 1000L)
+        if (audioBytesWritten <= 0L) return baseMs
+        var maxBacklogBytes = 0L
+        var any = false
+        synchronized(lock) {
+            for (slot in slots) {
+                if (!slot.route.enabled || slot.track == null || !slot.writerRunning.get()) continue
+                any = true
+                var backlog: Long
+                synchronized(slot.queueLock) {
+                    backlog = slot.pendingBytes.toLong()
+                    val lo = slot.leftover
+                    if (lo != null) backlog += (lo.size - slot.leftoverOffset).toLong()
+                }
+                backlog += slot.latencyFrames.toLong() * frameBytes
+                if (backlog > maxBacklogBytes) maxBacklogBytes = backlog
+            }
+        }
+        if (!any) return baseMs
+        val playedBytes = audioBytesWritten - maxBacklogBytes
+        val frames = if (playedBytes > 0) playedBytes / frameBytes else 0L
+        return baseMs + (frames * 1000L) / max(1, sampleRate)
     }
 
     // ---------------------------------------------------------- دورة البث
@@ -353,7 +411,8 @@ class MultiAudioEngine(private val appContext: Context) {
             }
             val decoder = codec ?: break
             if (!sawInputEos) feedInput(decoder)
-            val index = decoder.dequeueOutputBuffer(info, 200)
+            // المهلة بالميكروثانية: 10ms تكفي لتخفيف حرارة المعالج دون تخلف الجدولة
+            val index = decoder.dequeueOutputBuffer(info, 10_000)
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 // حدث تغير الفورمات بعد البدء
                 val format = decoder.outputFormat
@@ -380,37 +439,66 @@ class MultiAudioEngine(private val appContext: Context) {
             try { decoder.releaseOutputBuffer(index, false) } catch (_: Exception) {}
             if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
                 eosReached = true
-                val tail = latencyMillis() + 250L
+                // انتظر حتى تسمع السماعات ذيل المقطع فعلًا — لا تحذف ما بقي في الطوابير
+                waitForQueuesToDrain()
+                if (!running) break
+                if (pendingRestartUs != null) continue // المستخدم انتقل أثناء التصريف
+                Thread.sleep(latencyMillis() + 120L)
+                if (!running) break
+                if (pendingRestartUs != null) continue // الانتقال الجديد له الأولوية على إعادة اللف
                 if (looping) {
-                    Thread.sleep(tail)
-                    audioBytesWritten = 0L
                     pendingRestartUs = 0L
                     pendingRecreate = false
-                    // امسح الطوابير لإعادة البدء
-                    synchronized(lock) { for (s in slots) s.clearQueue() }
                 } else {
-                    Thread.sleep(tail)
+                    // النهاية الطبيعية: أظهر الموضع عند آخر المدة فلا «يقفز» العدّاد للصفر
+                    startUs = durationUs
+                    playBaseUs = durationUs
                     running = false
                 }
             }
         }
     }
 
+    /**
+     * انتظر حتى تستهلك السماعات كل ما في طوابيرها.
+     * يستجيب فورًا للإيقاف أو طلب انتقال جديد.
+     */
+    private fun waitForQueuesToDrain(timeoutMs: Long = 6000L) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (running && pendingRestartUs == null && System.currentTimeMillis() < deadline) {
+            var pending = false
+            synchronized(lock) {
+                for (slot in slots) {
+                    if (!slot.route.enabled || slot.track == null || !slot.writerRunning.get()) continue
+                    if (slot.hasPendingAudio()) { pending = true; break }
+                }
+            }
+            if (!pending) return
+            try { Thread.sleep(25) } catch (_: InterruptedException) {}
+        }
+    }
+
     private fun restart(atUs: Long, recreate: Boolean) {
         if (recreate) {
+            // 1) أوقف الصوت أولًا فيفك أي كتابة محجوبة
+            pauseLiveTracks()
+            // 2) نظّف الطوابير والمحاذاة
             synchronized(lock) {
-                // لا نطلق المسارات، فقط نوقف الكتابة مؤقتاً ونمسح الطوابير
                 for (slot in slots) {
                     slot.clearQueue()
                     slot.padFrames = 0
                     slot.aligned = false
                 }
-                stopWritersOnly()
             }
+            // 3) أوقف خيوط الكتابة بهدوء
+            stopWritersOnly()
+            // 4) افرغ مخازن الصوت حتى لا يُسمع صوت ما قبل الانتقال بعده (تداخل/قفزة)
+            flushLiveTracks()
         } else {
             synchronized(lock) { for (slot in slots) slot.clearQueue() }
         }
         audioBytesWritten = 0L
+        playBaseUs = atUs
         eosReached = false
         createDecoder(atUs)
         primeFormat()
@@ -421,14 +509,28 @@ class MultiAudioEngine(private val appContext: Context) {
         applyVolumes()
     }
 
+    private fun pauseLiveTracks() {
+        val copy: List<Slot>
+        synchronized(lock) { copy = ArrayList(slots) }
+        for (slot in copy) {
+            val track = slot.track ?: continue
+            try { if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.pause() } catch (_: Exception) {}
+        }
+    }
+
+    private fun flushLiveTracks() {
+        val copy: List<Slot>
+        synchronized(lock) { copy = ArrayList(slots) }
+        for (slot in copy) {
+            val track = slot.track ?: continue
+            try { track.flush() } catch (_: Exception) {}
+        }
+    }
+
     private fun stopWritersOnly() {
         val copy: List<Slot>
         synchronized(lock) { copy = ArrayList(slots) }
         for (slot in copy) stopWriter(slot)
-        // أعد تشغيل الكتاب بعد إعادة المحاذاة
-        for (slot in copy) {
-            if (slot.route.enabled && slot.track != null) startWriter(slot)
-        }
     }
 
     private fun createDecoder(atUs: Long) {
@@ -469,7 +571,7 @@ class MultiAudioEngine(private val appContext: Context) {
         val deadline = System.currentTimeMillis() + 6000
         while (System.currentTimeMillis() < deadline) {
             if (!sawInputEos) feedInput(decoder)
-            val index = decoder.dequeueOutputBuffer(info, 200)
+            val index = decoder.dequeueOutputBuffer(info, 10_000)
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 val format = decoder.outputFormat
                 sampleRate = if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE)) format.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 44100
@@ -499,7 +601,7 @@ class MultiAudioEngine(private val appContext: Context) {
     private fun feedInput(decoder: MediaCodec) {
         if (sawInputEos) return
         val extractor = this.extractor ?: return
-        val index = decoder.dequeueInputBuffer(2000)
+        val index = decoder.dequeueInputBuffer(10_000)
         if (index < 0) return
         val buffer = decoder.getInputBuffer(index) ?: return
         val size = extractor.readSampleData(buffer, 0)
@@ -513,69 +615,75 @@ class MultiAudioEngine(private val appContext: Context) {
         extractor.advance()
     }
 
+    /**
+     * يوزّع مقطع الصوت على كل السماعات دون حذف أي شيء.
+     * إذا امتلأ طابور سماعة، ينتظر المنتج حتى تستهلكها — هذا الضغط العكسي
+     * يجعل فك الترميز يتبع الزمن الحقيقي للتشغيل، فلا تتقدم القراءة على السمع
+     * ولا «تقفز» الأغنية أبدًا.
+     */
     private fun writeAllEnqueue(data: ByteArray) {
         val snapshot: List<Slot>
         synchronized(lock) { snapshot = ArrayList(slots) }
+        var delivered = false
         for (slot in snapshot) {
             if (!slot.route.enabled) continue
             if (slot.track == null) continue
-            // تجنب امتلاء الطابور بشكل مفرط (حد 40 قطعة ≈ 1.2 ثانية)
+            // كاتب ميت لا يستهلك شيئًا: تخطَّه حتى لا يوقف بقية السماعات
+            if (!slot.writerRunning.get()) continue
+
             synchronized(slot.queueLock) {
-                if (slot.queue.size > 60) {
-                    // إذا امتلأ، انتظر قليلاً أو احذف الأقدم للحفاظ على التزامن
-                    // نحذف الأقدم لتجنب تأخر كبير
-                    while (slot.queue.size > 50) slot.queue.removeFirst()
+                while (running &&
+                    pendingRestartUs == null &&
+                    slot.track != null &&
+                    slot.writerRunning.get() &&
+                    slot.pendingBytes > 0 &&
+                    slot.pendingBytes + data.size > slot.capacityBytes
+                ) {
+                    try { slot.queueLock.wait(40) } catch (_: InterruptedException) {}
                 }
+                // طلب انتقال أو إيقاف: المقطع المتبقي من الموضع القديم لم يعد مطلوبًا
+                if (!running || pendingRestartUs != null) return
                 slot.queue.addLast(data)
+                slot.pendingBytes += data.size
                 slot.queueLock.notifyAll()
             }
+            delivered = true
         }
-        audioBytesWritten += data.size
+        if (delivered) {
+            audioBytesWritten += data.size
+        } else {
+            // لا سماعة حيّة تستهلك حاليًا: لا تحرق المعالج بفك ترميز فارغ
+            try { Thread.sleep(50) } catch (_: InterruptedException) {}
+        }
     }
 
     // ------------------------------------------------------------- المسارات
 
     private fun ensureTracks() {
-        val toBuild = ArrayList<Slot>()
-        synchronized(lock) {
-            for (slot in slots) {
-                if (!slot.route.enabled) {
-                    // إذا معطل، أطلق المسار إن وجد
-                    if (slot.track != null) {
-                        // سيتم إطلاقه خارج القفل
-                        toBuild.add(slot) // علامة لإطلاق؟ سنعالج لاحقاً
-                    }
-                    continue
-                }
-                if (slot.track == null) toBuild.add(slot)
-            }
-            // نظف المعطلة
-            for (slot in slots) {
-                if (!slot.route.enabled && slot.track != null) {
-                    // سنطلقها
-                }
-            }
-            alignPads()
-        }
-        // بناء المسارات خارج القفل
-        for (slot in slots.filter { it.route.enabled && it.track == null }) {
-            val track = buildTrack(slot)
+        synchronized(lock) { alignPads() }
+        // ابنِ المسارات الناقصة خارج القفل
+        val toBuild: List<Slot>
+        synchronized(lock) { toBuild = slots.filter { it.route.enabled && it.track == null } }
+        for (slot in toBuild) {
+            val track = buildTrack(slot) ?: continue
             synchronized(lock) {
                 slot.track = track
-                if (track != null) {
-                    // إعادة حساب الـ latency
-                    alignPads()
-                }
+                alignPads()
             }
-            if (track != null) startWriter(slot)
         }
-        // إطلاق المعطلة
+        // أطلق مسارات المعطّلة
         val disabled: List<Slot>
         synchronized(lock) { disabled = slots.filter { !it.route.enabled && it.track != null } }
         for (slot in disabled) releaseSlot(slot)
-
         // إعادة مواءمة بعد البناء
         synchronized(lock) { alignPads() }
+    }
+
+    private fun queueCapacityBytes(): Int {
+        // نحو 1.5 ثانية من الصوت الخام: تكفي لامتصاص تذبذب السماعات دون حذف
+        val perSecond = max(1, sampleRate) * max(1, frameBytes)
+        val desired = perSecond + perSecond / 2
+        return desired.coerceIn(96 * 1024, 384 * 1024)
     }
 
     private fun buildTrack(slot: Slot): AudioTrack? {
@@ -633,8 +741,8 @@ class MultiAudioEngine(private val appContext: Context) {
                 }
             }
 
-            // تحقق إضافي: إذا كان الجهاز بلوتوث وفشل التفضيل، نحاول مرة أخرى بعد play
             slot.latencyFrames = bufferSize / max(1, frameBytes)
+            slot.capacityBytes = queueCapacityBytes()
             slot.aligned = false
             slot.writerErrorCount = 0
 
@@ -677,7 +785,6 @@ class MultiAudioEngine(private val appContext: Context) {
 
     private fun writerLoop(slot: Slot) {
         val track = slot.track ?: return
-        var silenceWritten = false
 
         while (slot.writerRunning.get() && running) {
             // 1) معالجة الـ pad (صمت للمحاذاة + trim)
@@ -706,11 +813,10 @@ class MultiAudioEngine(private val appContext: Context) {
                     slot.writerErrorCount = 0
                 }
                 slot.padFrames = max(0, left)
-                if (slot.padFrames == 0) silenceWritten = true
-                else continue
+                if (slot.padFrames > 0) continue
             }
 
-            // 2) معالجة leftover
+            // 2) خذ مقطعًا من الطابور (مع بقايا المقطع السابق)
             var toWrite: ByteArray? = null
             var offset = 0
             var length = 0
@@ -722,6 +828,8 @@ class MultiAudioEngine(private val appContext: Context) {
                     length = (toWrite!!.size - offset)
                 } else if (slot.queue.isNotEmpty()) {
                     toWrite = slot.queue.removeFirst()
+                    slot.pendingBytes = max(0, slot.pendingBytes - toWrite!!.size)
+                    slot.queueLock.notifyAll() // أيقظ المنتج: توفّر مكان في الطابور
                     offset = 0
                     length = toWrite!!.size
                 } else {
@@ -755,7 +863,6 @@ class MultiAudioEngine(private val appContext: Context) {
                     if (slot.writerErrorCount > 30) {
                         Log.e("MultiAudioEngine", "writer too many errors, giving up for ${slot.route.target.name}")
                         listener?.onError("انقطع الصوت عن «${slot.route.target.name}». سيُعاد المحاولة.")
-                        // حاول إعادة إنشاء المسار لاحقاً
                         break
                     }
                     break
@@ -810,6 +917,7 @@ class MultiAudioEngine(private val appContext: Context) {
             for (slot in slots) {
                 val track = slot.track ?: continue
                 if (!slot.route.enabled) continue
+                slot.capacityBytes = queueCapacityBytes()
                 if (track.playState != AudioTrack.PLAYSTATE_PLAYING) {
                     try {
                         track.play()
@@ -840,10 +948,13 @@ class MultiAudioEngine(private val appContext: Context) {
     }
 
     private fun releaseSlot(slot: Slot) {
-        stopWriter(slot)
+        // أوقف الصوت أولًا لفك أي كتابة محجوبة ثم أوقف الكاتب
         val track = slot.track
         if (track != null) {
             try { if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.pause() } catch (_: Exception) {}
+        }
+        stopWriter(slot)
+        if (track != null) {
             try { track.flush() } catch (_: Exception) {}
             try { track.stop() } catch (_: Exception) {}
             try { track.release() } catch (_: Exception) {}
