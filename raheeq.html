@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="رحيق RAHEEQ — منصة تسجيل ولي الأمر. سجّل ابنك في رحيق بخطوات بسيطة وآمنة.">
 <title>رحيق RAHEEQ | تسجيل ولي الأمر</title>
-<link rel="icon" href="assets/raheeq-logo.jpg" type="image/jpeg">
+<link rel="icon" href="assets/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="assets/brand/raheeq-icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="assets/brand/raheeq-apple-touch.png">
+<meta property="og:title" content="رحيق RAHEEQ">
+<meta property="og:image" content="assets/brand/raheeq-og.jpg">
+<meta name="theme-color" content="#881234">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -44,8 +49,8 @@ body{
   overflow-x:hidden;
 }
 img,svg{display:block}
-.raheeq-logo{width:58px;height:68px;object-fit:contain;background:#f8f0e4;border:2px solid var(--gold);border-radius:12px;flex:none}
-.footer-logo .raheeq-logo{width:68px;height:80px}
+.raheeq-logo{width:58px;height:68px;object-fit:contain;background:linear-gradient(160deg,#FFFDF7,#F6EBD6);border:2px solid var(--gold);border-radius:14px;flex:none;box-shadow:0 4px 14px rgba(0,0,0,.28),inset 0 0 0 3px rgba(255,255,255,.55)}
+.footer-logo .raheeq-logo{width:68px;height:80px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 @media (max-width:600px){.logo .raheeq-logo{width:46px;height:54px}}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font-family:inherit;font-weight:600}
@@ -455,7 +460,7 @@ button,input,select,textarea{font-family:inherit;font-weight:600}
 <header class="site-header">
   <div class="container header-row">
     <a class="logo" href="#" aria-label="رحيق RAHEEQ">
-      <img class="raheeq-logo" src="assets/raheeq-logo.jpg" alt="" width="58" height="68">
+      <img class="raheeq-logo" src="assets/brand/raheeq-logo.png" alt="" width="58" height="68">
       <span class="logo-text"><strong>رحيق</strong><span>RAHEEQ</span></span>
     </a>
     <div class="header-actions">
@@ -720,9 +725,10 @@ button,input,select,textarea{font-family:inherit;font-weight:600}
         <p class="success-sub">شكرًا لثقتك في أكاديمية رحيق</p>
         <div class="order-badge" id="orderNumber">RHQ-0000</div>
         <div class="success-box" id="successBox"></div>
+        <div class="success-note">📲 تم تجهيز رسالة بكل بيانات الطالب وإرسالها إلى واتساب الأكاديمية <b>01151947735</b> — اضغط «إرسال» داخل واتساب لإتمام الإرسال.</div>
         <div class="success-note">⏳ هنتواصل معاك خلال 24–48 ساعة لتأكيد التسجيل وإتمام الإجراءات.</div>
         <div class="success-actions">
-          <button class="btn btn-green btn-block btn-lg" id="whatsappBtn" type="button">💬 إرسال البيانات عبر واتساب</button>
+          <a class="btn btn-green btn-block btn-lg" id="whatsappBtn" href="#" target="_blank" rel="noopener noreferrer">💬 إرسال البيانات عبر واتساب</a>
           <button class="btn btn-outline btn-block" id="newRegBtn" type="button">تسجيل طالب آخر</button>
         </div>
       </div>
@@ -766,7 +772,7 @@ button,input,select,textarea{font-family:inherit;font-weight:600}
 <footer class="site-footer">
   <div class="container">
     <div class="footer-logo">
-      <img class="raheeq-logo" src="assets/raheeq-logo.jpg" alt="" width="58" height="68">
+      <img class="raheeq-logo" src="assets/brand/raheeq-logo.png" alt="" width="58" height="68">
       <span><strong>رحيق</strong><span>RAHEEQ</span></span>
     </div>
     <div class="socials" aria-label="منصات التواصل">
@@ -1158,6 +1164,12 @@ function buildWhatsAppMessage(data){
   var lines = [
     '🎓 *طلب تسجيل جديد — أكاديمية رحيق RAHEEQ*',
     'رقم الطلب: ' + data.orderNumber,
+    'تاريخ الإرسال: ' + new Date(data.createdAt).toLocaleString('ar-EG'),
+    '———————',
+    '⭐ *ملخص سريع*',
+    'الطالب: ' + data.studentName + ' — ' + data.grade,
+    'ولي الأمر: ' + data.parentName + ' (' + data.relation + ')',
+    'موبايل التواصل: ' + data.mobile,
     '———————',
     '👨‍👩‍👦 *بيانات ولي الأمر*',
     'الاسم: ' + data.parentName,
@@ -1190,7 +1202,13 @@ var lastWhatsAppUrl = '';
 function sendWhatsApp(data){
   var msg = buildWhatsAppMessage(data);
   lastWhatsAppUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
-  window.open(lastWhatsAppUrl, '_blank', 'noopener');
+  var win = null;
+  try{ win = window.open(lastWhatsAppUrl, '_blank', 'noopener'); }catch(e){ win = null; }
+  /* لو المتصفح منع النافذة المنبثقة: بديل مضمون بدون حظر */
+  if(!win){
+    try{ location.href = lastWhatsAppUrl; }catch(e){}
+  }
+  return lastWhatsAppUrl;
 }
 
 /* ---------- إرسال التسجيل ---------- */
@@ -1236,7 +1254,8 @@ $('regForm').addEventListener('submit', function(e){
   localStorage.setItem(LS_CURRENT, data.mobile);
 
   /* إرسال واتساب فورًا (داخل تفاعل المستخدم حتى لا يُحظر) */
-  sendWhatsApp(data);
+  var waUrl = sendWhatsApp(data);
+  $('whatsappBtn').href = waUrl;
 
   /* شاشة النجاح */
   $('registerView').hidden = true;
@@ -1263,8 +1282,12 @@ function esc(s){
   });
 }
 
-$('whatsappBtn').addEventListener('click', function(){
-  if(lastWhatsAppUrl){ window.open(lastWhatsAppUrl, '_blank', 'noopener'); }
+$('whatsappBtn').addEventListener('click', function(e){
+  if(lastWhatsAppUrl){
+    this.href = lastWhatsAppUrl; // لو الرابط لم يُحفظ بعد
+  }else{
+    e.preventDefault();
+  }
 });
 $('newRegBtn').addEventListener('click', function(){
   $('regForm').reset();
