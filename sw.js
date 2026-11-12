@@ -1,5 +1,5 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v2';
+const CACHE = 'majlis-shell-v3';
 const SHELL = [
   './',
   './index.html',
@@ -10,7 +10,9 @@ const SHELL = [
   './sound/app/simple.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './assets/brand/raheeq-logo.png',
+  './assets/brand/raheeq-icon-192.png'
 ];
 
 self.addEventListener('install', (event) => {
