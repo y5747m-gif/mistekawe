@@ -212,6 +212,15 @@ input[type=range]{accent-color:var(--acc)}
 .foot{text-align:center;color:var(--faint);font-size:12.5px;padding:26px 0 40px;border-top:1px solid var(--line);margin-top:20px}
 .foot .faint{opacity:.8}
 
+/* ---------- منصات التواصل — أكاديمية رحيق ---------- */
+.socials{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.social-link{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;color:var(--text);font-size:13px;font-weight:600;transition:.18s}
+.social-link svg{width:16px;height:16px;fill:currentColor;flex-shrink:0}
+.social-link:hover{border-color:var(--acc);color:var(--acc);transform:translateY(-2px)}
+.social-link:active{transform:scale(.97)}
+.social-link .handle{color:var(--faint);font-size:11.5px;font-weight:400;direction:ltr}
+.social-link:hover .handle{color:var(--acc)}
+
 /* ---------- toast ---------- */
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,90px);background:var(--surface);border:1px solid var(--line2);color:var(--text);padding:12px 20px;border-radius:12px;box-shadow:var(--shadow);font-size:13.5px;opacity:0;transition:.28s;z-index:200;max-width:min(90vw,520px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}

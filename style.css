@@ -585,6 +585,73 @@ button, input, select, textarea{ font-family: inherit; }
 }
 .social-btn:hover{ border-color: var(--gold); }
 
+/* ---------- منصات التواصل — أكاديمية رحيق ---------- */
+.socials{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.social-link{
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ivory);
+  font-size: 14px;
+  font-weight: 600;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, transform 0.18s ease;
+}
+.social-link svg{ width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+.social-link:hover{
+  border-color: var(--gold);
+  color: var(--gold-light);
+  background: rgba(192,138,62,0.08);
+  transform: translateY(-2px);
+}
+.social-link:active{ transform: scale(0.97); }
+.social-link .handle{ color: var(--muted); font-size: 12px; font-weight: 400; direction: ltr; }
+.social-link:hover .handle{ color: var(--gold-light); }
+
+/* أيقونات دائرية مدمجة (الفوتر) */
+.socials--icons{ gap: 8px; }
+.socials--icons .social-link{
+  width: 40px; height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+.socials--icons .social-link svg{ width: 17px; height: 17px; }
+.socials--icons .social-link span{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* قسم المتابعة في صفحات الدخول */
+.follow-box{
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.follow-box p{ color: var(--muted); font-size: 13.5px; margin-bottom: 14px; }
+.follow-box .socials{ justify-content: center; }
+
+/* بانر أكاديمية رحيق في الصفحة الرئيسية */
+.raheeq-banner{
+  background:
+    radial-gradient(circle at 85% 20%, rgba(192,138,62,0.18), transparent 55%),
+    radial-gradient(circle at 10% 90%, rgba(122,139,111,0.14), transparent 50%),
+    linear-gradient(155deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 30px 26px;
+  margin-bottom: 14px;
+}
+.raheeq-banner h2{ font-size: 24px; margin-bottom: 8px; }
+.raheeq-banner h2 span{ color: var(--gold-light); }
+.raheeq-banner p{ color: var(--muted); font-size: 14.5px; max-width: 52ch; }
+.raheeq-banner .socials{ margin-top: 18px; }
+.raheeq-banner .raheeq-cta{ margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; }
+
 .auth-switch{ text-align: center; margin-top: 30px; color: var(--muted); font-size: 14px; }
 
 .toast{
@@ -703,3 +770,6 @@ button, input, select, textarea{ font-family: inherit; }
 /* ---------- Utility ---------- */
 .mt-lg{ margin-top: 60px; }
 .text-center{ text-align: center; }
+
+/* شعار رحيق المقدم من الأكاديمية */
+.raheeq-brand-mark{width:50px;height:58px;object-fit:contain;border:2px solid #C9A86A;border-radius:10px;background:#f8f0e4;flex:none}

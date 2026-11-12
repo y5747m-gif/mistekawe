@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="رحيق RAHEEQ — منصة تسجيل ولي الأمر. سجّل ابنك في رحيق بخطوات بسيطة وآمنة.">
+<title>رحيق RAHEEQ | تسجيل ولي الأمر</title>
+<link rel="icon" href="assets/raheeq-logo.jpg" type="image/jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   رحيق RAHEEQ — هوية العلامة
+   ============================================================ */
+:root{
+  --maroon:#881234;
+  --maroon-dark:#5E0C24;
+  --maroon-hover:#A6193F;
+  --cream:#F3E8D2;
+  --beige:#EADFC8;
+  --gold:#C9A86A;
+  --gold-light:#E3C98F;
+  --text:#2B2B2B;
+  --muted:#6B6B6B;
+  --white:#FFFFFF;
+  --success:#1E8A49;
+  --error:#D32F2F;
+  --radius-card:20px;
+  --radius-btn:14px;
+  --shadow:0 18px 45px rgba(94,12,36,.16);
+  --shadow-soft:0 8px 24px rgba(94,12,36,.10);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:'Cairo',sans-serif;
+  font-weight:600;
+  background:var(--cream);
+  color:var(--text);
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,svg{display:block}
+.raheeq-logo{width:58px;height:68px;object-fit:contain;background:#f8f0e4;border:2px solid var(--gold);border-radius:12px;flex:none}
+.footer-logo .raheeq-logo{width:68px;height:80px}
+@media (max-width:600px){.logo .raheeq-logo{width:46px;height:54px}}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font-family:inherit;font-weight:600}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+::selection{background:var(--maroon);color:var(--white)}
+
+.container{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ---------- حركات ---------- */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(26px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes slideLeft{
+  from{opacity:0;transform:translateX(-34px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes slideRight{
+  from{opacity:0;transform:translateX(34px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-5px)}
+  80%{transform:translateX(5px)}
+}
+@keyframes popIn{
+  0%{opacity:0;transform:scale(.82)}
+  70%{transform:scale(1.04)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes floaty{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-8px)}
+}
+.fade-up{animation:fadeUp .7s cubic-bezier(.22,.9,.3,1) both}
+.shake{animation:shake .45s ease}
+.step-enter{animation:slideLeft .45s cubic-bezier(.22,.9,.3,1) both}
+.step-enter-back{animation:slideRight .45s cubic-bezier(.22,.9,.3,1) both}
+
+/* ---------- الهيدر ---------- */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:linear-gradient(180deg,var(--maroon-dark),#4A0A1D);
+  border-bottom:3px solid var(--gold);
+  box-shadow:0 6px 24px rgba(94,12,36,.35);
+}
+.header-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  min-height:76px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap;
+}
+.logo{display:flex;align-items:center;gap:12px;color:var(--white)}
+.logo-icon{
+  position:relative;width:54px;height:54px;flex:none;
+  border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,var(--gold-light),var(--gold) 62%,#9A7B45);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(0,0,0,.3),inset 0 0 0 2px rgba(255,255,255,.35);
+}
+.logo-icon svg{width:30px;height:30px;fill:var(--maroon-dark)}
+.logo-icon .logo-r{
+  position:absolute;bottom:-4px;left:-4px;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--white);color:var(--maroon);
+  font-size:15px;font-weight:900;line-height:24px;text-align:center;
+  border:2px solid var(--gold);
+}
+.logo-text{line-height:1.15}
+.logo-text strong{display:block;font-size:27px;font-weight:900;letter-spacing:.2px}
+.logo-text span{display:block;font-size:12px;font-weight:800;letter-spacing:3px;color:var(--gold-light)}
+.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sound-btn{
+  width:46px;height:46px;border-radius:50%;flex:none;
+  border:2px solid var(--gold);background:rgba(255,255,255,.08);
+  color:var(--white);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,background .2s;
+}
+.sound-btn:hover{background:rgba(255,255,255,.18)}
+.sound-btn:active{transform:scale(.92)}
+
+/* ---------- الأزرار ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:none;cursor:pointer;
+  border-radius:var(--radius-btn);
+  padding:13px 26px;font-size:16px;font-weight:800;
+  transition:transform .15s,background .2s,box-shadow .2s,border-color .2s;
+  user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--maroon);color:var(--white);box-shadow:0 8px 20px rgba(136,18,52,.28)}
+.btn-primary:hover{background:var(--maroon-hover);box-shadow:0 10px 24px rgba(166,25,63,.32)}
+.btn-gold{background:var(--gold);color:var(--maroon-dark)}
+.btn-gold:hover{background:var(--gold-light)}
+.btn-outline{background:transparent;color:var(--maroon);border:2px solid var(--maroon)}
+.btn-outline:hover{background:rgba(136,18,52,.07);border-color:var(--maroon-hover);color:var(--maroon-hover)}
+.btn-white{background:var(--white);color:var(--maroon-dark)}
+.btn-white:hover{background:var(--cream)}
+.btn-green{background:var(--success);color:var(--white)}
+.btn-green:hover{filter:brightness(1.08)}
+.btn-block{width:100%}
+.btn-lg{padding:15px 32px;font-size:17px}
+.btn-sm{padding:9px 18px;font-size:14px}
+
+/* ---------- الهيرو ---------- */
+.hero{padding:44px 0 30px}
+.hero-grid{
+  display:grid;grid-template-columns:1fr 1.05fr;gap:36px;align-items:start;
+}
+.hero-text{padding-top:18px}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--white);color:var(--maroon);
+  border:1.5px solid var(--gold);border-radius:999px;
+  padding:7px 18px;font-size:13.5px;font-weight:800;
+  box-shadow:var(--shadow-soft);
+}
+.hero-text h1{
+  margin:18px 0 14px;
+  font-size:clamp(32px,5vw,52px);
+  font-weight:900;line-height:1.35;color:var(--maroon-dark);
+}
+.hero-text h1 .hl{
+  color:var(--maroon);
+  background:linear-gradient(transparent 62%,rgba(201,168,106,.55) 62%);
+  padding:0 6px;border-radius:6px;
+}
+.hero-text .subtitle{
+  margin:0 0 24px;color:var(--muted);font-size:17px;max-width:46ch;font-weight:600;
+}
+.hero-badges{display:flex;flex-wrap:wrap;gap:10px}
+.hero-badges .hbadge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--white);border:1.5px solid var(--gold);
+  border-radius:999px;padding:9px 18px;font-size:14px;font-weight:800;color:var(--maroon-dark);
+  box-shadow:var(--shadow-soft);
+  transition:transform .18s,border-color .18s;
+  cursor:default;
+}
+.hero-badges .hbadge:hover{transform:translateY(-3px);border-color:var(--maroon)}
+.hero-badges .hbadge svg{width:18px;height:18px;fill:var(--maroon)}
+.hero-note{
+  margin-top:22px;display:flex;gap:10px;align-items:flex-start;
+  color:var(--muted);font-size:14px;max-width:48ch;
+}
+.hero-note svg{width:20px;height:20px;fill:var(--success);flex:none;margin-top:3px}
+
+/* ---------- بطاقة التسجيل ---------- */
+.reg-card{
+  background:var(--beige);
+  border:2px solid var(--gold);
+  border-radius:var(--radius-card);
+  box-shadow:var(--shadow);
+  padding:26px 24px 24px;
+  position:relative;
+}
+.reg-card::before{
+  content:"";position:absolute;top:0;right:0;left:0;height:6px;
+  background:linear-gradient(90deg,var(--maroon),var(--gold),var(--maroon-hover));
+  border-radius:20px 20px 0 0;
+}
+.card-title{margin:4px 0 4px;font-size:22px;font-weight:900;color:var(--maroon-dark);text-align:center}
+.card-sub{margin:0 0 18px;text-align:center;color:var(--muted);font-size:14px}
+
+/* التبويبات */
+.tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  background:var(--white);border:1.5px solid var(--gold);
+  border-radius:var(--radius-btn);padding:6px;margin-bottom:20px;
+}
+.tab{
+  border:none;background:transparent;cursor:pointer;
+  border-radius:10px;padding:11px 10px;
+  font-size:15px;font-weight:800;color:var(--muted);
+  transition:background .2s,color .2s,transform .15s;
+}
+.tab:active{transform:scale(.97)}
+.tab.active{background:var(--maroon);color:var(--white);box-shadow:0 6px 16px rgba(136,18,52,.25)}
+
+/* مؤشر الخطوات */
+.progress-wrap{margin-bottom:22px}
+.progress-steps{display:flex;justify-content:space-between;position:relative;margin-bottom:10px}
+.progress-steps::before{
+  content:"";position:absolute;top:19px;right:16%;left:16%;height:3px;
+  background:var(--gold);opacity:.5;border-radius:99px;
+}
+.progress-fill{
+  position:absolute;top:19px;right:16%;height:3px;width:0;
+  background:var(--maroon);border-radius:99px;transition:width .5s cubic-bezier(.22,.9,.3,1);
+}
+.pstep{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;width:33%;text-align:center}
+.pstep .dot{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--white);border:2.5px solid var(--gold);
+  color:var(--muted);font-weight:900;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s;
+}
+.pstep .plabel{font-size:13px;font-weight:800;color:var(--muted);transition:color .3s}
+.pstep.active .dot{background:var(--maroon);border-color:var(--maroon);color:var(--white);transform:scale(1.12);box-shadow:0 6px 16px rgba(136,18,52,.3)}
+.pstep.active .plabel{color:var(--maroon)}
+.pstep.done .dot{background:var(--gold);border-color:var(--gold);color:var(--maroon-dark)}
+.pstep.done .plabel{color:var(--maroon-dark)}
+
+/* النماذج */
+.form-step{display:none}
+.form-step.current{display:block}
+.step-head{margin:0 0 16px;font-size:17px;font-weight:900;color:var(--maroon-dark);display:flex;align-items:center;gap:8px}
+.step-head svg{width:20px;height:20px;fill:var(--maroon)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+.field label{font-size:14px;font-weight:800;color:var(--maroon-dark)}
+.field label .req{color:var(--error)}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--white);
+  border:2px solid var(--gold);border-radius:12px;
+  padding:12px 14px;font-size:15px;color:var(--text);
+  transition:border-color .2s,box-shadow .2s;
+}
+.field textarea{resize:vertical;min-height:74px}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--maroon);
+  box-shadow:0 0 0 4px rgba(136,18,52,.14),0 0 14px rgba(136,18,52,.18);
+}
+.field input.invalid,.field select.invalid,.field textarea.invalid{
+  border-color:var(--error);box-shadow:0 0 0 3px rgba(211,47,47,.12);
+}
+.field .hint{font-size:12px;color:var(--muted);font-weight:600}
+.field .err{
+  display:none;font-size:13px;font-weight:700;color:var(--error);
+  align-items:center;gap:5px;
+}
+.field.has-error .err{display:flex}
+.field.has-error input,.field.has-error select,.field.has-error textarea{border-color:var(--error)}
+
+/* رفع الملفات */
+.upload-box{
+  border:2px dashed var(--gold);border-radius:14px;
+  background:var(--white);padding:16px;text-align:center;
+  cursor:pointer;transition:border-color .2s,background .2s,transform .15s;
+}
+.upload-box:hover{border-color:var(--maroon);background:#FFF9EC}
+.upload-box:active{transform:scale(.98)}
+.upload-box svg{width:34px;height:34px;fill:var(--maroon);margin:0 auto 6px}
+.upload-box .up-title{font-weight:800;font-size:14.5px;color:var(--maroon-dark)}
+.upload-box .up-sub{font-size:12.5px;color:var(--muted)}
+.upload-box .file-name{
+  margin-top:10px;display:none;align-items:center;justify-content:center;gap:8px;
+  background:var(--cream);border:1.5px solid var(--gold);border-radius:10px;
+  padding:8px 12px;font-size:13px;font-weight:800;color:var(--maroon-dark);
+  word-break:break-all;
+}
+.upload-box.has-file .file-name{display:flex}
+.upload-box.has-file{border-style:solid;border-color:var(--success)}
+.upload-box input[type=file]{display:none}
+
+/* الموافقة */
+.agree{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--white);border:1.5px solid var(--gold);border-radius:12px;
+  padding:13px 14px;font-size:14px;cursor:pointer;
+}
+.agree input{width:20px;height:20px;accent-color:var(--maroon);flex:none;margin-top:3px;cursor:pointer}
+.agree a{color:var(--maroon);font-weight:800;text-decoration:underline}
+
+/* أزرار التنقل بين الخطوات */
+.step-nav{display:flex;gap:10px;margin-top:20px}
+.step-nav .btn{flex:1}
+.form-alert{
+  display:none;margin-top:14px;
+  background:#FDECEA;border:1.5px solid var(--error);color:var(--error);
+  border-radius:12px;padding:11px 14px;font-size:14px;font-weight:800;
+  text-align:center;
+}
+.form-alert.show{display:block}
+
+/* ---------- شاشة النجاح ---------- */
+.success-view{text-align:center;padding:8px 0 4px}
+.success-icon{
+  width:92px;height:92px;margin:0 auto 14px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,#2FAE63,var(--success) 65%,#146B36);
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;box-shadow:0 12px 28px rgba(30,138,73,.35);
+  animation:popIn .6s cubic-bezier(.22,.9,.3,1) both;
+}
+.success-view h2{margin:0 0 6px;font-size:26px;font-weight:900;color:var(--maroon-dark)}
+.success-view .success-sub{margin:0 0 18px;color:var(--muted);font-size:15px}
+.success-box{
+  background:var(--white);border:2px solid var(--gold);border-radius:16px;
+  padding:18px;text-align:right;margin-bottom:16px;
+}
+.success-box .row{
+  display:flex;justify-content:space-between;gap:12px;
+  padding:9px 0;border-bottom:1px dashed var(--gold);font-size:14.5px;
+}
+.success-box .row:last-child{border-bottom:none}
+.success-box .row span:first-child{color:var(--muted);font-weight:700}
+.success-box .row span:last-child{font-weight:800;color:var(--maroon-dark);text-align:left}
+.order-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--maroon-dark);color:var(--gold-light);
+  border:2px solid var(--gold);border-radius:999px;
+  padding:10px 24px;font-size:18px;font-weight:900;letter-spacing:1px;
+  margin-bottom:14px;direction:ltr;
+}
+.success-note{
+  background:#E7F5EC;border:1.5px solid var(--success);color:#14532D;
+  border-radius:12px;padding:12px 14px;font-size:14.5px;font-weight:800;margin-bottom:16px;
+}
+.success-actions{display:flex;flex-direction:column;gap:10px}
+
+/* ---------- المزايا ---------- */
+.features{padding:34px 0 10px}
+.section-title{text-align:center;margin:0 0 8px;font-size:30px;font-weight:900;color:var(--maroon-dark)}
+.section-sub{text-align:center;margin:0 auto 26px;color:var(--muted);font-size:15.5px;max-width:56ch}
+.features-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.feature-card{
+  background:var(--beige);border:2px solid var(--gold);border-radius:var(--radius-card);
+  padding:26px 20px;text-align:center;box-shadow:var(--shadow-soft);
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.feature-card:hover{transform:translateY(-6px);border-color:var(--maroon);box-shadow:var(--shadow)}
+.feature-icon{
+  width:64px;height:64px;margin:0 auto 14px;border-radius:50%;
+  background:var(--maroon);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 18px rgba(136,18,52,.28);
+}
+.feature-icon svg{width:30px;height:30px;fill:var(--gold-light)}
+.feature-card h3{margin:0 0 8px;font-size:20px;font-weight:900;color:var(--maroon-dark)}
+.feature-card p{margin:0;color:var(--muted);font-size:14px}
+
+/* ---------- الفوتر ---------- */
+.site-footer{
+  margin-top:44px;background:linear-gradient(180deg,var(--maroon-dark),#4A0A1D);
+  color:var(--white);border-top:3px solid var(--gold);
+  padding:34px 0 26px;text-align:center;
+}
+.footer-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
+.footer-logo .logo-icon{width:46px;height:46px}
+.footer-logo .logo-icon svg{width:26px;height:26px}
+.footer-logo strong{font-size:24px;font-weight:900}
+.footer-logo span{font-size:11px;letter-spacing:3px;color:var(--gold-light);display:block;text-align:right}
+.socials{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:6px 0 18px}
+.social-link{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1.5px solid var(--gold);border-radius:999px;
+  padding:9px 18px;font-size:14px;font-weight:800;color:var(--white);
+  transition:background .2s,transform .18s,border-color .2s;
+}
+.social-link svg{width:17px;height:17px;fill:var(--gold-light)}
+.social-link:hover{background:rgba(201,168,106,.16);border-color:var(--gold-light);transform:translateY(-2px)}
+.social-link .handle{color:var(--gold-light);font-size:12px;font-weight:700;direction:ltr}
+.footer-line{color:rgba(255,255,255,.85);font-size:14.5px}
+.footer-line a{color:var(--gold-light);font-weight:800;text-decoration:underline}
+.footer-values{margin-top:10px;color:var(--gold-light);font-size:13.5px;font-weight:700;letter-spacing:.5px}
+
+/* ---------- تنبيه ---------- */
+.toast{
+  position:fixed;bottom:22px;right:50%;transform:translateX(50%) translateY(80px);
+  background:var(--maroon-dark);color:var(--white);
+  border:2px solid var(--gold);border-radius:14px;
+  padding:13px 22px;font-size:15px;font-weight:800;
+  box-shadow:var(--shadow);z-index:300;max-width:min(92vw,480px);text-align:center;
+  transition:transform .35s cubic-bezier(.22,.9,.3,1),opacity .3s;opacity:0;pointer-events:none;
+}
+.toast.show{transform:translateX(50%) translateY(0);opacity:1}
+.toast.error{background:#7A1414;border-color:#E57373}
+
+#confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:250}
+
+/* ---------- استجابة ---------- */
+@media (max-width:960px){
+  .hero-grid{grid-template-columns:1fr;gap:28px}
+  .hero-text{text-align:center}
+  .hero-text .subtitle{margin-inline:auto}
+  .hero-badges{justify-content:center}
+  .hero-note{margin-inline:auto;text-align:right}
+  .features-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:600px){
+  .header-row{min-height:68px}
+  .logo-text strong{font-size:22px}
+  .logo-icon{width:46px;height:46px}
+  .btn-header{padding:11px 16px;font-size:14px}
+  .hero{padding:28px 0 20px}
+  .reg-card{padding:20px 16px}
+  .form-grid{grid-template-columns:1fr}
+  .features-grid{grid-template-columns:1fr}
+  .step-nav{flex-direction:column-reverse}
+  .step-nav .btn{width:100%}
+  .pstep .plabel{font-size:11.5px}
+  .success-box .row{flex-direction:column;gap:2px}
+  .success-box .row span:last-child{text-align:right}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= الهيدر ================= -->
+<header class="site-header">
+  <div class="container header-row">
+    <a class="logo" href="#" aria-label="رحيق RAHEEQ">
+      <img class="raheeq-logo" src="assets/raheeq-logo.jpg" alt="" width="58" height="68">
+      <span class="logo-text"><strong>رحيق</strong><span>RAHEEQ</span></span>
+    </a>
+    <div class="header-actions">
+      <button class="sound-btn" id="soundToggle" type="button" aria-label="تشغيل أو كتم الصوت" title="الصوت">🔊</button>
+      <button class="btn btn-gold btn-header" id="headerLoginBtn" type="button">تسجيل دخول ولي الأمر</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ================= الهيرو ================= -->
+<section class="hero">
+  <div class="container hero-grid">
+
+    <div class="hero-text fade-up">
+      <span class="hero-badge">🎓 منصة تسجيل ولي الأمر — أكاديمية رحيق</span>
+      <h1>سجّل ابنك في <span class="hl">رحيق</span><br>بخطوات بسيطة وآمنة</h1>
+      <p class="subtitle">املأ بيانات ولي الأمر والطالب والمستندات في ثلاث خطوات فقط، وسيصل طلبك إلينا فورًا. بياناتك محفوظة بأمان ولا تُشارك مع أي طرف آخر.</p>
+      <div class="hero-badges">
+        <span class="hbadge"><svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>ثقة</span>
+        <span class="hbadge"><svg viewBox="0 0 24 24"><path d="M12 2C7 2 3 6 3 11c0 2.4 1.2 4.5 3 5.8V19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-2.2c1.8-1.3 3-3.4 3-5.8 0-5-4-9-9-9zM8 22h8v1H8z"/></svg>نمو</span>
+        <span class="hbadge"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-10-9.3C.4 8.6 2.3 5 5.7 5c2 0 3.4 1.1 4.3 2.4h4C15 6.1 16.4 5 18.4 5c3.4 0 5.3 3.6 3.7 6.7C19.5 16.1 12 21 12 21z" transform="scale(.92) translate(1,1)"/></svg>رعاية</span>
+        <span class="hbadge"><svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2z"/></svg>تميز</span>
+      </div>
+      <p class="hero-note">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.2-3.6-3.6 1.4-1.4 2.2 2.2 4.6-4.6 1.4 1.4-6 6z"/></svg>
+        <span>بعد إرسال الطلب سيتم تحويلك إلى واتساب لإرسال البيانات كاملة إلى إدارة الأكاديمية، وسنتواصل معك خلال 24–48 ساعة.</span>
+      </p>
+    </div>
+
+    <!-- بطاقة التسجيل / الدخول -->
+    <div class="reg-card fade-up" id="mainCard" style="animation-delay:.12s">
+      <h2 class="card-title" id="cardTitle">تسجيل ولي الأمر</h2>
+      <p class="card-sub" id="cardSub">أنشئ حسابك وسجّل ابنك في ثلاث خطوات</p>
+
+      <div class="tabs" role="tablist" aria-label="التبديل بين التسجيل والدخول">
+        <button class="tab active" id="tabRegister" type="button" role="tab" aria-selected="true">تسجيل جديد</button>
+        <button class="tab" id="tabLogin" type="button" role="tab" aria-selected="false">تسجيل دخول</button>
+      </div>
+
+      <!-- ====== التسجيل ====== -->
+      <div id="registerView">
+        <div class="progress-wrap" aria-label="تقدم التسجيل">
+          <div class="progress-steps">
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="pstep active" data-step="1"><span class="dot">1</span><span class="plabel">ولي الأمر</span></div>
+            <div class="pstep" data-step="2"><span class="dot">2</span><span class="plabel">الطالب</span></div>
+            <div class="pstep" data-step="3"><span class="dot">3</span><span class="plabel">المستندات</span></div>
+          </div>
+        </div>
+
+        <form id="regForm" novalidate>
+          <!-- الخطوة 1 -->
+          <fieldset class="form-step current" data-step-panel="1" style="border:none;margin:0;padding:0">
+            <p class="step-head"><svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg>بيانات ولي الأمر</p>
+            <div class="form-grid">
+              <div class="field full" data-field="parentName">
+                <label for="parentName">الاسم رباعي <span class="req">*</span></label>
+                <input type="text" id="parentName" placeholder="مثال: محمد أحمد علي حسن" autocomplete="name">
+                <span class="hint">اكتب الاسم من 4 أجزاء</span>
+                <span class="err">⚠ الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل</span>
+              </div>
+              <div class="field" data-field="nationalId">
+                <label for="nationalId">الرقم القومي <span class="req">*</span></label>
+                <input type="text" id="nationalId" inputmode="numeric" maxlength="14" placeholder="14 رقمًا" autocomplete="off">
+                <span class="err">⚠ الرقم القومي يجب أن يكون 14 رقمًا بالضبط</span>
+              </div>
+              <div class="field" data-field="relation">
+                <label for="relation">صلة القرابة <span class="req">*</span></label>
+                <select id="relation">
+                  <option value="">اختر صلة القرابة</option>
+                  <option value="أب">أب</option>
+                  <option value="أم">أم</option>
+                  <option value="ولي أمر">ولي أمر</option>
+                </select>
+                <span class="err">⚠ اختر صلة القرابة</span>
+              </div>
+              <div class="field" data-field="mobile">
+                <label for="mobile">رقم الموبايل <span class="req">*</span></label>
+                <input type="tel" id="mobile" inputmode="numeric" maxlength="11" placeholder="01xxxxxxxxx" autocomplete="tel">
+                <span class="err">⚠ رقم الموبايل يجب أن يكون 11 رقمًا</span>
+              </div>
+              <div class="field" data-field="whatsapp">
+                <label for="whatsapp">رقم الواتساب</label>
+                <input type="tel" id="whatsapp" inputmode="numeric" maxlength="11" placeholder="اتركه فارغًا لاستخدام الموبايل" autocomplete="off">
+                <span class="hint">اختياري — لو تركته سنستخدم رقم الموبايل</span>
+                <span class="err">⚠ رقم الواتساب يجب أن يكون 11 رقمًا</span>
+              </div>
+              <div class="field full" data-field="email">
+                <label for="email">البريد الإلكتروني <span class="req">*</span></label>
+                <input type="email" id="email" placeholder="example@mail.com" autocomplete="email" dir="ltr" style="text-align:right">
+                <span class="err">⚠ أدخل بريدًا إلكترونيًا صحيحًا يحتوي على @</span>
+              </div>
+              <div class="field" data-field="password">
+                <label for="password">كلمة السر <span class="req">*</span></label>
+                <input type="password" id="password" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+                <span class="err">⚠ كلمة السر يجب ألا تقل عن 6 أحرف</span>
+              </div>
+              <div class="field" data-field="confirmPassword">
+                <label for="confirmPassword">تأكيد كلمة السر <span class="req">*</span></label>
+                <input type="password" id="confirmPassword" placeholder="أعد كتابة كلمة السر" autocomplete="new-password">
+                <span class="err">⚠ كلمتا السر غير متطابقتين</span>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- الخطوة 2 -->
+          <fieldset class="form-step" data-step-panel="2" style="border:none;margin:0;padding:0">
+            <p class="step-head"><svg viewBox="0 0 24 24"><path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>بيانات الطالب</p>
+            <div class="form-grid">
+              <div class="field full" data-field="studentName">
+                <label for="studentName">اسم الطالب رباعي <span class="req">*</span></label>
+                <input type="text" id="studentName" placeholder="مثال: عمر محمد أحمد علي">
+                <span class="err">⚠ اسم الطالب يجب أن يتكون من 4 أجزاء على الأقل</span>
+              </div>
+              <div class="field" data-field="dob">
+                <label for="dob">تاريخ الميلاد <span class="req">*</span></label>
+                <input type="date" id="dob">
+                <span class="err">⚠ اختر تاريخ ميلاد صحيحًا</span>
+              </div>
+              <div class="field" data-field="gender">
+                <label for="gender">النوع <span class="req">*</span></label>
+                <select id="gender">
+                  <option value="">اختر النوع</option>
+                  <option value="ذكر">ذكر</option>
+                  <option value="أنثى">أنثى</option>
+                </select>
+                <span class="err">⚠ اختر النوع</span>
+              </div>
+              <div class="field" data-field="grade">
+                <label for="grade">الصف الدراسي <span class="req">*</span></label>
+                <select id="grade">
+                  <option value="">اختر الصف الدراسي</option>
+                  <option value="KG1">KG1</option>
+                  <option value="KG2">KG2</option>
+                  <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
+                  <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
+                  <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
+                  <option value="الصف الرابع الابتدائي">الصف الرابع الابتدائي</option>
+                  <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
+                  <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
+                  <option value="الصف الأول الإعدادي">الصف الأول الإعدادي</option>
+                  <option value="الصف الثاني الإعدادي">الصف الثاني الإعدادي</option>
+                  <option value="الصف الثالث الإعدادي">الصف الثالث الإعدادي</option>
+                  <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
+                  <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
+                  <option value="الصف الثالث الثانوي">الصف الثالث الثانوي</option>
+                </select>
+                <span class="err">⚠ اختر الصف الدراسي</span>
+              </div>
+              <div class="field" data-field="prevSchool">
+                <label for="prevSchool">المدرسة السابقة</label>
+                <input type="text" id="prevSchool" placeholder="اسم المدرسة السابقة (اختياري)">
+              </div>
+              <div class="field full" data-field="address">
+                <label for="address">العنوان <span class="req">*</span></label>
+                <input type="text" id="address" placeholder="المحافظة — المدينة — الشارع">
+                <span class="err">⚠ أدخل العنوان</span>
+              </div>
+              <div class="field full" data-field="healthNotes">
+                <label for="healthNotes">ملاحظات صحية</label>
+                <textarea id="healthNotes" placeholder="أي ملاحظات صحية أو حساسية يجب معرفتها (اختياري)"></textarea>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- الخطوة 3 -->
+          <fieldset class="form-step" data-step-panel="3" style="border:none;margin:0;padding:0">
+            <p class="step-head"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8V4h7v5h5v9z"/></svg>المستندات المطلوبة</p>
+            <div class="form-grid">
+              <div class="field full" data-field="birthCert">
+                <label>شهادة الميلاد <span class="req">*</span></label>
+                <label class="upload-box" data-upload="birthCert">
+                  <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                  <span class="up-title">اضغط لرفع شهادة الميلاد</span>
+                  <span class="up-sub">صورة أو ملف — JPG / PNG / PDF</span>
+                  <span class="file-name"></span>
+                  <input type="file" accept="image/*,.pdf" data-file-input="birthCert">
+                </label>
+                <span class="err">⚠ ارفع شهادة الميلاد</span>
+              </div>
+              <div class="field full" data-field="photo">
+                <label>صورة شخصية للطالب <span class="req">*</span></label>
+                <label class="upload-box" data-upload="photo">
+                  <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg>
+                  <span class="up-title">اضغط لرفع الصورة الشخصية</span>
+                  <span class="up-sub">صورة حديثة للطالب — JPG / PNG</span>
+                  <span class="file-name"></span>
+                  <input type="file" accept="image/*" data-file-input="photo">
+                </label>
+                <span class="err">⚠ ارفع الصورة الشخصية</span>
+              </div>
+              <div class="field full" data-field="parentCard">
+                <label>بطاقة ولي الأمر <span class="req">*</span></label>
+                <label class="upload-box" data-upload="parentCard">
+                  <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 14H4V6h16v12zM6 9h5v2H6zm0 3h8v2H6z"/></svg>
+                  <span class="up-title">اضغط لرفع بطاقة ولي الأمر</span>
+                  <span class="up-sub">صورة أو ملف — JPG / PNG / PDF</span>
+                  <span class="file-name"></span>
+                  <input type="file" accept="image/*,.pdf" data-file-input="parentCard">
+                </label>
+                <span class="err">⚠ ارفع بطاقة ولي الأمر</span>
+              </div>
+              <div class="field full" data-field="reportCard">
+                <label>بيان نجاح</label>
+                <label class="upload-box" data-upload="reportCard">
+                  <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-2 14-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                  <span class="up-title">اضغط لرفع بيان النجاح (اختياري)</span>
+                  <span class="up-sub">صورة أو ملف — JPG / PNG / PDF</span>
+                  <span class="file-name"></span>
+                  <input type="file" accept="image/*,.pdf" data-file-input="reportCard">
+                </label>
+              </div>
+              <div class="field full" data-field="agree">
+                <label class="agree">
+                  <input type="checkbox" id="agreeTerms">
+                  <span>أوافق على <a href="#" id="termsLink">الشروط والأحكام</a> الخاصة بالتسجيل في أكاديمية رحيق، وأؤكد صحة البيانات المذكورة أعلاه. <span class="req" style="color:var(--error)">*</span></span>
+                </label>
+                <span class="err">⚠ يجب الموافقة على الشروط والأحكام</span>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="form-alert" id="formAlert" role="alert"></div>
+
+          <div class="step-nav">
+            <button class="btn btn-outline" id="prevStepBtn" type="button" style="display:none">السابق</button>
+            <button class="btn btn-primary" id="nextStepBtn" type="button">التالي ←</button>
+            <button class="btn btn-primary" id="submitBtn" type="submit" style="display:none">إرسال طلب التسجيل ✓</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ====== الدخول ====== -->
+      <div id="loginView" hidden>
+        <form id="loginForm" novalidate>
+          <div class="form-grid">
+            <div class="field full" data-field="loginMobile">
+              <label for="loginMobile">رقم الموبايل <span class="req">*</span></label>
+              <input type="tel" id="loginMobile" inputmode="numeric" maxlength="11" placeholder="01xxxxxxxxx" autocomplete="tel">
+              <span class="err">⚠ أدخل رقم موبايل صحيحًا (11 رقمًا)</span>
+            </div>
+            <div class="field full" data-field="loginPassword">
+              <label for="loginPassword">كلمة السر <span class="req">*</span></label>
+              <input type="password" id="loginPassword" placeholder="كلمة السر" autocomplete="current-password">
+              <span class="err">⚠ أدخل كلمة السر</span>
+            </div>
+          </div>
+          <div class="form-alert" id="loginAlert" role="alert"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+            <button class="btn btn-primary btn-block btn-lg" type="submit">تسجيل الدخول</button>
+            <button class="btn btn-outline btn-block" id="goRegisterBtn" type="button">إنشاء حساب جديد</button>
+          </div>
+          <p id="loginWelcome" style="display:none;margin:14px 0 0;text-align:center;color:var(--success);font-weight:800"></p>
+        </form>
+      </div>
+
+      <!-- ====== النجاح ====== -->
+      <div id="successView" class="success-view" hidden>
+        <div class="success-icon" aria-hidden="true">🎓</div>
+        <h2>تم استلام طلبك بنجاح</h2>
+        <p class="success-sub">شكرًا لثقتك في أكاديمية رحيق</p>
+        <div class="order-badge" id="orderNumber">RHQ-0000</div>
+        <div class="success-box" id="successBox"></div>
+        <div class="success-note">⏳ هنتواصل معاك خلال 24–48 ساعة لتأكيد التسجيل وإتمام الإجراءات.</div>
+        <div class="success-actions">
+          <button class="btn btn-green btn-block btn-lg" id="whatsappBtn" type="button">💬 إرسال البيانات عبر واتساب</button>
+          <button class="btn btn-outline btn-block" id="newRegBtn" type="button">تسجيل طالب آخر</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= المزايا ================= -->
+<section class="features">
+  <div class="container">
+    <h2 class="section-title fade-up">لماذا رحيق؟</h2>
+    <p class="section-sub fade-up">أربع قيم نلتزم بها في أكاديمية رحيق من أول يوم</p>
+    <div class="features-grid">
+      <article class="feature-card fade-up" style="animation-delay:.05s">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+        <h3>ثقة</h3>
+        <p>بياناتك ومستنداتك محفوظة بأمان، وتواصل شفاف في كل خطوة من خطوات التسجيل.</p>
+      </article>
+      <article class="feature-card fade-up" style="animation-delay:.12s">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2C7 2 3 6 3 11c0 2.4 1.2 4.5 3 5.8V19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-2.2c1.8-1.3 3-3.4 3-5.8 0-5-4-9-9-9zM8 22h8v1H8z"/></svg></div>
+        <h3>نمو</h3>
+        <p>نرافق ابنك في رحلة تعلّم متدرجة تنمّي مهاراته وثقته بنفسه عامًا بعد عام.</p>
+      </article>
+      <article class="feature-card fade-up" style="animation-delay:.19s">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.9-10-9.3C.4 8.6 2.3 5 5.7 5c2 0 3.4 1.1 4.3 2.4h4C15 6.1 16.4 5 18.4 5c3.4 0 5.3 3.6 3.7 6.7C19.5 16.1 12 21 12 21z" transform="scale(.92) translate(1,1)"/></svg></div>
+        <h3>رعاية</h3>
+        <p>اهتمام حقيقي بكل طالب على حدة، ومتابعة مستمرة مع ولي الأمر أولًا بأول.</p>
+      </article>
+      <article class="feature-card fade-up" style="animation-delay:.26s">
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2z"/></svg></div>
+        <h3>تميز</h3>
+        <p>منهج متميز وكوادر متميزة، هدفنا أن يصل ابنك إلى أفضل نسخة من نفسه.</p>
+      </article>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ================= الفوتر ================= -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-logo">
+      <img class="raheeq-logo" src="assets/raheeq-logo.jpg" alt="" width="58" height="68">
+      <span><strong>رحيق</strong><span>RAHEEQ</span></span>
+    </div>
+    <div class="socials" aria-label="منصات التواصل">
+      <a class="social-link" href="https://www.facebook.com/share/1D5b2pqYVv/" target="_blank" rel="noopener noreferrer" aria-label="رحيق على فيسبوك" title="فيسبوك">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        <span>فيسبوك</span>
+      </a>
+      <a class="social-link" href="https://www.instagram.com/ltrykh.nbd" target="_blank" rel="noopener noreferrer" aria-label="رحيق على إنستجرام" title="إنستجرام">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg>
+        <span>إنستجرام</span><span class="handle">@ltrykh.nbd</span>
+      </a>
+      <a class="social-link" href="https://www.tiktok.com/@shahdadeel..952008" target="_blank" rel="noopener noreferrer" aria-label="رحيق على تيك توك" title="تيك توك">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+        <span>تيك توك</span><span class="handle">@shahdadeel..952008</span>
+      </a>
+      <a class="social-link" href="https://youtube.com/@raheeq.foundati?si=yvSJSrTjSsgAFn7k" target="_blank" rel="noopener noreferrer" aria-label="أكاديمية رحيق على يوتيوب" title="يوتيوب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z"/></svg><span>يوتيوب</span></a>
+    </div>
+    <p class="footer-line">© 2026 رحيق RAHEEQ — <a href="mailto:info@raheeq.edu">info@raheeq.edu</a></p>
+    <p class="footer-values">ثقة • نمو • رعاية • تميز</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+<canvas id="confettiCanvas" aria-hidden="true"></canvas>
+
+<script>
+/* ============================================================
+   رحيق RAHEEQ — منطق المنصة (ملف واحد، بلا خادم)
+   ============================================================ */
+(function(){
+'use strict';
+
+/* ---------- إعدادات ---------- */
+var WHATSAPP_NUMBER = '201151947735'; // 01151947735 بصيغة دولية
+var LS_SOUND = 'raheeq_sound_on';
+var LS_USERS = 'raheeq_users';
+var LS_REGS  = 'raheeq_registrations';
+var LS_CURRENT = 'raheeq_current_user';
+
+/* ---------- محرك الصوت ---------- */
+var SOUND_DEFS = {
+  click:   { file:'sounds/click.mp3',   vol:0.3 },
+  hover:   { file:'sounds/hover.mp3',   vol:0.1 },
+  typing:  { file:'sounds/typing.mp3',  vol:0.05 },
+  success: { file:'sounds/success.mp3', vol:0.6 },
+  error:   { file:'sounds/error.mp3',   vol:0.5 },
+  step:    { file:'sounds/step.mp3',    vol:0.4 },
+  upload:  { file:'sounds/upload.mp3',  vol:0.4 },
+  toggle:  { file:'sounds/toggle.mp3',  vol:0.3 }
+};
+var soundOn = localStorage.getItem(LS_SOUND) !== '0'; // الافتراضي: يعمل
+var audioCache = {};
+var audioCtx = null;
+var lastHover = 0, lastTyping = 0;
+
+function getCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+  return audioCtx;
+}
+
+/* تحميل مسبق لكل الأصوات عند فتح الصفحة */
+function preloadSounds(){
+  Object.keys(SOUND_DEFS).forEach(function(name){
+    try{
+      var a = new Audio(SOUND_DEFS[name].file);
+      a.preload = 'auto';
+      a.volume = SOUND_DEFS[name].vol;
+      a.load();
+      audioCache[name] = a;
+    }catch(e){}
+  });
+}
+
+/* توليد بديل عبر Web Audio لو تعذّر تشغيل الملف */
+function synth(name, vol){
+  var ctx = getCtx(); if(!ctx) return;
+  var t = ctx.currentTime;
+  function tone(freq, start, dur, type, v){
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(v, start + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(start); o.stop(start + dur + 0.05);
+  }
+  function noise(start, dur, v){
+    var len = Math.floor(ctx.sampleRate * dur);
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0;i<len;i++){ d[i] = (Math.random()*2-1) * (1 - i/len); }
+    var src = ctx.createBufferSource(); src.buffer = buf;
+    var g = ctx.createGain(); g.gain.value = v;
+    src.connect(g); g.connect(ctx.destination); src.start(start);
+  }
+  if(name==='click'){ tone(1400,t,0.08,'sine',vol); noise(t,0.03,vol*0.6); }
+  else if(name==='hover'){ tone(2000,t,0.05,'sine',vol); }
+  else if(name==='typing'){ tone(2600,t,0.04,'sine',vol); noise(t,0.02,vol*0.5); }
+  else if(name==='success'){ tone(523,t,0.5,'sine',vol); tone(659,t+0.12,0.5,'sine',vol); tone(784,t+0.24,0.5,'sine',vol); tone(1047,t+0.36,0.7,'sine',vol); }
+  else if(name==='error'){ tone(150,t,0.35,'square',vol*0.6); tone(110,t,0.35,'square',vol*0.4); }
+  else if(name==='step'){ noise(t,0.4,vol); }
+  else if(name==='upload'){ tone(900,t,0.18,'sine',vol); tone(500,t+0.06,0.12,'sine',vol*0.7); }
+  else if(name==='toggle'){ tone(1000,t,0.05,'sine',vol); tone(1500,t+0.07,0.05,'sine',vol); }
+}
+
+function playSound(name){
+  if(!soundOn) return;
+  var def = SOUND_DEFS[name]; if(!def) return;
+  var a = audioCache[name];
+  if(a && a.readyState >= 2 && !a.error){
+    try{
+      a.volume = def.vol;
+      a.currentTime = 0;
+      var p = a.play();
+      if(p && p.catch){ p.catch(function(){ synth(name, def.vol); }); }
+      return;
+    }catch(e){}
+  }
+  synth(name, def.vol);
+}
+
+function vibrate(pattern){
+  try{ if(navigator.vibrate){ navigator.vibrate(pattern); } }catch(e){}
+}
+
+/* زر الصوت */
+var soundBtn = document.getElementById('soundToggle');
+function renderSoundBtn(){ soundBtn.textContent = soundOn ? '🔊' : '🔇'; }
+renderSoundBtn();
+soundBtn.addEventListener('click', function(){
+  soundOn = !soundOn;
+  localStorage.setItem(LS_SOUND, soundOn ? '1' : '0');
+  renderSoundBtn();
+  if(soundOn){ playSound('click'); showToast('🔊 تم تشغيل الصوت'); }
+  else{ showToast('🔇 تم كتم الصوت'); }
+});
+
+/* ---------- أدوات عامة ---------- */
+function $(id){ return document.getElementById(id); }
+function showToast(msg, isError){
+  var toast = $('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ toast.classList.remove('show'); }, 3200);
+}
+function shakeCard(){
+  var card = $('mainCard');
+  card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+}
+function setFieldError(fieldName, hasError){
+  var field = document.querySelector('[data-field="' + fieldName + '"]');
+  if(field){ field.classList.toggle('has-error', !!hasError); }
+}
+function clearFieldErrors(scope){
+  (scope || document).querySelectorAll('.field.has-error').forEach(function(f){ f.classList.remove('has-error'); });
+}
+function showAlert(id, msg){
+  var el = $(id);
+  if(!msg){ el.classList.remove('show'); el.textContent=''; return; }
+  el.textContent = msg; el.classList.add('show');
+}
+function digitsOnly(v){ return (v || '').replace(/\D/g, ''); }
+function wordsCount(v){ return (v || '').trim().split(/\s+/).filter(Boolean).length; }
+
+/* ---------- أصوات التفاعل ---------- */
+document.addEventListener('click', function(e){
+  if(e.target.closest('button, .tab, a, .upload-box, .agree')){
+    playSound('click');
+  }
+}, true);
+
+document.addEventListener('mouseover', function(e){
+  if(e.target.closest('button, .feature-card, .hbadge, .social-link')){
+    var now = Date.now();
+    if(now - lastHover > 180){ lastHover = now; playSound('hover'); }
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.target.matches('input, textarea, select')){
+    var now = Date.now();
+    if(now - lastTyping > 140){ lastTyping = now; playSound('typing'); }
+  }
+});
+
+/* ---------- التبويبات: تسجيل / دخول ---------- */
+var mode = 'register';
+function switchMode(next){
+  if(mode === next) return;
+  mode = next;
+  playSound('toggle');
+  var isReg = mode === 'register';
+  $('tabRegister').classList.toggle('active', isReg);
+  $('tabLogin').classList.toggle('active', !isReg);
+  $('tabRegister').setAttribute('aria-selected', isReg ? 'true' : 'false');
+  $('tabLogin').setAttribute('aria-selected', isReg ? 'false' : 'true');
+  $('registerView').hidden = !isReg;
+  $('loginView').hidden = isReg;
+  $('successView').hidden = true;
+  $('cardTitle').textContent = isReg ? 'تسجيل ولي الأمر' : 'تسجيل دخول ولي الأمر';
+  $('cardSub').textContent = isReg ? 'أنشئ حسابك وسجّل ابنك في ثلاث خطوات' : 'أدخل رقم موبايلك وكلمة السر للمتابعة';
+  var card = $('mainCard');
+  card.classList.remove('step-enter'); void card.offsetWidth; card.classList.add('step-enter');
+}
+$('tabRegister').addEventListener('click', function(){ switchMode('register'); });
+$('tabLogin').addEventListener('click', function(){ switchMode('login'); });
+$('headerLoginBtn').addEventListener('click', function(){
+  switchMode('login');
+  $('mainCard').scrollIntoView({ behavior:'smooth', block:'center' });
+  setTimeout(function(){ $('loginMobile').focus(); }, 450);
+});
+$('goRegisterBtn').addEventListener('click', function(){ switchMode('register'); });
+$('termsLink').addEventListener('click', function(e){
+  e.preventDefault();
+  showToast('📋 الشروط: التسجيل في أكاديمية رحيق يتطلب بيانات صحيحة ومستندات أصلية، وسيتم التواصل معك خلال 24–48 ساعة.');
+});
+
+/* ---------- خطوات التسجيل ---------- */
+var currentStep = 1;
+var uploadedFiles = { birthCert:'', photo:'', parentCard:'', reportCard:'' };
+
+function renderStep(){
+  document.querySelectorAll('.form-step').forEach(function(p){
+    p.classList.toggle('current', parseInt(p.dataset.stepPanel,10) === currentStep);
+  });
+  document.querySelectorAll('.pstep').forEach(function(s){
+    var n = parseInt(s.dataset.step,10);
+    s.classList.toggle('active', n === currentStep);
+    s.classList.toggle('done', n < currentStep);
+    s.querySelector('.dot').textContent = n < currentStep ? '✓' : String(n);
+  });
+  $('progressFill').style.width = ((currentStep - 1) / 2 * 68) + '%';
+  $('prevStepBtn').style.display = currentStep > 1 ? '' : 'none';
+  $('nextStepBtn').style.display = currentStep < 3 ? '' : 'none';
+  $('submitBtn').style.display = currentStep === 3 ? '' : 'none';
+  showAlert('formAlert', '');
+}
+
+function goStep(n, backward){
+  currentStep = Math.max(1, Math.min(3, n));
+  playSound('step');
+  var panel = document.querySelector('[data-step-panel="' + currentStep + '"]');
+  renderStep();
+  if(panel){
+    panel.classList.remove('step-enter','step-enter-back'); void panel.offsetWidth;
+    panel.classList.add(backward ? 'step-enter-back' : 'step-enter');
+  }
+  $('mainCard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+/* ---------- التحقق ---------- */
+function validateStep1(){
+  var ok = true;
+  var parentName = $('parentName').value.trim();
+  var nationalId = digitsOnly($('nationalId').value);
+  var relation = $('relation').value;
+  var mobile = digitsOnly($('mobile').value);
+  var whatsapp = digitsOnly($('whatsapp').value);
+  var email = $('email').value.trim();
+  var password = $('password').value;
+  var confirm = $('confirmPassword').value;
+
+  var checks = [
+    ['parentName', wordsCount(parentName) >= 4],
+    ['nationalId', /^\d{14}$/.test(nationalId)],
+    ['relation', !!relation],
+    ['mobile', /^\d{11}$/.test(mobile)],
+    ['whatsapp', whatsapp === '' || /^\d{11}$/.test(whatsapp)],
+    ['email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)],
+    ['password', password.length >= 6],
+    ['confirmPassword', confirm.length > 0 && confirm === password]
+  ];
+  checks.forEach(function(c){ setFieldError(c[0], !c[1]); if(!c[1]) ok = false; });
+  return ok;
+}
+
+function validateStep2(){
+  var ok = true;
+  var studentName = $('studentName').value.trim();
+  var dob = $('dob').value;
+  var gender = $('gender').value;
+  var grade = $('grade').value;
+  var address = $('address').value.trim();
+
+  var dobOk = false;
+  if(dob){
+    var d = new Date(dob + 'T00:00:00');
+    dobOk = !isNaN(d.getTime()) && d.getTime() <= Date.now();
+  }
+  var checks = [
+    ['studentName', wordsCount(studentName) >= 4],
+    ['dob', dobOk],
+    ['gender', !!gender],
+    ['grade', !!grade],
+    ['address', address.length >= 5]
+  ];
+  checks.forEach(function(c){ setFieldError(c[0], !c[1]); if(!c[1]) ok = false; });
+  return ok;
+}
+
+function validateStep3(){
+  var ok = true;
+  var checks = [
+    ['birthCert', !!uploadedFiles.birthCert],
+    ['photo', !!uploadedFiles.photo],
+    ['parentCard', !!uploadedFiles.parentCard],
+    ['agree', $('agreeTerms').checked]
+  ];
+  checks.forEach(function(c){ setFieldError(c[0], !c[1]); if(!c[1]) ok = false; });
+  return ok;
+}
+
+function failValidation(msg){
+  playSound('error');
+  vibrate([100,50,100]);
+  shakeCard();
+  showAlert('formAlert', msg || '⚠ راجع البيانات المطلوبة وأكمل الحقول المميزة بعلامة *');
+  var firstErr = document.querySelector('.form-step.current .field.has-error input, .form-step.current .field.has-error select, .form-step.current .field.has-error textarea');
+  if(firstErr){ firstErr.focus({ preventScroll:false }); }
+}
+
+$('nextStepBtn').addEventListener('click', function(){
+  clearFieldErrors(document.querySelector('[data-step-panel="' + currentStep + '"]'));
+  var ok = currentStep === 1 ? validateStep1() : validateStep2();
+  if(!ok){ failValidation(); return; }
+  goStep(currentStep + 1, false);
+});
+$('prevStepBtn').addEventListener('click', function(){ goStep(currentStep - 1, true); });
+
+/* مسح خطأ الحقل عند الكتابة */
+document.querySelectorAll('#regForm input, #regForm select, #regForm textarea').forEach(function(el){
+  el.addEventListener('input', function(){
+    var f = el.closest('.field'); if(f) f.classList.remove('has-error');
+    showAlert('formAlert','');
+  });
+  el.addEventListener('change', function(){
+    var f = el.closest('.field'); if(f) f.classList.remove('has-error');
+  });
+});
+
+/* ---------- رفع الملفات ---------- */
+document.querySelectorAll('[data-file-input]').forEach(function(input){
+  input.addEventListener('change', function(){
+    var key = input.dataset.fileInput;
+    var file = input.files && input.files[0];
+    var box = input.closest('.upload-box');
+    var nameEl = box.querySelector('.file-name');
+    if(file){
+      uploadedFiles[key] = file.name;
+      nameEl.textContent = '✓ ' + file.name;
+      box.classList.add('has-file');
+      setFieldError(key, false);
+      playSound('upload');
+      showToast('📎 تم رفع: ' + file.name);
+    }else{
+      uploadedFiles[key] = '';
+      nameEl.textContent = '';
+      box.classList.remove('has-file');
+    }
+  });
+});
+
+/* ---------- التخزين المحلي ---------- */
+function readJSON(key, fallback){
+  try{ return JSON.parse(localStorage.getItem(key)) || fallback; }catch(e){ return fallback; }
+}
+function writeJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+function makeOrderNumber(){
+  var regs = readJSON(LS_REGS, []);
+  var num;
+  do{ num = 'RHQ-' + (1000 + Math.floor(Math.random() * 9000)); }
+  while(regs.some(function(r){ return r.orderNumber === num; }));
+  return num;
+}
+
+/* ---------- واتساب ---------- */
+function normalizePhone(p){
+  var d = digitsOnly(p);
+  if(d.indexOf('0020') === 0) d = d.slice(2);
+  if(d.charAt(0) === '0') d = '20' + d.slice(1);
+  return d;
+}
+function buildWhatsAppMessage(data){
+  var lines = [
+    '🎓 *طلب تسجيل جديد — أكاديمية رحيق RAHEEQ*',
+    'رقم الطلب: ' + data.orderNumber,
+    '———————',
+    '👨‍👩‍👦 *بيانات ولي الأمر*',
+    'الاسم: ' + data.parentName,
+    'الرقم القومي: ' + data.nationalId,
+    'صلة القرابة: ' + data.relation,
+    'الموبايل: ' + data.mobile,
+    'واتساب: ' + (data.whatsapp || data.mobile),
+    'البريد الإلكتروني: ' + data.email,
+    '———————',
+    '🧒 *بيانات الطالب*',
+    'الاسم: ' + data.studentName,
+    'تاريخ الميلاد: ' + data.dob,
+    'النوع: ' + data.gender,
+    'الصف الدراسي: ' + data.grade,
+    'المدرسة السابقة: ' + (data.prevSchool || '—'),
+    'العنوان: ' + data.address,
+    'ملاحظات صحية: ' + (data.healthNotes || '—'),
+    '———————',
+    '📎 *المستندات المرفوعة*',
+    'شهادة الميلاد: ' + (data.files.birthCert || '—'),
+    'صورة شخصية: ' + (data.files.photo || '—'),
+    'بطاقة ولي الأمر: ' + (data.files.parentCard || '—'),
+    'بيان نجاح: ' + (data.files.reportCard || '—'),
+    '———————',
+    'تم الإرسال من منصة رحيق RAHEEQ'
+  ];
+  return lines.join('\n');
+}
+var lastWhatsAppUrl = '';
+function sendWhatsApp(data){
+  var msg = buildWhatsAppMessage(data);
+  lastWhatsAppUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
+  window.open(lastWhatsAppUrl, '_blank', 'noopener');
+}
+
+/* ---------- إرسال التسجيل ---------- */
+$('regForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  clearFieldErrors(document.querySelector('[data-step-panel="3"]'));
+  if(!validateStep3()){ failValidation('⚠ ارفع المستندات المطلوبة ووافق على الشروط لإتمام التسجيل'); return; }
+
+  var data = {
+    orderNumber: makeOrderNumber(),
+    parentName: $('parentName').value.trim(),
+    nationalId: digitsOnly($('nationalId').value),
+    relation: $('relation').value,
+    mobile: digitsOnly($('mobile').value),
+    whatsapp: digitsOnly($('whatsapp').value) || digitsOnly($('mobile').value),
+    email: $('email').value.trim(),
+    password: $('password').value,
+    studentName: $('studentName').value.trim(),
+    dob: $('dob').value,
+    gender: $('gender').value,
+    grade: $('grade').value,
+    prevSchool: $('prevSchool').value.trim(),
+    address: $('address').value.trim(),
+    healthNotes: $('healthNotes').value.trim(),
+    files: Object.assign({}, uploadedFiles),
+    createdAt: new Date().toISOString()
+  };
+
+  /* حفظ المستخدم + الطلب */
+  var users = readJSON(LS_USERS, []);
+  var existing = users.find(function(u){ return u.mobile === data.mobile; });
+  var userRecord = {
+    mobile: data.mobile, password: data.password,
+    parentName: data.parentName, email: data.email
+  };
+  if(existing){ existing.password = data.password; existing.parentName = data.parentName; existing.email = data.email; }
+  else{ users.push(userRecord); }
+  writeJSON(LS_USERS, users);
+
+  var regs = readJSON(LS_REGS, []);
+  regs.push(data);
+  writeJSON(LS_REGS, regs);
+  localStorage.setItem(LS_CURRENT, data.mobile);
+
+  /* إرسال واتساب فورًا (داخل تفاعل المستخدم حتى لا يُحظر) */
+  sendWhatsApp(data);
+
+  /* شاشة النجاح */
+  $('registerView').hidden = true;
+  $('loginView').hidden = true;
+  $('successView').hidden = false;
+  $('cardTitle').textContent = 'تم التسجيل بنجاح';
+  $('cardSub').textContent = 'احتفظ برقم الطلب للمتابعة';
+  $('orderNumber').textContent = data.orderNumber;
+  $('successBox').innerHTML =
+    '<div class="row"><span>اسم ولي الأمر</span><span>' + esc(data.parentName) + '</span></div>' +
+    '<div class="row"><span>اسم الطالب</span><span>' + esc(data.studentName) + '</span></div>' +
+    '<div class="row"><span>الصف الدراسي</span><span>' + esc(data.grade) + '</span></div>' +
+    '<div class="row"><span>رقم الموبايل</span><span>' + esc(data.mobile) + '</span></div>';
+
+  playSound('success');
+  vibrate(100);
+  launchConfetti();
+  $('mainCard').scrollIntoView({ behavior:'smooth', block:'center' });
+});
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+$('whatsappBtn').addEventListener('click', function(){
+  if(lastWhatsAppUrl){ window.open(lastWhatsAppUrl, '_blank', 'noopener'); }
+});
+$('newRegBtn').addEventListener('click', function(){
+  $('regForm').reset();
+  uploadedFiles = { birthCert:'', photo:'', parentCard:'', reportCard:'' };
+  document.querySelectorAll('.upload-box').forEach(function(b){ b.classList.remove('has-file'); b.querySelector('.file-name').textContent=''; });
+  clearFieldErrors(document);
+  currentStep = 1; renderStep();
+  switchMode('register');
+  $('successView').hidden = true;
+  $('registerView').hidden = false;
+  $('cardTitle').textContent = 'تسجيل ولي الأمر';
+  $('cardSub').textContent = 'أنشئ حسابك وسجّل ابنك في ثلاث خطوات';
+});
+
+/* ---------- تسجيل الدخول ---------- */
+$('loginForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var mobile = digitsOnly($('loginMobile').value);
+  var password = $('loginPassword').value;
+  var okMobile = /^\d{11}$/.test(mobile);
+  var okPass = password.length >= 1;
+  setFieldError('loginMobile', !okMobile);
+  setFieldError('loginPassword', !okPass);
+  if(!okMobile || !okPass){ failLogin('⚠ أدخل رقم الموبايل وكلمة السر'); return; }
+
+  var users = readJSON(LS_USERS, []);
+  var user = users.find(function(u){ return u.mobile === mobile && u.password === password; });
+  if(!user){ failLogin('⚠ رقم الموبايل أو كلمة السر غير صحيحة. لو ليس لديك حساب، أنشئ حسابًا جديدًا.'); return; }
+
+  localStorage.setItem(LS_CURRENT, mobile);
+  showAlert('loginAlert','');
+  var welcome = $('loginWelcome');
+  welcome.style.display = 'block';
+  welcome.textContent = '✓ أهلًا بك ' + user.parentName + ' — تم تسجيل الدخول بنجاح';
+  playSound('success');
+  vibrate(100);
+  showToast('🎓 تم تسجيل الدخول بنجاح، أهلًا بك في رحيق');
+});
+
+function failLogin(msg){
+  playSound('error');
+  vibrate([100,50,100]);
+  shakeCard();
+  showAlert('loginAlert', msg);
+}
+
+/* ---------- قصاصات الاحتفال (ماروني + ذهبي) ---------- */
+function launchConfetti(){
+  var canvas = $('confettiCanvas');
+  var ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  var colors = ['#881234','#C9A86A','#A6193F','#F3E8D2','#5E0C24','#E3C98F'];
+  var pieces = [];
+  for(var i=0;i<110;i++){
+    pieces.push({
+      x: Math.random()*canvas.width,
+      y: -20 - Math.random()*canvas.height*0.4,
+      w: 6 + Math.random()*7,
+      h: 8 + Math.random()*10,
+      c: colors[Math.floor(Math.random()*colors.length)],
+      vy: 2.2 + Math.random()*3.2,
+      vx: -1.4 + Math.random()*2.8,
+      rot: Math.random()*Math.PI*2,
+      vr: -0.12 + Math.random()*0.24
+    });
+  }
+  var start = null;
+  function frame(ts){
+    if(!start) start = ts;
+    var elapsed = ts - start;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(function(p){
+      p.y += p.vy; p.x += p.vx + Math.sin((elapsed/300)+p.rot)*0.6; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if(elapsed < 3800){ requestAnimationFrame(frame); }
+    else{ ctx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- بدء ---------- */
+preloadSounds();
+renderStep();
+})();
+</script>
+</body>
+</html>
