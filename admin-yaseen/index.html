@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<title>لوحة مدير رحيق</title>
+<link rel="icon" href="/assets/brand/favicon-32.png" type="image/png">
+<link rel="stylesheet" href="/admin-yaseen/admin.css">
+</head>
+<body>
+
+<main id="loginView" class="login">
+  <form id="loginForm" class="card" novalidate autocomplete="off">
+    <img src="/assets/yaseen/avatar.webp" alt="" class="login-avatar" width="84" height="84">
+    <h1>لوحة مدير رحيق</h1>
+    <p class="muted">دخول مدير الأكاديمية فقط — بريد + كلمة سر + رمز التحقق</p>
+    <label>البريد الإلكتروني<input type="email" id="email" dir="ltr" autocomplete="username" required></label>
+    <label>كلمة السر<input type="password" id="password" dir="ltr" autocomplete="current-password" required></label>
+    <label>رمز التحقق OTP (6 أرقام من تطبيق المصادقة)<input type="text" id="otp" dir="ltr" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></label>
+    <p id="loginError" class="error" role="alert"></p>
+    <button type="submit" class="btn primary">دخول</button>
+  </form>
+</main>
+
+<main id="panel" class="panel" hidden>
+  <header class="top">
+    <div class="top-id">
+      <img src="/assets/yaseen/avatar.webp" alt="" width="44" height="44">
+      <div><strong>لوحة مدير رحيق</strong><span id="who"></span></div>
+    </div>
+    <div class="top-actions">
+      <span id="statusPill" class="pill"></span>
+      <button type="button" id="killBtn" class="btn danger"></button>
+      <button type="button" id="logoutBtn" class="btn ghost">خروج</button>
+    </div>
+  </header>
+  <p id="notice" class="notice" hidden></p>
+
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <div id="sections"></div>
+
+  <footer class="savebar">
+    <span id="saveStatus" class="muted" role="status"></span>
+    <button type="button" id="reloadBtn" class="btn ghost">تراجع عن التعديلات</button>
+    <button type="button" id="saveBtn" class="btn primary">حفظ التغييرات</button>
+  </footer>
+</main>
+
+<script src="/admin-yaseen/admin.js"></script>
+</body>
+</html>

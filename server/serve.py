@@ -5,6 +5,8 @@
     GET  /                          موقع رحيق (index.html)
     GET  /api/health                حالة الواجهة وقدراتها
     POST /api/registrations         رفع طلب تسجيل مع صور المستندات (JSON + base64)
+    GET  /api/yaseen-config         مساعد التسجيل رحيق (يُمرَّر إلى server/yaseen-server.js)
+    POST /api/yaseen-chat           محادثة رحيق (منطق البوت على الخادم فقط)
     GET  /api/registrations         قائمة الطلبات        (يتطلب X-Admin-Token)
     GET  /api/registrations/<order> تفاصيل طلب           (يتطلب X-Admin-Token)
     GET  /api/registrations/<order>/<docKey>  ملف المستند (يتطلب X-Admin-Token)
@@ -21,10 +23,16 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import atexit
+import http.client
 import http.server
 import json
 import os
+import shutil
+import signal
+import socket
 import socketserver
+import subprocess
 import sys
 import urllib.parse
 import webbrowser
@@ -71,6 +79,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     data_dir = DEFAULT_DATA_DIR
     admin_token = None
     limiter = raheeq_api.RateLimiter()
+    yaseen_port = None          # منفذ خادم رحيق المحلي (Node) إن كان يعمل
+    trust_proxy = False         # الوثوق بترويسة X-Forwarded-For (خلف وكيل عكسي فقط)
 
     # ------------------------------------------------------------------ أدوات
     def _json(self, status, payload, extra_headers=None):
@@ -105,7 +115,54 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return True
 
     def _client_ip(self):
+        if self.trust_proxy:
+            forwarded = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+            if forwarded:
+                return forwarded[:64]
         return (self.client_address or ("?",))[0]
+
+    # ------------------------------------------------------------ رحيق
+    @staticmethod
+    def _is_yaseen_path(path):
+        return path in ("/api/yaseen-config", "/api/yaseen-chat") or path.startswith("/api/yaseen-admin/")
+
+    def _proxy_yaseen(self):
+        """تمرير طلبات رحيق إلى خادمه المحلي؛ منطق البوت وإعداداته لا تُخدَّم كملفات أبدًا."""
+        if not self.yaseen_port:
+            self._json(503, {"ok": False, "error": "yaseen-unavailable"})
+            return
+        body = None
+        if self.command == "POST":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = -1
+            if length < 0 or length > 96 * 1024:
+                self._json(413, {"ok": False, "error": "too-large"})
+                return
+            body = self.rfile.read(length) if length else b""
+        headers = {"X-Forwarded-For": self._client_ip()}
+        for name in ("Content-Type", "Authorization"):
+            if self.headers.get(name):
+                headers[name] = self.headers.get(name)
+        conn = http.client.HTTPConnection("127.0.0.1", self.yaseen_port, timeout=10)
+        try:
+            conn.request(self.command, self.path, body=body, headers=headers)
+            resp = conn.getresponse()
+            payload = resp.read()
+            self.send_response(resp.status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Robots-Tag", "noindex")
+            if resp.getheader("Retry-After"):
+                self.send_header("Retry-After", resp.getheader("Retry-After"))
+            self.end_headers()
+            self.wfile.write(payload)
+        except OSError:
+            self._json(503, {"ok": False, "error": "yaseen-unavailable"})
+        finally:
+            conn.close()
 
     def _read_json_body(self):
         raw_length = self.headers.get("Content-Length")
@@ -163,6 +220,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404)          # لا نكشف كود الخادم
             return
 
+        if path in ("/package.json", "/package-lock.json", "/vercel.json") or path.startswith("/node_modules"):
+            self.send_error(404)
+            return
+        if self._is_yaseen_path(path):
+            self._proxy_yaseen()
+            return
+
         if path.startswith("/api/"):
             try:
                 if path == "/api/health":
@@ -199,6 +263,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     # ------------------------------------------------------------------ POST
     def do_POST(self):  # noqa: N802
         parsed = urllib.parse.urlsplit(self.path)
+        if self._is_yaseen_path(parsed.path):
+            self._proxy_yaseen()
+            return
         if parsed.path != "/api/registrations":
             self._json(404, {"ok": False, "error": "مسار API غير معروف"})
             return
@@ -250,6 +317,28 @@ class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 
 
+def start_yaseen(data_dir):
+    """يشغّل خادم رحيق (Node) على منفذ محلي حر ويعيد رقم المنفذ، أو None إن لم يتوفر Node."""
+    node = shutil.which("node")
+    script = os.path.join(ROOT, "server", "yaseen-server.js")
+    if not node or not os.path.exists(script):
+        return None
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    env = dict(os.environ)
+    env.setdefault("YASEEN_DATA_DIR", os.path.join(data_dir, "yaseen"))
+    try:
+        proc = subprocess.Popen([node, script, "--port", str(port), "--host", "127.0.0.1"], env=env, cwd=ROOT)
+    except OSError:
+        return None
+    atexit.register(proc.terminate)
+    # atexit لا يعمل مع SIGTERM افتراضيًا: نحوّله إلى خروج عادي حتى لا يبقى خادم رحيق يتيمًا
+    with contextlib.suppress(ValueError, OSError):
+        signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    return port
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Raheeq site + upload API server")
     ap.add_argument("--host", default="0.0.0.0")
@@ -259,11 +348,17 @@ def main() -> int:
                     help="مجلد حفظ الطلبات والمستندات (افتراضي: data/)")
     ap.add_argument("--admin-token", default=os.environ.get("RAHEEQ_ADMIN_TOKEN"),
                     help="رمز قراءة الطلبات (أو متغيّر RAHEEQ_ADMIN_TOKEN)")
+    ap.add_argument("--no-yaseen", action="store_true", help="لا تشغّل مساعد التسجيل رحيق")
+    ap.add_argument("--trust-proxy", action="store_true",
+                    default=os.environ.get("RAHEEQ_TRUST_PROXY") == "1",
+                    help="استخدم X-Forwarded-For لعنوان العميل (خلف وكيل عكسي موثوق فقط)")
     args = ap.parse_args()
 
     data_dir = os.path.abspath(args.data_dir)
     Handler.data_dir = data_dir
     Handler.admin_token = (args.admin_token or "").strip() or None
+    Handler.trust_proxy = bool(args.trust_proxy)
+    Handler.yaseen_port = None if args.no_yaseen else start_yaseen(data_dir)
 
     with Server((args.host, args.port), Handler) as httpd:
         url = f"http://localhost:{args.port}/"
@@ -275,6 +370,10 @@ def main() -> int:
             print("  قراءة الطلبات: مفعّلة برمز إدارة (X-Admin-Token).")
         else:
             print("  قراءة الطلبات: معطّلة — شغّل بـ RAHEEQ_ADMIN_TOKEN=... لتفعيلها.")
+        if Handler.yaseen_port:
+            print("  رحيق:   مفعّل (منطق البوت على الخادم) — لوحة المدير: " + url + "admin-yaseen/")
+        else:
+            print("  رحيق:   غير مفعّل (يتطلب Node.js 18+).")
         if not args.no_browser:
             with contextlib.suppress(Exception):
                 webbrowser.open(url)
