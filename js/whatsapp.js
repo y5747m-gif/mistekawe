@@ -92,6 +92,7 @@
     if (data.dob) lines.push('🎂 ' + (isEn() ? 'Date of birth: ' : 'تاريخ الميلاد: ') + data.dob);
     if (data.gender) lines.push('⚧ ' + (isEn() ? 'Gender: ' : 'النوع: ') + genderLabel(data.gender));
     if (data.grade) lines.push('📚 ' + (isEn() ? 'Grade: ' : 'الصف: ') + (isEn() ? gradeEn(data.grade) : data.grade));
+    if (Array.isArray(data.foundationSubjects) && data.foundationSubjects.length) lines.push('✏️ ' + (isEn() ? 'Foundation subjects: ' : 'مواد التأسيس: ') + data.foundationSubjects.map(function (v) { return isEn() ? gradeEn(v) : v; }).join('، '));
     if (data.prevSchool) lines.push('🏫 ' + (isEn() ? 'Previous academy: ' : 'الأكاديمية السابقة: ') + data.prevSchool);
     if (data.address) lines.push('📍 ' + (isEn() ? 'Address: ' : 'العنوان: ') + data.address);
     if (data.healthNotes) lines.push('🩺 ' + (isEn() ? 'Health notes: ' : 'ملاحظات صحية: ') + data.healthNotes);

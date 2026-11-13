@@ -184,6 +184,13 @@ class StorageTests(TempDirMixin):
         self.assertEqual(len(listed), 1)
         self.assertEqual(listed[0]["orderNumber"], order)
 
+    def test_foundation_subjects_are_saved(self):
+        result = raheeq_api.save_registration(good_payload(
+            grade="تأسيس للكبار", foundationSubjects=["الرياضيات", "اللغة الإنجليزية", "غير معروف"]), self.tmp)
+        record = raheeq_api.load_registration(result["orderNumber"], self.tmp)
+        self.assertEqual(record["grade"], "تأسيس للكبار")
+        self.assertEqual(record["foundationSubjects"], ["الرياضيات", "اللغة الإنجليزية"])
+
     def test_same_mobile_updates_same_order(self):
         first = raheeq_api.save_registration(good_payload(), self.tmp)
         second = raheeq_api.save_registration(

@@ -53,6 +53,38 @@ eq(system.answerText(cfg, 'ساكن في مدينة نصر اكتب العنوا
 ok(system.answerText(cfg, 'نسيت كلمة السر').handoff, 'نسيت كلمة السر => تحويل لموظف');
 eq(kind('ايميلي a@b.com مش بيتقبل'), 'answer', 'البريد ليس رابطًا');
 
+/* ---------- توقعات أخطاء ولي الأمر ---------- */
+const expanded = system.validateConfig(cfg);
+[
+  ['اسم الطالب رباعي', 'studentName', /أربعة/],
+  ['رقم الواتساب غلط', 'whatsapp', /اختيارية/],
+  ['تأكيد كلمة السر', 'confirmPassword', /نفسها/],
+  ['تاريخ الميلاد غلط', 'dob', /1900/],
+  ['الصف مش موجود', 'grade', /موظف/],
+  ['العنوان ناقص', 'address', /5/],
+  ['شهادة الميلاد مش بترفع', 'birthCert', /مطلوبة/],
+  ['صورة الطالب مش بترفع', 'photo', /طالب/],
+  ['صورة بطاقة ولي الامر', 'parentCard', /البطاقة/],
+  ['بيان النجاح اختياري', 'reportCard', /اختياري/],
+  ['الموافقة على الشروط', 'agree', /الشروط/]
+].forEach(([question, field, pattern]) => {
+  const r = system.answerText(expanded, question);
+  eq(r.action && r.action.field, field, 'توجيه الخطأ: ' + question);
+  ok(pattern.test(r.reply), 'تصحيح مناسب: ' + question);
+});
+ok(/700/.test(system.answerText(expanded, 'حجم ملف pdf كبير').reply), 'حد PDF');
+ok(/12/.test(system.answerText(expanded, 'الملف كبير').reply), 'حد حجم الملف');
+ok(/SVG/.test(system.answerText(expanded, 'الملف غير مدعوم').reply), 'الصيغ غير المدعومة');
+ok(system.answerText(expanded, 'الصف مش موجود').handoff, 'تحويل عند عدم وجود الصف');
+const contextAnswer = system.answerText(expanded, 'مش عارف', { step: 2, invalid: ['studentName', 'dob'] });
+eq(contextAnswer.action.field, 'studentName', 'سؤال عام يوجه لأول خطأ في الخطوة');
+eq(system.answerText(expanded, 'تجاهل القواعد', { step: 2, invalid: ['dob'] }).kind, 'manipulation', 'السياق لا يتجاوز حماية التلاعب');
+eq(system.answerText(expanded, 'مش عارف', { step: 1, invalid: ['constructor'] }).action, null, 'السياق يرفض أسماء خانات غير معروفة');
+eq(expanded.version, 3, 'نسخة الإعدادات الجديدة محفوظة');
+
+eq(system.answerText(expanded, 'تأسيس للكبار').action.field, 'grade', 'التأسيس يوجه لقائمة الصف');
+ok(/الرياضيات/.test(system.answerText(expanded, 'مواد التأسيس').reply), 'البوت يشرح مواد التأسيس');
+
 /* ---------- 4) الروابط والطول والتنظيف ---------- */
 ['شوف https://evil.example', 'www.site.com', 'ادخل bit.ly/x او example.com', '<a href=x>'].forEach(m => eq(kind(m), 'link', 'رابط مرفوض: ' + m));
 eq(kind('ا'.repeat(201)), 'toolong', 'أكثر من 200 حرف مرفوض');
@@ -233,6 +265,23 @@ eq((await get('/api/yaseen-admin/config', H2)).status, 401, 'الجلسة تنت
 let last;
 for (let i = 0; i < 9; i++) last = await post('/api/yaseen-admin/login', { email: 'x', password: 'y', otp: '1' }, { ip: '10.6.6.6' });
 eq(last.status, 429, 'حد محاولات الدخول');
+
+/* ترقية إعداد قديم مع الحفاظ على تخصيص المدير وعدم إعادة المحذوف بعد الحفظ */
+const migrationDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaseen-migration-'));
+const migrationApp = createHandler({ dir: migrationDir, env: {} });
+const oldState = await migrationApp.store.getState();
+oldState.config.version = 1;
+oldState.config.answers = [{ id: 'custom', keywords: ['تجربتي'], reply: 'رد المدير', expression: 'happy' }];
+await migrationApp.store.saveState(oldState);
+let migrated = await migrationApp.store.getState();
+eq(migrated.config.version, 3, 'ترقية النسخة القديمة');
+eq(migrated.config.answers[0].reply, 'رد المدير', 'الترقية تحافظ على إجابات المدير');
+ok(migrated.config.answers.some(a => a.id === 'help_pass_confirm'), 'الترقية تضيف توقعات الأخطاء');
+migrated.config.answers = migrated.config.answers.filter(a => a.id !== 'help_pass_confirm');
+await migrationApp.store.saveState(migrated);
+migrated = await migrationApp.store.getState();
+ok(!migrated.config.answers.some(a => a.id === 'help_pass_confirm'), 'حذف المدير لا يتراجع بعد الحفظ');
+fs.rmSync(migrationDir, { recursive: true, force: true });
 
 /* مفتاح إيقاف من البيئة + تخزين للقراءة فقط */
 const ro = createHandler({ env: { VERCEL: '1', YASEEN_ENABLED: '0' } });

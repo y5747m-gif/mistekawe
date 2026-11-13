@@ -154,7 +154,7 @@ function createHandler(options) {
     } else if (typeof body.quickReply === 'string') {
       result = system.answerQuick(config, body.quickReply, body.context);
     } else if (typeof body.message === 'string') {
-      result = system.answerText(config, body.message.slice(0, 2000));
+      result = system.answerText(config, body.message.slice(0, 2000), body.context);
     } else {
       result = { reply: config.messages.empty, expression: 'thinking', action: null, handoff: null };
     }
