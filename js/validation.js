@@ -22,7 +22,13 @@
     });
   }
 
-  var MSG = {
+  /* النص العربي هو المفتاح: عند الإنجليزية يُترجم من قاموس js/i18n.js */
+  function T(str) {
+    var I = typeof window !== 'undefined' ? window.RaheeqI18n : null;
+    return I && I.t ? I.t(str) : str;
+  }
+
+  var MSG_AR = {
     parentName: 'الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل',
     nationalId: 'الرقم القومي يجب أن يكون 14 رقمًا بالضبط',
     mobile: 'رقم الموبايل يجب أن يكون 11 رقمًا',
@@ -41,6 +47,16 @@
     loginMobile: 'أدخل رقم موبايل صحيحًا (11 رقمًا)',
     loginPassword: 'أدخل كلمة السر'
   };
+  /* رسائل جاهزة مترجمة حسب لغة الواجهة الحالية (العربية هي الأساس) */
+  var MSG = {};
+  Object.keys(MSG_AR).forEach(function (k) { MSG[k] = MSG_AR[k]; });
+  function refreshMessages() {
+    Object.keys(MSG_AR).forEach(function (k) { MSG[k] = T(MSG_AR[k]); });
+  }
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('raheeq:langchange', refreshMessages);
+  }
+  document.addEventListener && document.addEventListener('DOMContentLoaded', refreshMessages);
 
   /* الخطوة الأولى: ولي الأمر */
   function step1() {
@@ -102,6 +118,8 @@
     esc: esc,
     val: val,
     messages: MSG,
+    messagesAr: MSG_AR,
+    refreshMessages: refreshMessages,
     step1: step1,
     step2: step2,
     step3: step3,

@@ -7,7 +7,7 @@
 
    • إن لم يكن الخادم متاحًا (فتح الملف مباشرة/GitHub Pages) يبقى الحفظ
      المحلي في LocalStorage هو الخطة البديلة، ولا يفشل التسجيل.
-   • لا تُرسل الصور إلى أي جهة غير خادم المدرسة الذي تشغّله أنت.
+   • لا تُرسل الصور إلى أي جهة غير الخادم الرسمي لأكاديمية رحيق.
    ============================================================ */
 (function (global) {
   'use strict';
@@ -82,7 +82,9 @@
       return cached.available;
     }, function (err) {
       cached = { checked: true, available: false, at: Date.now(), admin: false };
-      lastError = err.message;
+      lastError = err.status === 404 || err.status === 405
+        ? 'الاستلام المباشر غير مفعّل — الإرسال يتم عبر واتساب أكاديمية رحيق'
+        : err.message;
       return false;
     });
   }
@@ -132,7 +134,7 @@
     var payload = buildPayload(data);
     var body = JSON.stringify(payload);
     if (body.length > MAX_PAYLOAD_CHARS) {
-      return Promise.reject(makeError('حجم الطلب مع الصور كبير جدًا على الخادم؛ جرّب صورًا أصغر', 'too-large'));
+      return Promise.reject(makeError('حجم الطلب مع الصور كبير جدًا؛ اختر صورًا أصغر ثم أعد الإرسال', 'too-large'));
     }
     lastPayload = payload;
     return request(ENDPOINT, {
@@ -155,13 +157,18 @@
   function errorMessage(err) {
     if (!err) return 'تعذّر الاتصال بالخادم';
     if (err.code === 'too-large') return err.message;
-    if (err.code === 'unsupported') return 'هذا المتصفح لا يدعم الاتصال بالخادم؛ الطلب محفوظ على جهازك فقط';
+    if (err.code === 'unsupported') return 'متصفحك لا يدعم الاتصال المباشر — أرسل طلبك على واتساب أكاديمية رحيق من الزر الأخضر';
     if (err.code === 'timeout') return 'انتهت مهلة الاتصال بالخادم؛ تحقّق من الشبكة وأعد المحاولة';
     if (!err.status) return 'تعذّر الاتصال بالخادم؛ تحقّق من الشبكة أو من تشغيل الخادم ثم أعد المحاولة';
-    if (err.status === 413) return 'حجم المستندات أكبر من المسموح على الخادم؛ صغّر الصور ثم أعد المحاولة';
+    /* 404/405 = الموقع منشور كملفات ثابتة بلا واجهة رفع (Vercel Pages مثلًا):
+       لا نعرض «HTTP 404» لولي الأمر، بل نوضح المسار اليدوي المضمون. */
+    if (err.status === 404 || err.status === 405) {
+      return 'أرسل طلبك الآن إلى أكاديمية رحيق على واتساب من الزر الأخضر — رسالة جاهزة بكل البيانات.';
+    }
+    if (err.status === 413) return 'حجم المستندات أكبر من المسموح؛ صغّر الصور ثم أعد الإرسال';
     if (err.status === 429) return 'عدد محاولات كبير على الخادم؛ انتظر دقيقة ثم أعد المحاولة';
-    if (err.status === 401 || err.status === 403) return 'الخادم رفض الطلب (صلاحيات)؛ أبلغ إدارة المدرسة';
-    if (err.status >= 500) return 'حدث خطأ على الخادم أثناء الحفظ؛ أعد المحاولة لاحقًا';
+    if (err.status === 401 || err.status === 403) return 'الخادم رفض الطلب (صلاحيات)؛ تواصل مع إدارة أكاديمية رحيق';
+    if (err.status >= 500) return 'تعذّر إتمام الإرسال الآن؛ أعد المحاولة، أو أرسل طلبك على واتساب أكاديمية رحيق';
     if (err.code === 'timeout') return 'انتهت مهلة الاتصال بالخادم؛ تحقّق من الشبكة وأعد المحاولة';
     if (err.fields) {
       var keys = Object.keys(err.fields);
