@@ -55,7 +55,7 @@
     <div class="hero-copy fade-up">
       <span class="eyebrow">🎓 منصة تسجيل ولي الأمر — أكاديمية رحيق</span>
       <h1>سجّل ابنك في <span class="hl">رحيق</span> بخطوات بسيطة و آمنة</h1>
-      <p class="subtitle">ثلاث خطوات واضحة تبدأ ببيانات ولي الأمر، ثم بيانات الطالب، ثم المستندات. هذه نسخة تجريبية تحفظ البيانات على جهازك فقط ولا ترسل الطلب إلى المدرسة.</p>
+      <p class="subtitle">ثلاث خطوات واضحة تبدأ ببيانات ولي الأمر، ثم بيانات الطالب، ثم المستندات. هذه نسخة تجريبية تحفظ البيانات وصور المستندات على جهازك فقط ولا ترسل الطلب إلى المدرسة.</p>
       <div class="hero-badges" aria-label="مميزات التسجيل">
         <span class="hbadge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9l-7 7z"/></svg>تسجيل آمن</span>
         <span class="hbadge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"/></svg>ثلاث خطوات</span>
@@ -214,7 +214,7 @@
                 <label class="upload-box" data-upload="birthCert">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                   <span class="up-title">اضغط لرفع صورة شهادة الميلاد</span>
-                  <span class="up-sub">صورة واضحة أو ملف مستند</span>
+                  <span class="up-sub">صورة واضحة أو PDF — تُحفظ الصورة نفسها</span>
                   <span class="upload-preview">
                     <img class="thumb" alt="معاينة شهادة الميلاد">
                     <span class="file-badge">📄 مستند مرفق</span>
@@ -230,7 +230,7 @@
                 <label class="upload-box" data-upload="photo">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg>
                   <span class="up-title">اضغط لرفع الصورة الشخصية للطالب</span>
-                  <span class="up-sub">صورة حديثة بخلفية واضحة</span>
+                  <span class="up-sub">صورة حديثة بخلفية واضحة — تُحفظ الصورة نفسها</span>
                   <span class="upload-preview">
                     <img class="thumb" alt="معاينة الصورة الشخصية">
                     <span class="file-badge"></span>
@@ -246,7 +246,7 @@
                 <label class="upload-box" data-upload="parentCard">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 14H4V6h16v12zM6 9h5v2H6zm0 3h8v2H6z"/></svg>
                   <span class="up-title">اضغط لرفع صورة بطاقة ولي الأمر</span>
-                  <span class="up-sub">وجه البطاقة واضح وكامل</span>
+                  <span class="up-sub">وجه البطاقة واضح وكامل — تُحفظ الصورة نفسها</span>
                   <span class="upload-preview">
                     <img class="thumb" alt="معاينة بطاقة ولي الأمر">
                     <span class="file-badge">📄 مستند مرفق</span>
@@ -262,7 +262,7 @@
                 <label class="upload-box" data-upload="reportCard">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-2 14-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
                   <span class="up-title">اضغط لرفع بيان النجاح (اختياري)</span>
-                  <span class="up-sub">آخر بيان درجات متاح</span>
+                  <span class="up-sub">آخر بيان درجات متاح — تُحفظ الصورة نفسها</span>
                   <span class="upload-preview">
                     <img class="thumb" alt="معاينة بيان النجاح">
                     <span class="file-badge">📄 مستند مرفق</span>
@@ -271,6 +271,8 @@
                   <input type="file" accept="image/*,.pdf" data-file-input="reportCard">
                 </label>
               </div>
+
+              <p class="sync-hint" id="syncHint">سيُرسل الطلب وصور المستندات إلى خادم المدرسة إن كان متاحًا، وإلا يُحفظ على جهازك.</p>
 
               <div class="field full" data-field="agree">
                 <label class="agree">
@@ -281,6 +283,8 @@
               </div>
             </div>
           </section>
+
+          <p class="upload-status" id="uploadStatus" hidden>⏳ جارٍ قراءة الصور وضغطها وحفظها على جهازك… لا تغلق الصفحة.</p>
 
           <div class="form-alert" id="formAlert" role="alert" aria-live="assertive"></div>
 
@@ -322,6 +326,7 @@
           <h3>تم تسجيل الدخول بنجاح</h3>
           <p class="welcome-sub" id="welcomeName"></p>
           <div class="welcome-details" id="welcomeDetails"></div>
+          <div class="docs-gallery" id="welcomeDocs" hidden></div>
           <button class="btn btn-outline btn-block" id="logoutBtn" type="button">تسجيل الخروج</button>
         </div>
       </div>
@@ -330,9 +335,12 @@
       <div id="successView" class="success-view" hidden>
         <div class="success-icon" aria-hidden="true">🎓</div>
         <h2>تم استلام طلبك بنجاح</h2>
-        <p class="success-sub">حُفظت البيانات على هذا الجهاز فقط؛ لم يُرسل الطلب أو المستندات إلى المدرسة.</p>
+        <p class="success-sub">حُفظت نسخة من البيانات وصور المستندات على هذا الجهاز، وتُرسل إلى خادم المدرسة عند توفره.</p>
         <div class="order-badge" id="orderNumber">RHQ-0000</div>
         <div class="success-box" id="successBox"></div>
+        <div class="docs-gallery" id="successDocs" hidden></div>
+        <div class="sync-status" id="syncStatus" hidden role="status" aria-live="polite"></div>
+        <button class="btn btn-soft btn-sm sync-retry" id="retryUploadBtn" type="button" hidden>🔄 إعادة محاولة الرفع إلى الخادم</button>
         <p class="success-note">هنتواصل معاك خلال 24-48 ساعة</p>
         <p class="success-foot">هذه رسالة توضيحية فقط؛ التواصل غير مفعّل في النسخة التجريبية.</p>
         <div class="success-actions">
@@ -340,7 +348,7 @@
           <button class="btn btn-soft btn-sm" id="copyOrderBtn" type="button">📋 نسخ رقم الطلب</button>
           <button class="btn btn-soft btn-sm" id="successLoginBtn" type="button">تسجيل الدخول</button>
         </div>
-        <p class="success-foot">بياناتك محفوظة على هذا الجهاز فقط، ويمكنك الدخول بها في أي وقت.</p>
+        <p class="success-foot">نسخة من بياناتك وصورك محفوظة على هذا الجهاز، ويمكنك الدخول بها في أي وقت.</p>
       </div>
 
     </div>
@@ -403,7 +411,7 @@
     <h3 id="termsTitle">الشروط والأحكام</h3>
     <ul>
       <li>أقر بأن جميع البيانات المدخلة صحيحة ومطابقة للمستندات الرسمية.</li>
-      <li>هذه نسخة تجريبية بلا خادم؛ لا تُرسل البيانات أو المستندات إلى المدرسة، ولا تُحفظ الملفات بعد إغلاق الصفحة.</li>
+      <li>تُحفظ صور المستندات فعليًا (بعد ضغطها) داخل متصفحك مع بيانات الحساب، ويمكنك عرضها أو تنزيلها بعد تسجيل الدخول. وعند توفّر خادم المدرسة تُرسل البيانات والصور إليه عبر واجهة الرفع الآمنة، وإلا يبقى الطلب على جهازك فقط.</li>
       <li>تُحفظ بيانات الحساب وكلمة السر على جهازك داخل المتصفح دون حماية مناسبة للبيانات الحساسة؛ لا تستخدم بيانات حقيقية أو جهازًا مشتركًا.</li>
       <li>رقم الطلب تجريبي، ولا توجد مراجعة أو وسيلة تواصل تلقائية في هذه النسخة.</li>
     </ul>
@@ -411,8 +419,26 @@
   </div>
 </div>
 
+<!-- ========== عرض المستند المحفوظ (الصورة الفعلية) ========== -->
+<div class="doc-modal" id="docModal" hidden role="dialog" aria-modal="true" aria-labelledby="docModalTitle">
+  <div class="doc-modal-backdrop" data-close-doc-modal></div>
+  <div class="doc-modal-card" role="document">
+    <button class="doc-modal-close" type="button" data-close-doc-modal aria-label="إغلاق">×</button>
+    <h3 id="docModalTitle">المستند</h3>
+    <div class="doc-modal-body">
+      <img id="docModalImg" alt="معاينة المستند">
+    </div>
+    <div class="doc-modal-actions">
+      <a class="btn btn-primary btn-sm" id="docModalDownload" href="#" download>⬇ تنزيل الصورة</a>
+      <button class="btn btn-outline btn-sm" type="button" data-close-doc-modal>إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/sounds.js" defer></script>
 <script src="js/confetti.js" defer></script>
+<script src="js/api.js" defer></script>
+<script src="js/uploads.js" defer></script>
 <script src="js/validation.js" defer></script>
 <script src="js/app.js" defer></script>
 </body>
