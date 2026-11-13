@@ -2,7 +2,7 @@
   "name": "مجلس الصوت — ننجاوي",
   "short_name": "مجلس الصوت",
   "description": "شغّل الصوت على عدة سماعات بلوتوث معًا دون انقطاع.",
-  "start_url": "./index.html",
+  "start_url": "./majlis.html",
   "scope": "./",
   "display": "standalone",
   "dir": "rtl",
