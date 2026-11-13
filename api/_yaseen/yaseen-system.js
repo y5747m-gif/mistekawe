@@ -1,4 +1,5 @@
 'use strict';
+const parentHelp = require('./parent-help');
 /* ============================================================
    رحيق YASEEN — نظام البوت المقفول (يعمل على الخادم فقط)
    ------------------------------------------------------------
@@ -151,7 +152,7 @@ const OFF_TOPIC = [
 /* ---------------- 2) الإعدادات الافتراضية التي يديرها المدير ---------------- */
 function defaultConfig() {
   return {
-    version: 1,
+    version: 3,
     enabled: true,
     name: 'رحيق',
     personality: {
@@ -182,17 +183,17 @@ function defaultConfig() {
       parentName: 'اكتب اسمك رباعي: 4 أسماء على الأقل.',
       nationalId: 'الرقم القومي لازم 14 رقم بالظبط.',
       relation: 'اختار صلة القرابة بالطالب.',
-      mobile: 'رقم الموبايل لازم 11 رقم ويبدأ بـ 01.',
+      mobile: 'اكتب رقم الموبايل 11 رقمًا وراجع الأرقام الناقصة أو الزائدة.',
       whatsapp: 'رقم الواتساب لازم 11 رقم، أو سيبه فاضي لو هو نفس الموبايل.',
-      email: 'اكتب بريد إلكتروني صحيح فيه علامة @.',
+      email: 'اكتب البريد بدون مسافات، مع علامة @ واحدة وبينها نص قبلها وبعدها.',
       password: 'كلمة السر لازم 6 حروف أو أرقام على الأقل.',
       confirmPassword: 'اكتب نفس كلمة السر مرة تانية بالظبط.',
       studentName: 'اكتب اسم الطالب رباعي: 4 أسماء على الأقل.',
-      dob: 'اختار تاريخ ميلاد الطالب من التقويم.',
+      dob: 'اختار تاريخ ميلاد صحيح للطالب، بعد سنة 1900 وليس في المستقبل.',
       gender: 'اختار نوع الطالب.',
       grade: 'اختار الصف الدراسي المطلوب.',
       prevSchool: 'اسم المدرسة السابقة اختياري.',
-      address: 'اكتب العنوان: المحافظة والمدينة والشارع.',
+      address: 'اكتب عنوانًا من 5 أحرف على الأقل، مثل المحافظة والمدينة والشارع.',
       healthNotes: 'لو فيه ملاحظات صحية اكتبها هنا، وده اختياري.',
       birthCert: 'ارفع صورة واضحة لشهادة الميلاد من هنا.',
       photo: 'ارفع صورة شخصية حديثة للطالب من هنا.',
@@ -203,7 +204,7 @@ function defaultConfig() {
     quickReplies: [
       { id: 'problem', label: 'فين المشكلة؟', reply: '' },
       { id: 'upload', label: 'عايز أرفع مستند', reply: 'المستندات في الخطوة 3: شهادة الميلاد، صورة الطالب، وبطاقة ولي الأمر. دوس على المربع واختار الصورة (JPG أو PNG أو PDF).', pointTo: 'birthCert', expression: 'point' },
-      { id: 'password', label: 'نسيت كلمة السر', reply: 'لو نسيت كلمة السر كلّم موظف التسجيل على واتساب الأكاديمية ومعاك رقم الطلب والرقم القومي، وهيساعدك تدخل حسابك.', expression: 'thinking', handoff: true },
+      { id: 'password', label: 'نسيت كلمة السر', reply: 'لو نسيت كلمة السر كلّم موظف التسجيل على واتساب الأكاديمية وهيساعدك تدخل حسابك. ما تبعتش كلمة السر في المحادثة.', expression: 'thinking', handoff: true },
       { id: 'human', label: 'عايز أكلم موظف', reply: 'حاضر 🤝 تقدر تكلّم موظف التسجيل مباشرة على واتساب أكاديمية رحيق من الزر ده.', expression: 'happy', handoff: true }
     ],
     answers: [
@@ -212,10 +213,10 @@ function defaultConfig() {
       { id: 'steps', keywords: ['ازاي اسجل', 'اسجل ازاي', 'طريقه التسجيل', 'خطوات', 'اسجل ابني', 'اسجل بنتي', 'التسجيل ازاي', 'ابدا منين', 'التقديم'], reply: 'التسجيل 3 خطوات: 1) بيانات ولي الأمر، 2) بيانات الطالب، 3) المستندات. بعد كده تدوس «إرسال طلب التسجيل» وتاخد رقم الطلب.', expression: 'happy' },
       { id: 'nationalId', keywords: ['الرقم القومي', 'رقم قومي', 'البطاقه', 'القومي'], reply: 'الرقم القومي لازم 14 رقم بالظبط، زي ما هو مكتوب في البطاقة ومن غير مسافات.', pointTo: 'nationalId', expression: 'point' },
       { id: 'parentName', keywords: ['الاسم رباعي', 'اسم رباعي', 'اسمي', 'اسم ولي الامر', 'رباعي', 'خانه الاسم'], reply: 'اكتب الاسم رباعي: 4 أسماء على الأقل، زي «محمد أحمد علي حسن».', pointTo: 'parentName', expression: 'point' },
-      { id: 'mobile', keywords: ['رقم الموبايل', 'الموبايل', 'رقم التليفون', 'التليفون', 'واتساب', 'رقم الواتس'], reply: 'رقم الموبايل لازم 11 رقم ويبدأ بـ 01. ولو الواتساب رقم مختلف اكتبه في خانته.', pointTo: 'mobile', expression: 'point' },
+      { id: 'mobile', keywords: ['رقم الموبايل', 'الموبايل', 'رقم التليفون', 'التليفون', 'واتساب', 'رقم الواتس'], reply: 'رقم الموبايل لازم 11 رقم. ولو الواتساب رقم مختلف اكتبه في خانته، أو سيبه فاضي.', pointTo: 'mobile', expression: 'point' },
       { id: 'email', keywords: ['الايميل', 'ايميل', 'البريد', 'بريد الكتروني', 'email'], reply: 'اكتب بريدك الإلكتروني كامل وفيه علامة @، زي name@example.com.', pointTo: 'email', expression: 'point' },
       { id: 'passwordRule', keywords: ['كلمه السر', 'كلمه المرور', 'الباسورد', 'باسورد', 'password'], reply: 'كلمة السر لازم 6 حروف أو أرقام على الأقل، وتكتبها مرتين بنفس الشكل. ولو نسيتها كلّم موظف التسجيل.', pointTo: 'password', expression: 'point' },
-      { id: 'forgot', keywords: ['نسيت كلمه السر', 'نسيت الباسورد', 'نسيت كلمه المرور', 'مش فاكر كلمه السر', 'مش عارف ادخل'], reply: 'لو نسيت كلمة السر كلّم موظف التسجيل على واتساب الأكاديمية ومعاك رقم الطلب والرقم القومي.', expression: 'thinking', handoff: true },
+      { id: 'forgot', keywords: ['نسيت كلمه السر', 'نسيت الباسورد', 'نسيت كلمه المرور', 'مش فاكر كلمه السر', 'مش عارف ادخل'], reply: 'لو نسيت كلمة السر كلّم موظف التسجيل على واتساب الأكاديمية وما تبعتش كلمة السر في المحادثة.', expression: 'thinking', handoff: true },
       { id: 'student', keywords: ['اسم الطالب', 'بيانات الطالب', 'اسم ابني', 'اسم بنتي'], reply: 'في الخطوة 2 اكتب اسم الطالب رباعي، وتاريخ الميلاد، والنوع، والصف، والعنوان.', pointTo: 'studentName', expression: 'point' },
       { id: 'dob', keywords: ['تاريخ الميلاد', 'تاريخ ميلاد', 'السن', 'سن القبول', 'عمر الطالب'], reply: 'اختار تاريخ ميلاد الطالب من التقويم في الخطوة 2. ولو عندك سؤال عن سن القبول كلّم موظف التسجيل.', pointTo: 'dob', expression: 'point' },
       { id: 'grade', keywords: ['الصف', 'الصفوف', 'المرحله', 'سنه كام', 'كي جي', 'kg', 'حضانه', 'ابتدائي', 'اعدادي'], reply: 'اختار الصف الدراسي المطلوب من القائمة في الخطوة 2.', pointTo: 'grade', expression: 'point' },
@@ -227,7 +228,7 @@ function defaultConfig() {
       { id: 'fees', keywords: ['المصاريف', 'المصروفات', 'الرسوم', 'بكام', 'السعر', 'الاقساط', 'خصم'], reply: 'تفاصيل المصروفات والخصومات مع موظف التسجيل. تقدر تكلّمه مباشرة على واتساب الأكاديمية.', expression: 'happy', handoff: true },
       { id: 'human', keywords: ['موظف', 'اكلم حد', 'خدمه العملاء', 'الدعم', 'اتصل', 'رقم الاكاديميه', 'رقم المدرسه', 'تواصل'], reply: 'تقدر تكلّم موظف التسجيل مباشرة على واتساب أكاديمية رحيق من الزر ده.', expression: 'happy', handoff: true },
       { id: 'error', keywords: ['مشكله', 'خطا', 'مش شغال', 'مش راضي', 'بيرفض', 'مش بيقبل', 'واقف', 'علقت', 'مش عارف', 'مش فاهم', 'ساعدني', 'مساعده', 'اكتب ايه', 'خانه'], reply: 'ولا يهمك 🙏 دوس على زر «فين المشكلة؟» وأنا أشاورلك على الخانة اللي محتاجة تتظبط.', expression: 'worried' }
-    ],
+    ].concat(parentHelp),
     animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10 },
     sounds: { enabled: true, volume: 0.4, speech: false },
     hours: { enabled: false, start: '08:00', end: '22:00', days: [0, 1, 2, 3, 4, 5, 6], timezone: 'Africa/Cairo' },
@@ -253,7 +254,7 @@ function exprOr(v, fallback) { return EXPRESSIONS.indexOf(v) >= 0 ? v : fallback
 function validateConfig(input) {
   const base = defaultConfig();
   const src = input && typeof input === 'object' ? input : {};
-  const out = { version: 1 };
+  const out = { version: src.version === 3 ? 3 : (src.version === 2 ? 2 : 1) };
   out.enabled = bool(src.enabled, base.enabled);
   out.name = str(src.name, 30, base.name);
 
@@ -286,7 +287,7 @@ function validateConfig(input) {
   const ansIn = Array.isArray(src.answers) ? src.answers : base.answers;
   const seen = new Set();
   out.answers = [];
-  ansIn.slice(0, 80).forEach((a, i) => {
+  ansIn.slice(0, 120).forEach((a, i) => {
     if (!a || typeof a !== 'object') return;
     const reply = str(a.reply, 400, '');
     const keywords = (Array.isArray(a.keywords) ? a.keywords : String(a.keywords || '').split(/[,،\n]/))
@@ -403,7 +404,7 @@ function answerQuick(config, id, ctx) {
   return withAction(config, item);
 }
 
-function answerText(config, raw) {
+function answerText(config, raw, ctx) {
   const text = sanitize(raw);
   if (!text) return reply(config.messages.empty, 'thinking', { kind: 'empty' });
   if (text.length > LIMITS.maxChars) return reply(config.messages.tooLong, 'worried', { kind: 'toolong' });
@@ -422,6 +423,12 @@ function answerText(config, raw) {
     a.keywords.forEach(k => { if (hasKeyword(norm, toks, k)) score += 1 + normalize(k).length / 10; });
     if (score > bestScore) { bestScore = score; best = a; }
   });
+  // الأسئلة العامة عن خطأ تستفيد من أسماء الخانات المتعثرة فقط، دون إرسال قيمها.
+  if (best && best.id === 'error') {
+    const c = cleanContext(ctx);
+    const bad = c.invalid.find(f => !c.step || FIELDS[f] === c.step) || c.invalid[0];
+    if (bad) return reply(config.guide[bad], 'point', { action: { type: 'point', field: bad, step: FIELDS[bad] }, kind: 'guide' });
+  }
   if (best) return withAction(config, best);
   // الأصل هو الرفض: أي شيء غير معروف يُعد خارج التسجيل
   return reply(FIXED.offTopic, 'thinking', { kind: 'offtopic' });

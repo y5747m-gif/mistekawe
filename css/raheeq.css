@@ -712,3 +712,10 @@ html[lang="en"] .subtitle{line-height:1.75}
 .wa-fallback[hidden]{display:none}
 .wa-fallback a{color:var(--maroon);font-weight:700;text-decoration:underline;text-underline-offset:3px;word-break:break-word}
 .sync-status.is-info{background:rgba(var(--gold-rgb),.14);border:1px dashed rgba(var(--gold-rgb),.8);color:var(--maroon-dark)}
+
+/* اختيارات مواد التأسيس */
+.foundation-subjects{border:0;margin:0;padding:0}
+.foundation-subjects legend{font-size:calc(13.5px*var(--ui-scale,1));font-weight:800;color:var(--maroon-dark);margin-bottom:6px}
+.foundation-options{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:8px}
+.foundation-options label{display:flex;align-items:center;gap:6px;font-size:calc(14px*var(--ui-scale,1));cursor:pointer}
+.foundation-options input[type="checkbox"]{width:auto;min-height:0;accent-color:var(--maroon);margin:0}

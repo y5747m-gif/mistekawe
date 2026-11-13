@@ -493,6 +493,7 @@
       dob: V.val('dob'),
       gender: V.val('gender'),
       grade: V.val('grade'),
+      foundationSubjects: Array.prototype.map.call(document.querySelectorAll('input[name="foundationSubjects"]:checked'), function (el) { return el.value; }),
       prevSchool: V.val('prevSchool'),
       address: V.val('address'),
       healthNotes: V.val('healthNotes'),
@@ -582,7 +583,8 @@
     $('successBox').innerHTML =
       row('اسم ولي الأمر', data.parentName) +
       row('اسم الطالب', data.studentName) +
-      row('الصف', data.grade) +
+      row('الصف', I && I.isEnglish && I.isEnglish() ? T(data.grade) : data.grade) +
+      (data.foundationSubjects && data.foundationSubjects.length ? row('مواد التأسيس', data.foundationSubjects.map(T).join('، ')) : '') +
       row('رقم الطلب', data.orderNumber) +
       row('رقم الموبايل', data.mobile) +
       row('المستندات المحفوظة', savedDocsCount(data.docs) + ' ' + T('من 4'));
@@ -811,7 +813,8 @@
     $('welcomeName').textContent = T('أهلًا بك ') + user.parentName;
     $('welcomeDetails').innerHTML =
       row('اسم الطالب', user.studentName) +
-      row('الصف', user.grade) +
+      row('الصف', I && I.isEnglish && I.isEnglish() ? T(user.grade) : user.grade) +
+      (user.foundationSubjects && user.foundationSubjects.length ? row('مواد التأسيس', user.foundationSubjects.map(T).join('، ')) : '') +
       row('رقم الطلب', user.orderNumber) +
       row('رقم الموبايل', user.mobile);
     /* الصور الفعلية المحفوظة مع الحساب تظهر هنا بعد تسجيل الدخول */

@@ -122,6 +122,7 @@
       dob: data.dob || '',
       gender: data.gender || '',
       grade: data.grade || '',
+      foundationSubjects: Array.isArray(data.foundationSubjects) ? data.foundationSubjects : [],
       prevSchool: data.prevSchool || '',
       address: data.address || '',
       healthNotes: data.healthNotes || '',

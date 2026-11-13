@@ -44,7 +44,16 @@ function emptyState() {
 function normalizeState(raw) {
   const st = emptyState();
   if (raw && typeof raw === 'object') {
-    st.config = system.validateConfig(raw.config);
+    // ترقية واحدة للإعدادات القديمة دون الكتابة فوق إجابات المدير.
+    const config = raw.config && typeof raw.config === 'object' ? raw.config : {};
+    if (config.version !== 3 && Array.isArray(config.answers)) {
+      const additions = require('./parent-help').filter(a => config.version !== 2 || a.id === 'help_foundation');
+      const ids = new Set(config.answers.map(a => a && a.id));
+      st.config = system.validateConfig({ ...config, version: 3,
+        answers: config.answers.concat(additions.filter(a => !ids.has(a.id))).slice(0, 120) });
+    } else {
+      st.config = system.validateConfig(config);
+    }
     st.admin = raw.admin && typeof raw.admin === 'object' ? raw.admin : null;
     st.logs = Array.isArray(raw.logs) ? raw.logs.slice(0, MAX_LOGS) : [];
     st.lastOtp = Number(raw.lastOtp) || 0;

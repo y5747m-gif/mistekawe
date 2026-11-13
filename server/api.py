@@ -258,6 +258,8 @@ def validate_registration(payload: Any) -> dict[str, Any]:
         "dob": dob,
         "gender": _text(payload.get("gender"), 20),
         "grade": grade,
+        "foundationSubjects": [s for s in (payload.get("foundationSubjects") if isinstance(payload.get("foundationSubjects"), list) else [])
+                               if isinstance(s, str) and s in ("اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "القراءة والكتابة")][:4],
         "prevSchool": _text(payload.get("prevSchool"), 160),
         "address": address,
         "healthNotes": _text(payload.get("healthNotes"), 800),
@@ -367,6 +369,7 @@ def save_registration(payload: Any, data_dir: str) -> dict[str, Any]:
         "dob": record["dob"],
         "gender": record["gender"],
         "grade": record["grade"],
+        "foundationSubjects": record.get("foundationSubjects", []),
         "prevSchool": record["prevSchool"],
         "address": record["address"],
         "healthNotes": record["healthNotes"],

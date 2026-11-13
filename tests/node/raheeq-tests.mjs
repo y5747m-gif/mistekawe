@@ -97,6 +97,7 @@ ok((html.match(/class="pstep/g) || []).length === 3, 'مؤشر تقدم بثلا
 ok((html.match(/data-step-panel=/g) || []).length === 3, 'ثلاث خطوات للنموذج');
 ok(html.includes('© 2026 رحيق RAHEEQ - <a href="mailto:info@raheeq.edu">info@raheeq.edu</a>'), 'نص الفوتر الدقيق');
 ok(html.includes('هنتواصل معاك خلال 24-48 ساعة'), 'رسالة المتابعة 24-48 ساعة');
+ok(html.includes('تأسيس للصغار') && html.includes('تأسيس للكبار') && html.includes('name="foundationSubjects"'), 'خيارات التأسيس ومواده في التسجيل');
 ok(html.includes('KG1') && html.includes('3 ثانوي'), 'الصفوف من KG1 إلى 3 ثانوي');
 ok(html.includes('id="agreeTerms"'), 'الموافقة على الشروط');
 ok(['birthCert', 'photo', 'parentCard', 'reportCard'].every(k => html.includes('data-file-input="' + k + '"')), 'مستندات الرفع الأربعة');
