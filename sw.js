@@ -1,8 +1,8 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v3';
+const CACHE = 'majlis-shell-v4-raheeq-root';
 const SHELL = [
   './',
-  './index.html',
+  './majlis.html',
   './hall.html',
   './sound/css/hall.css',
   './sound/css/simple.css',
@@ -44,7 +44,7 @@ self.addEventListener('fetch', (event) => {
       const cached = await caches.match(req);
       if (cached) return cached;
       if (req.mode === 'navigate') {
-        const home = await caches.match('./index.html');
+        const home = await caches.match('./majlis.html');
         if (home) return home;
       }
       throw new Error('offline');

@@ -36,6 +36,8 @@ EXTRA_TYPES = {
     ".jpg": "image/jpeg",
     ".webp": "image/webp",
     ".svg": "image/svg+xml",
+    ".woff2": "font/woff2",
+    ".woff": "font/woff",
     ".webmanifest": "application/manifest+json",
     ".mp3": "audio/mpeg",
     ".wav": "audio/wav",
