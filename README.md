@@ -1,5 +1,23 @@
 # MISTEKAWE
 
+## الرابط الحي للموقع
+
+**https://mistekawe.vercel.app** — النسخة المنشورة من `main` على Vercel، وتُعاد نشرها تلقائيًا عند كل دمج في `main`.
+
+### بطاقة معاينة الرابط (Open Graph)
+
+كل الصفحات تحمل الآن وسوم Open Graph وTwitter Card كاملة برابط صورة مطلق
+(`https://mistekawe.vercel.app/assets/brand/...`) وعنوان ووصف و`canonical` خاص بكل صفحة،
+حتى تظهر بطاقة الموقع (صورة + عنوان + وصف) عند وضع اللينك في واتساب/فيسبوك/إكس/تيليجرام:
+
+* الصفحات الداكنة (مجلس الصوت/ننجاوي): `assets/brand/ninjawi-og.jpg` (1424×752).
+* صفحات رحيق: `assets/brand/raheeq-og.jpg` (1200×661).
+
+> ملاحظة: منصات التواصل تخزّن نسخة قديمة من البطاقة. بعد أي تعديل أعد «التبليغ/الفحص»
+> للرابط عبر Facebook Sharing Debugger (https://developers.facebook.com/tools/debug/)
+> أو Twitter Card Validator، وواتساب يتحدّث بمجرد مشاركة الرابط في محادثة جديدة.
+
+
 ## أكاديمية رحيق — منصة تسجيل الدخول (قيد التحويل)
 
 ### منصة رحيق RAHEEQ — تسجيل ولي الأمر (`raheeq.html`)
