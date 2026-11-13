@@ -1,5 +1,5 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v5-raheeq-logo';
+const CACHE = 'majlis-shell-v6-raheeq-intro';
 const SHELL = [
   './',
   './majlis.html',
@@ -11,6 +11,11 @@ const SHELL = [
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './css/intro.css',
+  './js/intro.js',
+  './css/raheeq.css',
+  './js/app.js',
+  './index.html',
   './assets/brand/raheeq-mark-vector.svg',
   './assets/brand/raheeq-mark-white.png',
   './assets/brand/raheeq-icon-192.png'

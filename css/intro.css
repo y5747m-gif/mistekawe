@@ -1,0 +1,400 @@
+/* ============================================================
+   رحيق RAHEEQ — انيميشن البداية (Intro / Splash)
+   الشعار يتفكك إلى شظايا ثلاثية الأبعاد ← يتجمّع في منتصف
+   الشاشة فوق أعلى «درجة بيانية» (عمود ذهبي في قمّة الرسم) ←
+   يظهر دفعة واحدة مع وميض احترافي.
+   يُحمَّل مرة واحدة مع الصفحة، ويُزال من الـ DOM بعد نهايته.
+   ============================================================ */
+
+.raheeq-intro{
+  --maroon:#881234;
+  --maroon-hover:#A6193F;
+  --maroon-dark:#5E0C24;
+  --maroon-deep:#2A0B17;
+  --ink:#15070F;
+  --gold:#C9A86A;
+  --gold-light:#E3C98F;
+  --gold-pale:#F5E6C0;
+  --cream:#FBF6EC;
+  --dep:clamp(15px,2.2vw,30px);           /* عمق الأعمدة (الوجه العلوي والجانبي) */
+  --bar-w:clamp(30px,8vw,88px);           /* عرض العمود */
+  --mark-w:clamp(112px,26vmin,168px);     /* عرض مساحة الشعار */
+
+  position:fixed;inset:0;z-index:500;overflow:hidden;
+  perspective:1500px;perspective-origin:50% 40%;
+  color:var(--cream);
+  font-family:'Reem Kufi','Cairo',sans-serif;
+  background:
+    radial-gradient(130% 80% at 50% -12%, rgba(227,201,143,.16), transparent 55%),
+    radial-gradient(80% 60% at 50% 122%, rgba(136,18,52,.55), transparent 62%),
+    linear-gradient(180deg,#200B14 0%, #170811 52%, #0F060D 100%);
+  /* شبكة أمان: لو فشل الـ JS (أو لم يوجد) يختفي الغطاء وحده */
+  animation:introFailsafe .001s linear 6.5s forwards;
+}
+
+/* حبيبات فيلم خفيفة + تظليل الحواف — تفصيلة «سينما» */
+.raheeq-intro::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:9;
+  background:
+    radial-gradient(120% 100% at 50% 46%, transparent 52%, rgba(8,3,6,.55) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  mix-blend-mode:normal;
+}
+
+@keyframes introFailsafe{to{opacity:0;visibility:hidden}}
+
+/* ============ حبس التمرير أثناء العرض ============ */
+body.raheeq-intro-lock{overflow:hidden}
+
+/* ============ أرضية المسرح (شبكة منظورية) ============ */
+.intro-floor{
+  position:absolute;left:-30%;right:-30%;bottom:-9%;height:56%;z-index:0;
+  transform-origin:50% 100%;transform:rotateX(56deg);
+  background:
+    linear-gradient(rgba(227,201,143,.17) 1.5px, transparent 1.5px) 0 0/100% 36px,
+    linear-gradient(90deg, rgba(227,201,143,.15) 1.5px, transparent 1.5px) 0 0/54px 100%,
+    radial-gradient(62% 92% at 50% 100%, rgba(201,168,106,.30), transparent 72%);
+  -webkit-mask-image:linear-gradient(180deg, transparent 0%, #000 34%, #000 82%, transparent 100%);
+          mask-image:linear-gradient(180deg, transparent 0%, #000 34%, #000 82%, transparent 100%);
+  opacity:0;animation:introFadeIn 1.15s ease .18s forwards;
+}
+
+/* ============ شعاع علوي (ضوء المسرح) ============ */
+.intro-beam{
+  position:absolute;top:-10%;left:50%;z-index:1;
+  width:min(560px,76vw);height:82vh;
+  transform:translateX(-50%) perspective(700px) rotateX(16deg);
+  transform-origin:50% 0;
+  background:linear-gradient(180deg, rgba(245,230,192,.42), rgba(245,230,192,.10) 46%, transparent 76%);
+  clip-path:polygon(43.5% 0, 56.5% 0, 100% 100%, 0% 100%);
+  mix-blend-mode:screen;opacity:0;
+  animation:introBeamIn 1.5s ease .4s forwards, introBeamPulse 2.6s ease-in-out 2.65s 2;
+}
+@keyframes introBeamIn{from{opacity:0}to{opacity:.9}}
+@keyframes introBeamPulse{0%,100%{opacity:.75}50%{opacity:1}}
+
+/* ============ غبار ذهبي عائم ============ */
+.intro-dust{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.intro-dust i{
+  position:absolute;bottom:-4vh;left:var(--x);
+  width:var(--s);height:var(--s);border-radius:50%;
+  background:radial-gradient(circle,#FFF8DE 0%, rgba(245,230,192,.9) 35%, rgba(245,230,192,0) 72%);
+  opacity:0;animation:dustRise var(--t) linear var(--d) infinite;
+}
+@keyframes dustRise{
+  0%  {transform:translate3d(0,0,0);opacity:0}
+  12% {opacity:var(--o)}
+  72% {opacity:var(--o)}
+  100%{transform:translate3d(var(--dx),-108vh,0);opacity:0}
+}
+
+/* ============ الأعمدة البيانية ثلاثية الأبعاد ============ */
+.intro-chart{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  height:44vh;min-height:190px;max-height:420px;
+  display:flex;align-items:flex-end;justify-content:center;
+  gap:clamp(4px,1.8vw,24px);padding:0 3vw;
+  transform:rotateX(19deg) rotateY(12deg);transform-origin:50% 100%;transform-style:preserve-3d;
+}
+
+.intro-bar{
+  position:relative;width:var(--bar-w);height:calc(var(--h)*1%);
+  transform-style:preserve-3d;transform:translateY(112%);
+  animation:barRise .84s cubic-bezier(.18,1.3,.32,1) var(--bd) forwards;
+}
+@keyframes barRise{
+  0%  {transform:translateY(112%) rotateX(-18deg)}
+  100%{transform:translateY(0)    rotateX(0)}
+}
+
+.intro-bar__face{position:absolute;display:block}
+
+/* الوجه الأمامي — بتموجات «أعمدة» تراثية وإضاءة علوية دافئة */
+.intro-bar__front{
+  inset:0;border:1px solid rgba(227,201,143,.34);border-bottom:0;
+  border-radius:4px 4px 0 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 13px, rgba(227,201,143,.055) 13px 14.5px, transparent 14.5px 29px),
+    linear-gradient(180deg, rgba(227,201,143,.34) 0%, rgba(227,201,143,0) 24%),
+    linear-gradient(180deg,#48172E 0%, #2C0E1F 56%, #1B0812 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,242,208,.4),
+    inset 0 -22px 34px rgba(0,0,0,.42),
+    inset -10px 0 22px rgba(0,0,0,.3);
+}
+
+/* الوجه العلوي — أفقي حقيقي في الفراغ (3D) */
+.intro-bar__top{
+  top:0;left:0;right:0;height:var(--dep);
+  transform-origin:50% 0;transform:rotateX(-90deg);
+  background:linear-gradient(90deg,#3B1224 0%, #5C2440 30%, #6E2C4C 50%, #5C2440 70%, #3B1224 100%);
+  box-shadow:inset 0 0 0 1px rgba(227,201,143,.30);
+}
+
+/* الوجه الجانبي — أعمق ظل */
+.intro-bar__side{
+  top:0;bottom:0;left:0;width:var(--dep);
+  transform-origin:0 50%;transform:rotateY(90deg);
+  background:linear-gradient(180deg,#31101F 0%, #1A0811 100%);
+  box-shadow:inset 0 0 0 1px rgba(227,201,143,.16);
+}
+
+/* العمود القِمّة — «أعلى درجة بيانية» */
+.intro-bar--apex{width:calc(var(--bar-w)*1.16);z-index:1}
+.intro-bar--apex .intro-bar__front{
+  border-color:rgba(245,230,192,.65);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 13px, rgba(245,230,192,.09) 13px 14.5px, transparent 14.5px 29px),
+    radial-gradient(150% 62% at 50% 0%, rgba(245,230,192,.55), rgba(245,230,192,0) 58%),
+    linear-gradient(180deg,#5A1E38 0%, #341020 55%, #210A14 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,248,222,.6),
+    inset 0 -22px 34px rgba(0,0,0,.38),
+    inset -12px 0 26px rgba(0,0,0,.32),
+    0 0 44px rgba(227,201,143,.28);
+}
+.intro-bar--apex .intro-bar__top{
+  background:linear-gradient(90deg,#8A6A34 0%, #E3C98F 30%, #FFF3C8 50%, #E3C98F 70%, #8A6A34 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,248,222,.75), 0 0 34px rgba(245,230,192,.5);
+}
+.intro-bar--apex .intro-bar__side{background:linear-gradient(180deg,#3E1626 0%, #200B13 100%)}
+
+/* وهج يشتعل على قمة العمود الأعلى لحظة اكتمال الشعار */
+.intro-apex-flare{
+  position:absolute;z-index:2;left:50%;bottom:calc(min(44vh,420px) - 4px);
+  width:min(300px,44vw);height:min(150px,22vh);
+  transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(50% 60% at 50% 100%, rgba(255,244,200,.9), rgba(227,201,143,.35) 45%, transparent 75%);
+  mix-blend-mode:screen;opacity:0;
+  animation:introFlare .9s ease 2.62s forwards;
+}
+@keyframes introFlare{0%{opacity:0}28%{opacity:1}100%{opacity:.55}}
+
+/* ============ خط الرسم البياني الذهبي فوق قمم الأعمدة ============ */
+.intro-trend{position:absolute;left:0;right:0;bottom:0;height:100%;z-index:5;overflow:visible;pointer-events:none}
+.intro-trend__area{
+  fill:url(#raheeqTrendFill);opacity:0;
+  animation:introAreaIn 1.1s ease 1.15s forwards;
+}
+@keyframes introAreaIn{from{opacity:0}to{opacity:1}}
+.intro-trend__line{
+  fill:none;stroke:url(#raheeqTrendStroke);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1;stroke-dashoffset:1;
+  filter:drop-shadow(0 0 6px rgba(245,230,192,.55));
+  animation:introLineDraw 1.35s cubic-bezier(.4,0,.2,1) 1s forwards;
+}
+@keyframes introLineDraw{to{stroke-dashoffset:0}}
+.intro-trend__dot{
+  fill:#F5E6C0;stroke:#7A5B22;stroke-width:1.1;opacity:0;
+  transform-box:fill-box;transform-origin:center;transform:scale(0);
+  animation:introDotPop .45s cubic-bezier(.2,1.7,.4,1) var(--dd,1.2s) forwards;
+}
+@keyframes introDotPop{0%{opacity:0;transform:scale(0)}100%{opacity:1;transform:scale(1)}}
+.intro-trend__dot--apex{fill:#FFF3C8;stroke:#C9A86A;stroke-width:1.4;filter:drop-shadow(0 0 6px rgba(255,243,200,.9))}
+
+/* ============ منصّة الشعار: الشظايا ← التجمّع ============ */
+.intro-lockup{
+  position:absolute;z-index:4;left:50%;bottom:calc(min(44vh,420px) + 1.4vh);
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  text-align:center;pointer-events:none;
+}
+
+.intro-mark-stage{
+  position:relative;width:var(--mark-w);aspect-ratio:472/557;
+  transform-style:preserve-3d;
+}
+
+.intro-shard{
+  position:absolute;inset:0;display:block;
+  background-image:url('../assets/brand/raheeq-mark-vector-white.svg');
+  background-repeat:no-repeat;background-size:100% 100%;background-position:center;
+  clip-path:polygon(var(--clip));
+  z-index:1;opacity:0;filter:blur(9px);
+  transform:translate3d(var(--sx),var(--sy),var(--sz))
+            rotate3d(var(--rx),var(--ry),var(--rz),var(--rr))
+            scale(var(--ss,.7));
+  animation:shardAssemble .92s cubic-bezier(.16,1.24,.3,1) var(--sd) forwards;
+  will-change:transform,opacity,filter;
+}
+@keyframes shardAssemble{
+  0%  {opacity:0;filter:blur(9px);
+       transform:translate3d(var(--sx),var(--sy),var(--sz))
+                 rotate3d(var(--rx),var(--ry),var(--rz),var(--rr))
+                 scale(var(--ss,.7))}
+  55% {opacity:1}
+  100%{opacity:1;filter:blur(0);
+       transform:translate3d(0,0,0) rotate3d(0,0,0,0deg) scale(1)}
+}
+
+/* نبضة الاستقرار لحظة التحام آخر شظية */
+.intro-mark-stage::after{
+  content:"";position:absolute;inset:-18%;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,244,200,.5), transparent 68%);
+  opacity:0;animation:introSettleGlow .85s ease 2.6s forwards;
+}
+@keyframes introSettleGlow{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+/* وميض «الظهور دفعة واحدة» */
+.intro-flash{
+  position:absolute;left:50%;top:50%;z-index:6;
+  width:420%;aspect-ratio:1;
+  transform:translate(-50%,-50%) scale(0);opacity:0;border-radius:50%;
+  background:radial-gradient(circle, #FFFFFF 0%, rgba(255,248,222,.95) 14%, rgba(227,201,143,.55) 36%, rgba(227,201,143,.12) 58%, transparent 72%);
+  mix-blend-mode:screen;pointer-events:none;
+  animation:introFlash .82s cubic-bezier(.1,.9,.24,1) 2.6s forwards;
+}
+@keyframes introFlash{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(0)}
+  16% {opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}
+}
+
+/* موجة دائرية رفيعة تنطلق من الشعار */
+.intro-ring{
+  position:absolute;left:50%;top:50%;z-index:5;
+  width:120%;aspect-ratio:1;border-radius:50%;
+  border:2px solid rgba(245,230,192,.95);
+  box-shadow:0 0 24px rgba(245,230,192,.6), inset 0 0 18px rgba(245,230,192,.5);
+  transform:translate(-50%,-50%) scale(.4);opacity:0;pointer-events:none;
+  animation:introRing .95s cubic-bezier(.16,.9,.3,1) 2.6s forwards;
+}
+@keyframes introRing{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(.35)}
+  22% {opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(3.1)}
+}
+
+/* توهّج ثابت خفيف خلف الشعار بعد اكتماله */
+.intro-mark-glow{
+  position:absolute;left:50%;top:50%;z-index:0;
+  width:230%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(201,168,106,.30), rgba(201,168,106,.07) 48%, transparent 70%);
+  opacity:0;animation:introFadeIn .8s ease 2.55s forwards;pointer-events:none;
+}
+
+/* ============ قفلة النص: رحيق / RAHEEQ / السطر الذهبي ============ */
+.intro-word-ar{
+  margin:calc(var(--mark-w)*.155 + 6px) 0 0;
+  font-family:'Amiri', serif;font-weight:700;
+  font-size:clamp(2.5rem, 10.5vmin, 4.35rem);line-height:1.12;
+  background:linear-gradient(180deg,#FFFDF2 8%, #F5E6C0 34%, #D9B566 62%, #8F6A33 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  opacity:0;transform:translateY(22px);
+  animation:introWordUp 1.0s cubic-bezier(.17,1.18,.32,1) 2.78s forwards;
+}
+
+.intro-word-latin{
+  margin:.1em 0 0;
+  font-family:'Cinzel', serif;font-weight:700;
+  font-size:clamp(.62rem, 2.5vmin, .92rem);
+  letter-spacing:.52em;text-indent:.52em;color:var(--gold-light);
+  opacity:0;transform:translateY(14px);
+  animation:introWordUp .85s cubic-bezier(.17,1.18,.32,1) 3.0s forwards;
+}
+
+.intro-divider{
+  display:flex;align-items:center;gap:12px;margin:.62em 0 .5em;
+  opacity:0;animation:introFadeIn .6s ease 3.18s forwards;
+}
+.intro-divider i{
+  display:block;width:min(96px,18vw);height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold-light));
+}
+.intro-divider i:last-child{transform:scaleX(-1)}
+.intro-divider b{
+  color:var(--gold-light);font-size:.72em;line-height:1;
+  transform:scale(.4);opacity:0;
+  animation:introDividerGem .55s cubic-bezier(.2,1.6,.4,1) 3.22s forwards;
+}
+@keyframes introDividerGem{to{transform:scale(1);opacity:1}}
+
+.intro-tagline{
+  margin:0;
+  font-family:'Reem Kufi', sans-serif;font-weight:500;
+  font-size:clamp(.6rem, 2.4vmin, .78rem);
+  color:#D9C8B2;letter-spacing:.03em;
+  opacity:0;transform:translateY(10px);
+  animation:introWordUp .8s ease 3.34s forwards;
+}
+
+@keyframes introWordUp{
+  from{opacity:0;transform:translateY(20px);filter:blur(7px)}
+  to  {opacity:1;transform:translateY(0);filter:blur(0) drop-shadow(0 4px 18px rgba(201,168,106,.35))}
+}
+@keyframes introFadeIn{from{opacity:0}to{opacity:1}}
+
+/* ============ زر التخطي ============ */
+.intro-skip{
+  position:absolute;z-index:8;
+  top:max(14px, env(safe-area-inset-top, 0px));left:18px;
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(23,10,18,.45);border:1px solid rgba(227,201,143,.38);
+  color:var(--gold-pale);border-radius:99px;
+  font-family:'Reem Kufi', sans-serif;font-weight:500;font-size:.8rem;
+  padding:8px 18px;cursor:pointer;backdrop-filter:blur(6px);
+  transition:border-color .2s, color .2s, background .2s, transform .2s;
+  opacity:0;animation:introFadeIn .35s ease .55s forwards;
+}
+.intro-skip:hover{border-color:var(--gold-light);color:#FFF8DE;background:rgba(42,16,26,.6)}
+.intro-skip:active{transform:scale(.96)}
+.intro-skip:focus-visible{outline:2px solid var(--gold-light);outline-offset:3px}
+.intro-skip svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============ خط التقدم السفلي ============ */
+.intro-progress{
+  position:absolute;z-index:8;bottom:0;left:0;right:0;height:3px;
+  background:rgba(227,201,143,.12);
+}
+.intro-progress i{
+  display:block;height:100%;width:0;
+  background:linear-gradient(90deg, rgba(201,168,106,.35), var(--gold) 35%, var(--gold-pale));
+  box-shadow:0 0 14px rgba(245,230,192,.65);
+  animation:introProgress 4.35s linear .2s forwards;
+}
+@keyframes introProgress{from{width:0}to{width:100%}}
+
+/* ============ الخروج ============ */
+.raheeq-intro.is-leaving{
+  opacity:0;visibility:hidden;transform:scale(1.05);filter:blur(7px);
+  transition:opacity .55s ease, transform .6s cubic-bezier(.3,.7,.3,1), filter .55s ease, visibility 0s linear .6s;
+  pointer-events:none;
+}
+.raheeq-intro.is-leaving *{animation-play-state:paused !important}
+
+/* ============ الجوال: تصغير المنظومة ============ */
+@media (max-width:620px){
+  .intro-chart{gap:4px;padding:0 2vw;transform:rotateX(14deg) rotateY(9deg)}
+  .intro-word-ar{font-size:clamp(2.3rem,14vw,3rem)}
+  .intro-apex-flare{width:60vw}
+}
+
+/* ============ الطباعة: لا تُطبع شاشة البداية ============ */
+@media print{
+  .raheeq-intro{display:none !important}
+}
+
+/* ============ احتراماً لمن يفضّل تقليل الحركة ============ */
+@media (prefers-reduced-motion: reduce){
+  .raheeq-intro{animation:introFailsafe .001s linear .12s forwards}
+  .intro-skip{display:none}
+  .raheeq-intro *,.raheeq-intro *::before,.raheeq-intro *::after{
+    animation:none !important;transition:none !important;
+  }
+  .intro-floor,.intro-beam,.intro-apex-flare,.intro-mark-glow{opacity:.8}
+  .intro-shard{opacity:1;filter:none;transform:none}
+  .intro-word-ar,.intro-word-latin,.intro-divider,.intro-tagline,.intro-divider b{opacity:1;transform:none;filter:none}
+  .intro-trend__line{stroke-dashoffset:0}
+  .intro-trend__dot{opacity:1;transform:none}
+  .intro-trend__area{opacity:1}
+}
+
+@media (max-height:660px){
+  .intro-chart{min-height:150px}
+  .intro-lockup{--mark-w:clamp(88px,19vmin,120px);bottom:calc(min(44vh,420px) + .8vh)}
+  .intro-word-ar{font-size:clamp(1.9rem,8.6vh,2.5rem);margin-top:2px}
+  .intro-word-latin{font-size:.58rem;letter-spacing:.46em}
+  .intro-tagline{font-size:.56rem}
+  .intro-divider{margin:.35em 0 .3em}
+}

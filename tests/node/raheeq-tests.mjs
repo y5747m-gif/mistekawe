@@ -38,12 +38,36 @@ for (const f of ['index.html', 'css/raheeq.css', 'js/sounds.js', 'js/confetti.js
   ok(exists(f), 'الملف موجود: ' + f);
 }
 ok(/<html[^>]*lang="ar"[^>]*dir="rtl"/.test(html), 'الصفحة الأساس عربية RTL');
-ok(html.includes('href="css/raheeq.css"') && !html.includes('<style>'), 'التنسيق في ملف خارجي منفصل');
+{
+  // التنسيق في ملفات خارجية؛ مُسموح فقط كتلة <style> حرجة صغيرة لأنيميشن البداية
+  ok(html.includes('href="css/raheeq.css"'), 'التنسيق الأساسي في ملف خارجي css/raheeq.css');
+  const inlineStyles = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
+  const inlineBytes = inlineStyles.reduce((n, cssBlock) => n + cssBlock.length, 0);
+  ok(inlineBytes <= 700, 'لا توجد كتل CSS كبيرة مضمّنة (حجم المضمّن ' + inlineBytes + ' بايت)');
+}
 ['js/sounds.js', 'js/confetti.js', 'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/app.js'].forEach(f =>
   ok(html.includes('src="' + f + '"'), 'السكربت خارجي: ' + f));
 ok(html.includes('family=Cairo') && css.includes("font-family:'Cairo Local'"), 'خط Cairo من Google Fonts مع نسخة محلية احتياطية');
 ok(read('raheeq.html').includes('location.replace'), 'الرابط القديم raheeq.html يحوّل إلى أساس الموقع');
 ok(exists('majlis.html') && read('majlis.html').includes('مجلس الصوت'), 'صفحة مجلس الصوت القديمة محفوظة');
+
+console.log('\n1.1) انيميشن البداية (Intro) + منظومة الخطوط متعددة العائلات');
+for (const f of ['css/intro.css', 'js/intro.js'])
+  ok(exists(f), 'ملف الانميشن موجود: ' + f);
+ok(html.includes('href="css/intro.css"'), 'intro.css محمّل في <head>');
+ok(html.includes('src="js/intro.js"'), 'js/intro.js محمّل');
+ok(html.includes('id="raheeqIntro"'), 'غطاء الانميشن موجود في الصفحة');
+ok(html.includes('intro-skip'), 'زر تخطي الانميشن موجود');
+for (const fam of ['Amiri', 'Cinzel', 'Reem+Kufi', 'IBM+Plex+Mono', 'Cairo'])
+  ok(html.includes('family=' + fam) || html.includes('family=' + fam.split(':')[0]), 'عائلة الخط محمّلة: ' + fam);
+for (const token of ['--font-body', '--font-display', '--font-kufi', '--font-brand', '--font-mono'])
+  ok(css.includes(token), 'رمز الخط معرّف في raheeq.css: ' + token);
+ok(css.includes('var(--font-display)') && css.includes('var(--font-kufi)'), 'العناوين والملصقات تستخدم خطوطها المميزة');
+ok(css.includes('var(--font-mono)'), 'حقول الأرقام/المعرفات تستخدم IBM Plex Mono');
+const introCss = read('css/intro.css');
+ok(introCss.includes('preserve-3d') && introCss.includes('clip-path'), 'الأعمدة 3D والشظايا مقصوصة بـ clip-path');
+ok(introCss.includes('prefers-reduced-motion'), 'يحترم تفضيل تقليل الحركة');
+ok(html.includes('intro-bar--apex') && html.includes('intro-mark-stage'), 'أعمدة تتصاعد وقمة للشعار');
 
 console.log('\n2) الهوية البصرية والأقسام المطلوبة');
 const colors = {
