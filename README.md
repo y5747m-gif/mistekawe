@@ -30,7 +30,10 @@ js/sounds.js            محرك الأصوات (Web Audio + ملفات MP3) و�
 js/confetti.js          قصاصات النجاح ماروني + ذهبي
 js/validation.js        قواعد التحقق من الحقول
 js/uploads.js           قراءة الصور الفعلية وضغطها وحفظها + سجلات المستندات
-js/app.js               الخطوات، الدخول، النجاح، LocalStorage
+js/api.js               إرسال الطلب والمستندات إلى خادم الرفع (/api/registrations)
+js/app.js               الخطوات، الدخول، النجاح، LocalStorage، المزامنة
+server/serve.py         خادم الموقع + واجهة الرفع (Python قياسي فقط)
+server/api.py           التحقق والتخزين الآمن للطلبات والمستندات
 sounds/*.mp3            الأصوات الثمانية (MP3 حقيقية)
 assets/brand/*          الشعار والأيقونات
 assets/fonts/*          خط Cairo محلي (احتياطي لـ Google Fonts)
@@ -66,7 +69,76 @@ python3 server/serve.py --no-browser      # ثم افتح http://localhost:8000/
 * **الأصوات**: الملفات الثمانية من `sounds/` تُحمّل مسبقًا عند فتح الصفحة،
   وتُشغّل عند التفاعل فقط (متوافقة مع الجوال). راجع `sounds/README.md`.
 
-الاختبارات: `node tests/node/raheeq-tests.mjs` (بنية الموقع + المنطق + تدفق رفع الصور وحفظها في `LocalStorage` واستعراضها)،
+## واجهة الرفع (API)
+
+بعد حفظ الطلب على الجهاز، ترسله الواجهة تلقائيًا إلى خادم المدرسة عبر
+`js/api.js` (مع إعادة محاولة يدوية إن فشل الاتصال)، وتحتفظ بنسخة محلية دائمًا.
+
+```bash
+# تشغيل الموقع + الواجهة على نفس المنفذ
+python3 server/serve.py --no-browser
+
+# لتفعيل قراءة الطلبات والمستندات (إدارة المدرسة)
+RAHEEQ_ADMIN_TOKEN="رمز-قوي-خاص" python3 server/serve.py --no-browser
+
+# مجلد تخزين مختلف (افتراضي: data/)
+RAHEEQ_DATA_DIR=/var/lib/raheeq python3 server/serve.py
+```
+
+| المسار | الوصف | المصادقة |
+| --- | --- | --- |
+| `GET /api/health` | حالة الواجهة وقدراتها (بلا بيانات شخصية) | عام |
+| `POST /api/registrations` | رفع طلب تسجيل مع صور المستندات (JSON + base64) | عام (بحدّ معدل) |
+| `GET /api/registrations` | قائمة الطلبات | `X-Admin-Token` |
+| `GET /api/registrations/<رقم>` | تفاصيل طلب (بدون كلمة السر) | `X-Admin-Token` |
+| `GET /api/registrations/<رقم>/<مستند>` | ملف المستند نفسه | `X-Admin-Token` |
+
+مثال رفع (نفس ما ترسله الواجهة):
+
+```bash
+curl -s http://localhost:8000/api/registrations \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "parentName": "محمد أحمد علي حسن",
+    "nationalId": "12345678901234",
+    "mobile": "01000000000",
+    "email": "waly@raheeq.edu",
+    "password": "secret1",
+    "studentName": "عمر محمد أحمد علي",
+    "dob": "2015-05-10",
+    "grade": "KG1",
+    "address": "القاهرة مدينة نصر",
+    "docs": {
+      "birthCert": {"name": "birth.jpg", "dataUrl": "data:image/jpeg;base64,..."},
+      "photo": {"name": "photo.jpg", "dataUrl": "data:image/jpeg;base64,..."},
+      "parentCard": {"name": "card.jpg", "dataUrl": "data:image/jpeg;base64,..."}
+    }
+  }'
+
+# إعادة قراءة المستندات لاحقًا (إدارة)
+curl -s -H 'X-Admin-Token: رمز-قوي-خاص' http://localhost:8000/api/registrations
+curl -s -H 'X-Admin-Token: رمز-قوي-خاص' \
+  http://localhost:8000/api/registrations/RHQ-1234/photo --output photo.jpg
+```
+
+**التخزين والأمان:**
+
+```text
+data/                                 (مستثنى من Git — بيانات شخصية)
+├── registrations/<رقم الطلب>.json    بيانات الطلب + أوصاف المستندات (بلا base64)
+├── registrations/index.json          فهرس مختصر للطلبات
+└── uploads/<رقم الطلب>/<المستند>.*   صور المستندات الفعلية (صلاحيات 600)
+```
+
+* الصور تُفحص بالبصمة الحقيقية للبايتات (Magic Bytes) لا بالامتداد: JPG/PNG/WEBP/GIF/PDF فقط،
+  وSVG/HTML مرفوضة، بحد 4MB للمستند و7MB للطلب.
+* كلمة السر تُخزَّن مشفّرة `PBKDF2-SHA256` (120 ألف دورة + ملح عشوائي)، ولا تُعاد أبدًا في أي رد.
+* مجلد `data/` و`/server/` و`/.git/` غير قابلة للوصول عبر الموقع، وقراءة الطلبات تتطلب رمز إدارة.
+* حدّ معدل 10 طلبات رفع في الدقيقة لكل عنوان IP، وأحجام الطلبات محدودة قبل قراءتها.
+* عند إيقاف الخادم أو تعطّله يظل التسجيل يعمل بحفظ محلي كامل (بدون فقدان الصور).
+
+الاختبارات: `node tests/node/raheeq-tests.mjs` (بنية الموقع + المنطق + تدفق رفع الصور وحفظها في `LocalStorage` واستعراضها + الواجهة)،
+`python3 tests/python/test_api.py` (26 اختبارًا للخادم: التحقق، البصمة، التخزين، الصلاحيات، حد المعدل)،
 `node tests/node/dom-smoke.mjs` (واجهة الاستوديو، يحتاج `jsdom`).
 
 ### الهوية البصرية — Brand Guidelines

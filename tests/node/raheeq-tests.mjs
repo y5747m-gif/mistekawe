@@ -27,15 +27,18 @@ const confetti = read('js/confetti.js');
 const validation = read('js/validation.js');
 const app = read('js/app.js');
 const uploads = read('js/uploads.js');
+const apiSrc = read('js/api.js');
 
 console.log('\n1) بنية الموقع (أساس متعدد الملفات وليس ملف HTML واحدًا)');
 for (const f of ['index.html', 'css/raheeq.css', 'js/sounds.js', 'js/confetti.js',
-                 'js/validation.js', 'js/app.js', 'raheeq.webmanifest', 'assets/brand/raheeq-mark.svg']) {
+                 'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/app.js',
+                 'raheeq.webmanifest', 'assets/brand/raheeq-mark.svg',
+                 'server/api.py', 'server/serve.py', 'tests/python/test_api.py']) {
   ok(exists(f), 'الملف موجود: ' + f);
 }
 ok(/<html[^>]*lang="ar"[^>]*dir="rtl"/.test(html), 'الصفحة الأساس عربية RTL');
 ok(html.includes('href="css/raheeq.css"') && !html.includes('<style>'), 'التنسيق في ملف خارجي منفصل');
-['js/sounds.js', 'js/confetti.js', 'js/validation.js', 'js/app.js'].forEach(f =>
+['js/sounds.js', 'js/confetti.js', 'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/app.js'].forEach(f =>
   ok(html.includes('src="' + f + '"'), 'السكربت خارجي: ' + f));
 ok(html.includes('family=Cairo') && css.includes("font-family:'Cairo Local'"), 'خط Cairo من Google Fonts مع نسخة محلية احتياطية');
 ok(read('raheeq.html').includes('location.replace'), 'الرابط القديم raheeq.html يحوّل إلى أساس الموقع');
@@ -327,7 +330,7 @@ function makeDomEnv() {
    'welcomeDocs', 'successDocs', 'successBox', 'orderNumber', 'newRegBtn', 'copyOrderBtn',
    'successLoginBtn', 'logoutBtn', 'soundToggle', 'headerLoginBtn', 'goRegisterBtn',
    'siteHeader', 'cardTitle', 'cardSub', 'docModal', 'docModalTitle', 'docModalImg',
-   'docModalDownload'].forEach(id => { if (!byId.has(id)) byId.set(id, makeEl('div')); });
+   'docModalDownload', 'syncStatus', 'retryUploadBtn', 'syncHint'].forEach(id => { if (!byId.has(id)) byId.set(id, makeEl('div')); });
   const loginBox = makeEl('div');
   const panels = [1, 2, 3].map(n => { const p = makeEl('section'); p.setAttribute('data-step-panel', String(n)); return p; });
   const steps = [1, 2, 3].map(n => { const p = makeEl('div'); p.setAttribute('data-step', String(n)); return p; });
@@ -452,6 +455,117 @@ const welcomeHtml = dom.byId.get('welcomeDocs').innerHTML;
 ok(/<img src="data:image\/jpeg;base64,/.test(welcomeHtml), 'بعد تسجيل الدخول تظهر الصور الفعلية المحفوظة');
 ok(welcomeHtml.includes('المستندات المرفوعة') && welcomeHtml.includes('data-doc-view'), 'المعرض يوفّر عرضًا وتنزيلًا للصور المحفوظة');
 ok(!dom.byId.get('welcomeBox').hidden, 'صندوق الترحيب يظهر بعد الدخول');
+
+console.log('\n8) واجهة الرفع (API): الخادم + ربط الواجهة + الرفع الفعلي');
+const serverSrc = read('server/serve.py');
+const apiSrcPy = read('server/api.py');
+ok(exists('server/api.py'), 'وحدة الرفع server/api.py موجودة');
+ok(serverSrc.includes('"/api/registrations"') && serverSrc.includes('save_registration'), 'الخادم يعرّف POST /api/registrations');
+ok(serverSrc.includes('"/api/health"') && apiSrcPy.includes('def health'), 'مسار فحص /api/health موجود');
+ok(serverSrc.includes('_admin_authorized') && serverSrc.includes('X-Admin-Token'), 'قراءة الطلبات محمية برمز إدارة');
+ok(serverSrc.includes('path.startswith("/data/")'), 'ملفات المستندات المحفوظة غير مكشوفة كملفات ثابتة');
+ok(apiSrcPy.includes('def parse_data_url') && apiSrcPy.includes('def hash_password'), 'الخادم يتحقق من الصور ويشفّر كلمة السر');
+ok(html.includes('src="js/api.js"') && html.indexOf('src="js/api.js"') < html.indexOf('src="js/app.js"'),
+  'js/api.js محمّل قبل app.js');
+ok(app.includes('window.RaheeqApi') && app.includes('API.submit(data)') && app.includes('function syncToServer'),
+  'app.js يرفع الطلب فعليًا عبر الواجهة');
+ok(html.includes('id="syncStatus"') && html.includes('id="retryUploadBtn"') && html.includes('id="syncHint"'),
+  'واجهة توضّح حالة الرفع وتتيح إعادة المحاولة');
+ok(app.includes("'/api/registrations'") === false && apiSrc.includes("'/api/registrations'"),
+  'مسار الرفع معرّف في api.js');
+ok(read('.gitignore').includes('data/'), 'مجلد data/ مستثنى من Git (بيانات شخصية)');
+
+/* الرفع الفعلي داخل تدفق التسجيل: يرسل بايتات الصور ثم ينجح بعد إعادة المحاولة */
+const fetchCalls = [];
+function fakeResponse(body, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: () => Promise.resolve(JSON.stringify(body))
+  };
+}
+let failNextUpload = true;
+sandbox2.fetch = (url, opts) => {
+  fetchCalls.push({ url, opts });
+  if (String(url).indexOf('/api/health') === 0) {
+    return Promise.resolve(fakeResponse({ ok: true, service: 'raheeq-api', adminReadEnabled: false }));
+  }
+  if (String(url).indexOf('/api/registrations') === 0) {
+    if (failNextUpload) {
+      failNextUpload = false;
+      return Promise.reject(new TypeError('Failed to fetch'));
+    }
+    return Promise.resolve(fakeResponse({ ok: true, orderNumber: 'RHQ-7777', savedAt: '2026-05-01T10:00:00Z', files: {} }, 201));
+  }
+  return Promise.reject(new TypeError('unexpected url'));
+};
+vm.runInNewContext(apiSrc, sandbox2, { filename: 'js/api.js' });
+vm.runInNewContext(app, sandbox2, { filename: 'js/app.js' });
+
+const apiSandbox = { fetch: sandbox2.fetch, AbortController: undefined, setTimeout, clearTimeout, Promise, JSON, Object, Date, Math, String, Error };
+apiSandbox.window = apiSandbox;
+vm.runInNewContext(apiSrc, apiSandbox, { filename: 'js/api.js (unit)' });
+const apiUnit = apiSandbox.RaheeqApi;
+ok(!!apiUnit, 'محرك API يُسجّل نفسه على window.RaheeqApi');
+const healthOk = await apiUnit.probe();
+ok(healthOk === true, 'probe يكتشف الخادم من /api/health');
+
+/* نفس التدفق السابق لكن مع الواجهة: */
+const domApi = makeDomEnv();
+const storeApi = new Map();
+const sandboxApi = Object.assign({}, sandbox2, {
+  document: domApi.document,
+  localStorage: {
+    getItem: k => (storeApi.has(k) ? storeApi.get(k) : null),
+    setItem: (k, v) => { storeApi.set(k, String(v)); },
+    removeItem: k => { storeApi.delete(k); }
+  },
+  navigator: { clipboard: null },
+  matchMedia: () => ({ matches: false }),
+  addEventListener() {},
+  fetch: sandbox2.fetch
+});
+sandboxApi.window = sandboxApi;
+sandboxApi.document.createElement = sandbox2.document.createElement;
+vm.runInNewContext(validation, sandboxApi, { filename: 'js/validation.js' });
+vm.runInNewContext(uploads, sandboxApi, { filename: 'js/uploads.js' });
+vm.runInNewContext(apiSrc, sandboxApi, { filename: 'js/api.js' });
+vm.runInNewContext(app, sandboxApi, { filename: 'js/app.js' });
+
+const setA = (id, v) => { domApi.byId.get(id).value = v; };
+Object.entries({ parentName: 'محمد أحمد علي حسن', nationalId: '12345678901234', relation: 'الأب',
+  mobile: '01000000000', whatsapp: '01000000000', email: 'waly@raheeq.edu', password: 'secret1',
+  confirmPassword: 'secret1', studentName: 'عمر محمد أحمد علي', dob: '2015-05-10', gender: 'ذكر',
+  grade: 'KG1', address: 'القاهرة مدينة نصر' }).forEach(([k, v]) => setA(k, v));
+domApi.byId.get('agreeTerms').checked = true;
+const apiDocBytes = bytesOf(2600, 17);
+['birthCert', 'photo', 'parentCard'].forEach((key, i) => {
+  domApi.boxes[key].input.files = [fakeFile(key + '.png', 'image/png', bytesOf(2000 + i * 300, 5 + i))];
+  domApi.boxes[key].input.emit('change');
+});
+await new Promise(r => setTimeout(r, 80));
+domApi.byId.get('regForm').emit('submit');
+await new Promise(r => setTimeout(r, 150));
+
+const uploadCall = fetchCalls.filter(c => String(c.url).indexOf('/api/registrations') === 0 && c.opts && c.opts.method === 'POST')[0];
+ok(!!uploadCall, 'الواجهة ترسل POST إلى /api/registrations');
+const sentPayload = uploadCall ? JSON.parse(uploadCall.opts.body) : {};
+ok(sentPayload.docs && Object.keys(sentPayload.docs).length === 3, 'الحمولة تحوي المستندات الثلاثة');
+ok(['birthCert', 'photo', 'parentCard'].every(k => String((sentPayload.docs[k] || {}).dataUrl || '').startsWith('data:image/jpeg;base64,')),
+  'الحمولة تحوي بيانات الصور الفعلية (Data URL) لا أسماءها');
+ok(sentPayload.mobile === '01000000000' && !!sentPayload.orderNumber, 'الحمولة تحوي بيانات الحساب ورقم الطلب');
+ok(sentPayload.password === 'secret1', 'كلمة السر تُرسل عبر الاتصال ليُشفّرها الخادم');
+ok(storeApi.get('raheeq_users') && JSON.parse(storeApi.get('raheeq_users')).length === 1, 'الحفظ المحلي يبقى يعمل كنسخة احتياطية');
+ok(/is-warn/.test(domApi.byId.get('syncStatus').className) && /تعذّر|فشل|انتهت|خطأ/.test(domApi.byId.get('syncStatus').innerHTML),
+  'فشل الاتصال يظهر كتحذير مع بقاء الطلب محفوظًا محليًا');
+ok(domApi.byId.get('retryUploadBtn').hidden === false, 'زر إعادة المحاولة يظهر عند فشل الرفع');
+domApi.byId.get('retryUploadBtn').emit('click');
+await new Promise(r => setTimeout(r, 120));
+ok(/is-ok/.test(domApi.byId.get('syncStatus').className) && domApi.byId.get('syncStatus').innerHTML.includes('RHQ-7777'),
+  'إعادة المحاولة تنجح وتؤكد رقم الطلب القادم من الخادم');
+const storedAfterSync = JSON.parse(storeApi.get('raheeq_users'))[0];
+ok(storedAfterSync.server && storedAfterSync.server.orderNumber === 'RHQ-7777',
+  'تأكيد الرفع يُسجّل في بيانات الحساب المحلية');
 
 if (failed) {
   console.error(`\n❌ فشل ${failed} اختبار في raheeq-tests.mjs`);

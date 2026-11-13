@@ -272,6 +272,8 @@
                 </label>
               </div>
 
+              <p class="sync-hint" id="syncHint">سيُرسل الطلب وصور المستندات إلى خادم المدرسة إن كان متاحًا، وإلا يُحفظ على جهازك.</p>
+
               <div class="field full" data-field="agree">
                 <label class="agree">
                   <input type="checkbox" id="agreeTerms">
@@ -333,10 +335,12 @@
       <div id="successView" class="success-view" hidden>
         <div class="success-icon" aria-hidden="true">🎓</div>
         <h2>تم استلام طلبك بنجاح</h2>
-        <p class="success-sub">حُفظت البيانات وصور المستندات فعليًا داخل هذا المتصفح على جهازك؛ لم يُرسل الطلب إلى المدرسة.</p>
+        <p class="success-sub">حُفظت نسخة من البيانات وصور المستندات على هذا الجهاز، وتُرسل إلى خادم المدرسة عند توفره.</p>
         <div class="order-badge" id="orderNumber">RHQ-0000</div>
         <div class="success-box" id="successBox"></div>
         <div class="docs-gallery" id="successDocs" hidden></div>
+        <div class="sync-status" id="syncStatus" hidden role="status" aria-live="polite"></div>
+        <button class="btn btn-soft btn-sm sync-retry" id="retryUploadBtn" type="button" hidden>🔄 إعادة محاولة الرفع إلى الخادم</button>
         <p class="success-note">هنتواصل معاك خلال 24-48 ساعة</p>
         <p class="success-foot">هذه رسالة توضيحية فقط؛ التواصل غير مفعّل في النسخة التجريبية.</p>
         <div class="success-actions">
@@ -344,7 +348,7 @@
           <button class="btn btn-soft btn-sm" id="copyOrderBtn" type="button">📋 نسخ رقم الطلب</button>
           <button class="btn btn-soft btn-sm" id="successLoginBtn" type="button">تسجيل الدخول</button>
         </div>
-        <p class="success-foot">بياناتك محفوظة على هذا الجهاز فقط، ويمكنك الدخول بها في أي وقت.</p>
+        <p class="success-foot">نسخة من بياناتك وصورك محفوظة على هذا الجهاز، ويمكنك الدخول بها في أي وقت.</p>
       </div>
 
     </div>
@@ -407,7 +411,7 @@
     <h3 id="termsTitle">الشروط والأحكام</h3>
     <ul>
       <li>أقر بأن جميع البيانات المدخلة صحيحة ومطابقة للمستندات الرسمية.</li>
-      <li>هذه نسخة تجريبية بلا خادم؛ لا تُرسل البيانات أو المستندات إلى المدرسة. تُحفظ صور المستندات فعليًا (بعد ضغطها) داخل متصفحك مع بيانات الحساب، ولا تُحذف بإغلاق الصفحة، ويمكنك عرضها أو تنزيلها بعد تسجيل الدخول.</li>
+      <li>تُحفظ صور المستندات فعليًا (بعد ضغطها) داخل متصفحك مع بيانات الحساب، ويمكنك عرضها أو تنزيلها بعد تسجيل الدخول. وعند توفّر خادم المدرسة تُرسل البيانات والصور إليه عبر واجهة الرفع الآمنة، وإلا يبقى الطلب على جهازك فقط.</li>
       <li>تُحفظ بيانات الحساب وكلمة السر على جهازك داخل المتصفح دون حماية مناسبة للبيانات الحساسة؛ لا تستخدم بيانات حقيقية أو جهازًا مشتركًا.</li>
       <li>رقم الطلب تجريبي، ولا توجد مراجعة أو وسيلة تواصل تلقائية في هذه النسخة.</li>
     </ul>
@@ -433,6 +437,7 @@
 
 <script src="js/sounds.js" defer></script>
 <script src="js/confetti.js" defer></script>
+<script src="js/api.js" defer></script>
 <script src="js/uploads.js" defer></script>
 <script src="js/validation.js" defer></script>
 <script src="js/app.js" defer></script>

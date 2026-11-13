@@ -245,6 +245,17 @@ button{cursor:pointer}
 .upload-box.is-loading .thumb{background:linear-gradient(90deg,var(--beige),#F7EEDC,var(--beige));background-size:200% 100%;animation:uploadShimmer 1.1s linear infinite}
 @keyframes uploadShimmer{from{background-position:0 0}to{background-position:-200% 0}}
 .upload-status{display:block;margin:14px 0 0;padding:10px 14px;border-radius:var(--radius-btn);background:rgba(201,168,106,.18);border:1px dashed var(--gold);color:var(--maroon-dark);font-size:12.5px;font-weight:800;text-align:center}
+.sync-hint{margin:8px 0 0;padding:9px 13px;border-radius:12px;background:rgba(201,168,106,.12);border:1px dashed rgba(201,168,106,.8);color:#6B5B45;font-size:11.5px;font-weight:700;line-height:1.7}
+.sync-hint.is-ok{background:rgba(30,138,73,.10);border-color:rgba(30,138,73,.45);color:#166B39}
+.sync-hint.is-offline{background:rgba(201,168,106,.16);color:#7A6440}
+
+/* حالة الرفع إلى الخادم */
+.sync-status{margin:14px 0 6px;padding:11px 14px;border-radius:var(--radius-btn);font-size:12.5px;font-weight:800;line-height:1.8;text-align:right}
+.sync-status small{display:block;font-size:11px;font-weight:600;opacity:.85;margin-top:2px}
+.sync-status.is-busy{background:rgba(201,168,106,.18);border:1px dashed var(--gold);color:var(--maroon-dark)}
+.sync-status.is-ok{background:rgba(30,138,73,.12);border:2px solid rgba(30,138,73,.5);color:#166B39}
+.sync-status.is-warn{background:#FFF6F5;border:2px solid rgba(211,47,47,.45);color:#A91D1D}
+.sync-retry{margin:4px auto 0;display:block}
 
 /* معرض المستندات المحفوظة (الصور الفعلية) */
 .docs-gallery{margin:16px 0 18px;text-align:right;background:var(--cream-soft);border:2px solid rgba(201,168,106,.75);border-radius:var(--radius-card);padding:16px 16px 12px}
@@ -417,6 +428,10 @@ body.modal-open{overflow:hidden}
   .pstep .dot{width:32px;height:32px;font-size:13px}
   .progress-line{top:15px}
   .toast{bottom:16px;font-size:12.5px}
+}
+@media (max-width:620px){
+  .docs-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .doc-modal-card{padding:16px}
 }
 @media (max-width:390px){
   .features-grid{grid-template-columns:1fr}

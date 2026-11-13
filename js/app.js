@@ -9,6 +9,7 @@
   var V = window.RaheeqValidation;
   var C = window.RaheeqConfetti;
   var U = window.RaheeqUploads;
+  var API = window.RaheeqApi;
   function $(id) { return document.getElementById(id); }
   function play(n) { if (S) S.play(n); }
   function vibrate(p) { if (S) S.vibrate(p); }
@@ -24,6 +25,7 @@
   var pendingUploads = {};
   var lastSubmission = null;
   var lastStorageError = '';
+  var pendingSync = null;
   var toastTimer;
 
   /* ---------------- أدوات واجهة ---------------- */
@@ -104,7 +106,9 @@
 
     if (next === 'register') {
       $('cardTitle').textContent = 'تسجيل ولي الأمر';
-      $('cardSub').textContent = 'نسخة تجريبية على جهازك فقط؛ لا تدخل بيانات حقيقية أو حساسة';
+      $('cardSub').textContent = API
+        ? 'يُرسل الطلب وصور المستندات إلى خادم المدرسة عند توفره، ويُحفظ نسخة على جهازك'
+        : 'نسخة محلية على جهازك فقط؛ لا تدخل بيانات حقيقية أو حساسة';
     } else if (next === 'login') {
       $('cardTitle').textContent = 'تسجيل دخول ولي الأمر';
       $('cardSub').textContent = 'أدخل رقم موبايلك وكلمة السر للمتابعة';
@@ -492,6 +496,60 @@
     return '<div class="row"><span>' + esc(label) + '</span><span>' + esc(value || '—') + '</span></div>';
   }
 
+  /* ---------------- مزامنة الرفع مع الخادم ---------------- */
+  function syncStatusUI(state, html) {
+    var el = $('syncStatus');
+    if (el) {
+      if (!state) { el.hidden = true; el.className = 'sync-status'; el.innerHTML = ''; }
+      else { el.hidden = false; el.className = 'sync-status is-' + state; el.innerHTML = html || ''; }
+    }
+    var retry = $('retryUploadBtn');
+    if (retry) retry.hidden = state !== 'warn';
+  }
+  function markServerUpload(mobile, info) {
+    try {
+      var users = readUsers();
+      var idx = users.findIndex(function (u) { return u.mobile === mobile; });
+      if (idx >= 0) {
+        users[idx].server = info;
+        users[idx].serverUploadedAt = info.savedAt;
+        writeUsers(users);
+      }
+    } catch (e) { /* الحفظ المحلي أساسي، وفشل تحديث العلامة لا يعطّل شيئًا */ }
+  }
+  /* إرسال فعلي إلى /api/registrations — والصور نفسها داخل الحمولة */
+  function syncToServer(data) {
+    if (!data) return Promise.resolve(false);
+    if (!API) {
+      syncStatusUI('warn', '⚠ لا يمكن الاتصال بالخادم من هذه النسخة — الطلب وصوره محفوظة على هذا الجهاز فقط.');
+      return Promise.resolve(false);
+    }
+    pendingSync = data;
+    syncStatusUI('busy', '⏳ جارٍ إرسال الطلب وصور المستندات إلى خادم المدرسة…');
+    return API.submit(data).then(function (result) {
+      pendingSync = null;
+      markServerUpload(data.mobile, {
+        orderNumber: result.orderNumber,
+        savedAt: result.savedAt,
+        files: result.files
+      });
+      syncStatusUI('ok', '✅ تم رفع الطلب وصور المستندات إلى خادم المدرسة — رقم الطلب ' + result.orderNumber);
+      showToast('✅ تم إرسال الطلب والمستندات إلى الخادم');
+      return true;
+    }, function (err) {
+      var msg = API.errorMessage(err);
+      syncStatusUI('warn', '⚠ ' + esc(msg) + '<br><small>الطلب وصوره محفوظة على هذا الجهاز، ويمكنك إعادة المحاولة.</small>');
+      showToast('⚠ ' + msg, true);
+      return false;
+    });
+  }
+  var retryUploadBtn = $('retryUploadBtn');
+  if (retryUploadBtn) {
+    retryUploadBtn.addEventListener('click', function () {
+      if (pendingSync) syncToServer(pendingSync);
+    });
+  }
+
   function savedDocsCount(docs) {
     var norm = U ? U.normalizeDocs(docs) : {};
     return U ? U.DOC_KEYS.filter(function (k) { return !!norm[k]; }).length : 0;
@@ -507,6 +565,7 @@
       row('رقم الموبايل', data.mobile) +
       row('المستندات المحفوظة', savedDocsCount(data.docs) + ' من 4');
     renderDocsGallery($('successDocs'), data.docs);
+    syncStatusUI(null);
     switchMode('success');
     succeed();
     showToast('🎓 تم استلام طلبك وحفظ الصور فعليًا — رقم الطلب ' + data.orderNumber);
@@ -580,6 +639,7 @@
       try { localStorage.setItem(LS_SESSION, data.mobile); } catch (err) {}
       lastSubmission = data;
       showSuccess(data);
+      syncToServer(data);            // رفع فعلي إلى /api/registrations
     }).catch(function () {
       saving = false;
       refreshSubmit();
@@ -595,6 +655,8 @@
     showAlert('formAlert', '');
     currentStep = 1;
     renderStep(true, false);
+    pendingSync = null;
+    syncStatusUI(null);
     switchMode('register', { scroll: true });
   });
 
@@ -664,6 +726,18 @@
   }
   renderStep(false, false);
   switchMode('register');
+
+  /* فحص توفّر خادم الرفع لتوضيح مصير الطلب لولي الأمر */
+  if (API) {
+    API.probe().then(function (available) {
+      var hint = $('syncHint');
+      if (!hint) return;
+      hint.className = 'sync-hint ' + (available ? 'is-ok' : 'is-offline');
+      hint.textContent = available
+        ? '✓ خادم المدرسة متاح الآن — سيُرسل الطلب وصور المستندات إليه عند الإرسال.'
+        : 'الخادم غير متاح الآن — سيُحفظ الطلب وصوره على هذا الجهاز فقط.';
+    });
+  }
 
   /* ظل الهيدر عند التمرير */
   var header = $('siteHeader');
