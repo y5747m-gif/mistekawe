@@ -71,13 +71,14 @@ button{cursor:pointer}
 }
 .site-header.is-scrolled{box-shadow:0 10px 30px rgba(41,6,17,.36)}
 .header-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:82px}
-.logo{display:flex;align-items:center;gap:11px;flex:none}
+.logo{display:flex;align-items:center;gap:12px;flex:none}
+/* الشعار الرسمي: نسخة بيضاء مقصوصة على البرغندي (بدون إطار) — مصدره assets/brand/raheeq-mark-vector-white.svg */
 .logo-mark{
-  width:54px;height:54px;object-fit:contain;
-  border:2px solid var(--gold);border-radius:16px;
-  background:var(--white);padding:3px;
-  box-shadow:0 5px 16px rgba(0,0,0,.22);
+  width:46px;height:55px;object-fit:contain;flex:none;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));
+  transition:transform .25s ease;
 }
+.logo:hover .logo-mark,.logo:focus-visible .logo-mark{transform:translateY(-1px) scale(1.04)}
 .logo-text{display:flex;flex-direction:column;line-height:1.1;color:var(--white)}
 .logo-text strong{font-size:26px;font-weight:900;letter-spacing:.5px}
 .logo-text span{font-size:12px;font-weight:800;letter-spacing:5px;color:var(--gold-light);margin-top:3px}
@@ -349,6 +350,7 @@ button{cursor:pointer}
 .site-footer{background:var(--maroon-dark);color:#F7EAD5;border-top:3px solid var(--gold);padding:34px 0 28px}
 .footer-inner{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .footer-brand{display:flex;align-items:center;gap:12px}
+.footer-brand .logo-mark{width:50px;height:60px}
 .footer-values{color:var(--gold-light);font-weight:800;font-size:14px;margin:6px 0 0;letter-spacing:1px}
 .footer-line{font-size:13.5px;font-weight:700;margin:2px 0 0;color:#E9DBC4}
 .footer-line a{color:var(--gold-light);text-decoration:underline;text-underline-offset:3px}
@@ -405,7 +407,7 @@ body.modal-open{overflow:hidden}
 @media (max-width:620px){
   .container{width:min(100% - 24px,1180px)}
   .header-row{min-height:70px;gap:8px}
-  .logo-mark{width:44px;height:44px;border-radius:13px}
+  .logo-mark{width:37px;height:44px}
   .logo-text strong{font-size:20px}
   .logo-text span{font-size:10px;letter-spacing:3px}
   .sound-btn{width:40px;height:40px;font-size:18px;border-radius:12px}

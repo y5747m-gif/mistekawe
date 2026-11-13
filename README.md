@@ -147,6 +147,8 @@ data/                                 (مستثنى من Git — بيانات ش
 
 | الملف | الاستخدام |
 |---|---|
+| `assets/brand/raheeq-mark-vector.svg` | الشعار المتجه (SVG) — النسخة الأساسية المستخدمة في الموقع والفافيكون |
+| `assets/brand/raheeq-mark-vector-white.svg` | الشعار المتجه باللون الأبيض — لوجو الهيدر على الخلفية البرغندية |
 | `assets/brand/raheeq-logo.png` | الشعار الأساسي بخلفية شفافة (R + قبعة التخرج + الكتاب) |
 | `assets/brand/raheeq-lockup.png` | الشعار الأفقي مع «رحيق RAHEEQ» |
 | `assets/brand/raheeq-logo-white.png` / `-black.png` | نسختا اللون الواحد للخلفيات الداكنة/الفاتحة |

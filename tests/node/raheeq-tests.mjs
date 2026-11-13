@@ -33,6 +33,7 @@ console.log('\n1) بنية الموقع (أساس متعدد الملفات ول
 for (const f of ['index.html', 'css/raheeq.css', 'js/sounds.js', 'js/confetti.js',
                  'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/app.js',
                  'raheeq.webmanifest', 'assets/brand/raheeq-mark.svg',
+                 'assets/brand/raheeq-mark-vector.svg', 'assets/brand/raheeq-mark-vector-white.svg',
                  'server/api.py', 'server/serve.py', 'tests/python/test_api.py']) {
   ok(exists(f), 'الملف موجود: ' + f);
 }
