@@ -370,9 +370,15 @@ body.raheeq-intro-lock{overflow:hidden}
   .intro-apex-flare{width:60vw}
 }
 
+/* ============ الطباعة: لا تُطبع شاشة البداية ============ */
+@media print{
+  .raheeq-intro{display:none !important}
+}
+
 /* ============ احتراماً لمن يفضّل تقليل الحركة ============ */
 @media (prefers-reduced-motion: reduce){
   .raheeq-intro{animation:introFailsafe .001s linear .12s forwards}
+  .intro-skip{display:none}
   .raheeq-intro *,.raheeq-intro *::before,.raheeq-intro *::after{
     animation:none !important;transition:none !important;
   }
