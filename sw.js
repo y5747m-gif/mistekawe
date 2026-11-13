@@ -1,5 +1,5 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v7-raheeq-i18n';
+const CACHE = 'majlis-shell-v8-raheeq-yaseen';
 const SHELL = [
   './',
   './majlis.html',
@@ -41,6 +41,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  /* واجهات الخادم ولوحة مدير ياسين لا تُخزَّن أبدًا (مفتاح الإيقاف يجب أن يسري فورًا) */
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin-yaseen')) return;
   event.respondWith((async () => {
     try {
       const fresh = await fetch(req);

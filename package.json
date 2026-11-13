@@ -1,0 +1,14 @@
+{
+  "name": "raheeq-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "RAHEEQ registration site + Yaseen locked assistant backend",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "yaseen:admin": "node server/yaseen-admin-setup.js",
+    "test:yaseen": "node tests/node/yaseen-tests.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  }
+}

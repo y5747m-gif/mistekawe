@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    { "source": "/api/yaseen-config", "destination": "/api/yaseen?__r=config" },
+    { "source": "/api/yaseen-chat", "destination": "/api/yaseen?__r=chat" },
+    { "source": "/api/yaseen-admin/:action", "destination": "/api/yaseen?__r=admin-:action" }
+  ],
+  "redirects": [
+    { "source": "/api/_yaseen/:path*", "destination": "/", "permanent": false },
+    { "source": "/server/:path*", "destination": "/", "permanent": false },
+    { "source": "/tests/:path*", "destination": "/", "permanent": false },
+    { "source": "/data/:path*", "destination": "/", "permanent": false }
+  ],
+  "headers": [
+    {
+      "source": "/admin-yaseen/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
+    }
+  ]
+}

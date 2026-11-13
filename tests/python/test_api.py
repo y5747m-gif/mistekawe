@@ -310,6 +310,18 @@ class HttpApiTests(TempDirMixin):
         self.assertEqual(self.request("GET", "/data/uploads/{}/photo.png".format(order))[0], 404)
         self.assertEqual(self.request("GET", "/data/registrations/index.json")[0], 404)
 
+    def test_yaseen_backend_is_never_served_as_static_files(self):
+        # قواعد ياسين وإعداداته تعمل على الخادم فقط ولا تُخدَّم كملفات
+        for path in ("/api/_yaseen/yaseen-system.js", "/api/_yaseen/store.js", "/api/yaseen.js",
+                     "/server/yaseen-server.js", "/data/yaseen/store.enc", "/package.json"):
+            self.assertEqual(self.request("GET", path)[0], 404, path)
+        # بدون خادم ياسين (Node) تُرفض المسارات ولا تظهر الشخصية للزائر
+        self.assertEqual(self.request("GET", "/api/yaseen-config")[0], 503)
+        self.assertEqual(self.request("POST", "/api/yaseen-chat", {"message": "x"})[0], 503)
+        self.assertEqual(self.request("GET", "/api/yaseen-admin/config")[0], 503)
+        # صفحة المدير موجودة لكنها غير مرتبطة من أي صفحة
+        self.assertEqual(self.request("GET", "/admin-yaseen/")[0], 200)
+
     def test_admin_reads_disabled_without_token(self):
         self.httpd.shutdown()
         self.httpd.server_close()
