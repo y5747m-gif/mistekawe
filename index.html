@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5E0C24">
+<meta name="raheeq-locale" content="ar,en">
+<!-- إعدادات المستخدم (الثيم/الخط/اللغة) — تُطبَّق قبل رسم الصفحة بلا وميض -->
+<script src="js/settings.js"></script>
 <meta name="description" content="رحيق RAHEEQ — منصة تسجيل ولي الأمر. سجّل ابنك في ثلاث خطوات بسيطة وآمنة، وتابع طلبك بكل سهولة.">
+<!-- رقم واتساب أكاديمية رحيق (يُقرأ من هنا، ويمكن تغييره من LocalStorage بالمفتاح raheeq_whatsapp_number) -->
+<meta name="raheeq-whatsapp" content="201151947735">
 <title>رحيق RAHEEQ | تسجيل ولي الأمر</title>
 <link rel="icon" href="assets/brand/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="assets/brand/raheeq-mark-vector.svg" type="image/svg+xml">
@@ -147,6 +152,10 @@
       <a href="#footer">تواصل معنا</a>
     </nav>
     <div class="header-actions">
+      <button class="lang-btn" id="langToggle" type="button" aria-label="تغيير اللغة" title="العربية / English">EN</button>
+      <button class="settings-btn" id="settingsBtn" type="button" aria-label="تخصيص الألوان والخط" title="تخصيص الألوان والخط" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 2.5 2.5 0 0 0 2.5-2.5c0-.66-.26-1.26-.68-1.7a2.5 2.5 0 0 1 1.8-4.3H17a5 5 0 0 0 5-5C22 4.9 17.5 2 12 2zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM18.5 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+      </button>
       <button class="sound-btn" id="soundToggle" type="button" aria-pressed="true" aria-label="كتم الصوت" title="الصوت">🔊</button>
       <button class="btn btn-gold" id="headerLoginBtn" type="button">تسجيل دخول ولي الأمر</button>
     </div>
@@ -164,7 +173,7 @@
     <div class="hero-copy fade-up">
       <span class="eyebrow">🎓 منصة تسجيل ولي الأمر — أكاديمية رحيق</span>
       <h1>سجّل ابنك في <span class="hl">رحيق</span> بخطوات بسيطة و آمنة</h1>
-      <p class="subtitle">ثلاث خطوات واضحة تبدأ ببيانات ولي الأمر، ثم بيانات الطالب، ثم المستندات. هذه نسخة تجريبية تحفظ البيانات وصور المستندات على جهازك فقط ولا ترسل الطلب إلى المدرسة.</p>
+      <p class="subtitle">ثلاث خطوات واضحة تبدأ ببيانات ولي الأمر، ثم بيانات الطالب، ثم المستندات الرسمية. أكمل طلبك في دقائق، وسيصلك رقم طلبك فورًا لتتابع به حالة التسجيل مع فريق أكاديمية رحيق في أي وقت.</p>
       <div class="hero-badges" aria-label="مميزات التسجيل">
         <span class="hbadge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9l-7 7z"/></svg>تسجيل آمن</span>
         <span class="hbadge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"/></svg>ثلاث خطوات</span>
@@ -173,7 +182,7 @@
       </div>
       <p class="hero-note">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.2-3.6-3.6 1.4-1.4 2.2 2.2 4.6-4.6 1.4 1.4-6 6z"/></svg>
-        <span>يظهر رقم الطلب بعد الحفظ على جهازك. <b>لا يتم إرسال الطلب أو المستندات تلقائيًا</b> في هذه النسخة.</span>
+        <span>يصلك <b>رقم طلب رسمي</b> لمتابعة تسجيل ابنك، ثم ترسل الطلب ومستنداته إلى <b>أكاديمية رحيق على واتساب</b> بضغطة واحدة.</span>
       </p>
     </div>
 
@@ -181,7 +190,7 @@
     <div class="reg-card fade-up" id="registerCard">
       <div class="card-head">
         <h2 id="cardTitle">تسجيل ولي الأمر</h2>
-        <p id="cardSub">نسخة تجريبية على جهازك فقط؛ لا تدخل بيانات حقيقية أو حساسة</p>
+        <p id="cardSub">سجّل بياناتك في دقائق، ونصلك برقم طلبك لمتابعة القبول مع فريق أكاديمية رحيق</p>
       </div>
 
       <div class="tabs" role="tablist" aria-label="التبديل بين التسجيل والدخول">
@@ -298,8 +307,8 @@
                 <span class="err">⚠ اختر الصف الدراسي</span>
               </div>
               <div class="field" data-field="prevSchool">
-                <label for="prevSchool">المدرسة السابقة</label>
-                <input type="text" id="prevSchool" placeholder="اسم المدرسة السابقة (اختياري)">
+                <label for="prevSchool">الأكاديمية السابقة</label>
+                <input type="text" id="prevSchool" placeholder="اسم الأكاديمية السابقة (اختياري)">
               </div>
               <div class="field full" data-field="address">
                 <label for="address">العنوان <span class="req">*</span></label>
@@ -381,7 +390,7 @@
                 </label>
               </div>
 
-              <p class="sync-hint" id="syncHint">سيُرسل الطلب وصور المستندات إلى خادم المدرسة إن كان متاحًا، وإلا يُحفظ على جهازك.</p>
+              <p class="sync-hint" id="syncHint">أكمل بياناتك ومستنداتك، وسيصل طلبك كاملًا إلى فريق أكاديمية رحيق على واتساب فور الإرسال.</p>
 
               <div class="field full" data-field="agree">
                 <label class="agree">
@@ -393,7 +402,7 @@
             </div>
           </section>
 
-          <p class="upload-status" id="uploadStatus" hidden>⏳ جارٍ قراءة الصور وضغطها وحفظها على جهازك… لا تغلق الصفحة.</p>
+          <p class="upload-status" id="uploadStatus" hidden>⏳ جارٍ تجهيز صور المستندات… لحظات ولا تغلق الصفحة.</p>
 
           <div class="form-alert" id="formAlert" role="alert" aria-live="assertive"></div>
 
@@ -444,20 +453,32 @@
       <div id="successView" class="success-view" hidden>
         <div class="success-icon" aria-hidden="true">🎓</div>
         <h2>تم استلام طلبك بنجاح</h2>
-        <p class="success-sub">حُفظت نسخة من البيانات وصور المستندات على هذا الجهاز، وتُرسل إلى خادم المدرسة عند توفره.</p>
+        <p class="success-sub">تم استلام بياناتك ومستنداتك بنجاح، وطلبك جاهز الآن للإرسال إلى فريق أكاديمية رحيق على واتساب.</p>
         <div class="order-badge" id="orderNumber">RHQ-0000</div>
         <div class="success-box" id="successBox"></div>
         <div class="docs-gallery" id="successDocs" hidden></div>
+
+        <div class="wa-panel" id="waPanel">
+          <p class="wa-lead">📲 خطوة أخيرة: أرسل طلبك إلى أكاديمية رحيق على واتساب</p>
+          <button class="btn btn-green btn-lg btn-block" id="whatsappSendBtn" type="button">📤 إرسال الطلب على واتساب</button>
+          <button class="btn btn-soft btn-block" id="whatsappShareBtn" type="button" hidden>📎 مشاركة الصور مع الطلب</button>
+          <p class="wa-help" id="waHelp">سيفتح واتساب برسالة جاهزة فيها كل بيانات طلبك على رقم أكاديمية رحيق. أرفق صور المستندات (4 صور) من زر 📎 داخل المحادثة إن لم تُرفق تلقائيًا.</p>
+          <p class="wa-fallback" id="waFallback" hidden>
+            <span>لو لم يفتح واتساب تلقائيًا:</span>
+            <a id="whatsappLink" href="#" target="_blank" rel="noopener noreferrer">اضغط هنا لفتح المحادثة</a>
+            <button class="btn btn-soft btn-sm" id="copyWaBtn" type="button">📋 نسخ رسالة الطلب</button>
+          </p>
+        </div>
+
         <div class="sync-status" id="syncStatus" hidden role="status" aria-live="polite"></div>
-        <button class="btn btn-soft btn-sm sync-retry" id="retryUploadBtn" type="button" hidden>🔄 إعادة محاولة الرفع إلى الخادم</button>
+        <button class="btn btn-soft btn-sm sync-retry" id="retryUploadBtn" type="button" hidden>↧ إعادة إرسال النسخة إلى الأكاديمية (اختياري)</button>
         <p class="success-note">هنتواصل معاك خلال 24-48 ساعة</p>
-        <p class="success-foot">هذه رسالة توضيحية فقط؛ التواصل غير مفعّل في النسخة التجريبية.</p>
         <div class="success-actions">
           <button class="btn btn-primary btn-block" id="newRegBtn" type="button">تسجيل طالب آخر</button>
           <button class="btn btn-soft btn-sm" id="copyOrderBtn" type="button">📋 نسخ رقم الطلب</button>
           <button class="btn btn-soft btn-sm" id="successLoginBtn" type="button">تسجيل الدخول</button>
         </div>
-        <p class="success-foot">نسخة من بياناتك وصورك محفوظة على هذا الجهاز، ويمكنك الدخول بها في أي وقت.</p>
+        <p class="success-foot">احتفظ برقم طلبك لمتابعة حالة التسجيل، ويمكنك الدخول بحسابك في أي وقت لمراجعة بياناتك ومستنداتك.</p>
       </div>
 
     </div>
@@ -509,6 +530,81 @@
   </div>
 </footer>
 
+<!-- ======================= لوحة تخصيص المستخدم ======================= -->
+<div class="settings" id="settingsPanel" hidden role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="settings-backdrop" data-close-settings></div>
+  <div class="settings-card">
+    <div class="settings-head">
+      <h3 id="settingsTitle" data-i18n="settings.title">تخصيص الموقع</h3>
+      <button class="settings-close" type="button" data-close-settings aria-label="إغلاق" data-i18n-attr="aria-label:settings.close">✕</button>
+    </div>
+    <p class="settings-sub" data-i18n="settings.intro">اختر لون الهوية وحجم الخط واللغة — يظهر اختيارك في كل زيارة للموقع.</p>
+
+    <section class="settings-group">
+      <h4><span>🎨</span> <span data-i18n="settings.themes">ألوان الهوية الجاهزة</span></h4>
+      <div class="theme-grid" id="themeGrid" role="group" aria-label="الثيمات"></div>
+    </section>
+
+    <section class="settings-group">
+      <h4><span>🖌️</span> <span data-i18n="settings.customColors">لون حر</span> <small data-i18n="settings.customHint">اختياري — يتقدم على الثيم</small></h4>
+      <div class="custom-row">
+        <label class="color-field"><span data-i18n="settings.brandColor">اللون الأساسي</span><input type="color" id="customBrand" value="#881234"></label>
+        <label class="color-field"><span data-i18n="settings.goldColor">اللون المكمّل</span><input type="color" id="customGold" value="#C9A86A"></label>
+        <label class="color-field"><span data-i18n="settings.creamColor">خلفية الصفحة</span><input type="color" id="customCream" value="#FBF6EC"></label>
+        <button class="btn btn-soft btn-sm" type="button" id="applyCustom" data-i18n="settings.applyCustom">تطبيق اللون</button>
+      </div>
+      <p class="settings-note" data-i18n="settings.customNote">جرّب أي لون، وسيُشتق باقي التدرّجات تلقائيًا ليبقى كل شيء مقروءًا.</p>
+    </section>
+
+    <section class="settings-group">
+      <h4><span>🔠</span> <span data-i18n="settings.textSize">حجم الخط</span> <small data-i18n="settings.textSizeHint">خط Cairo موحّد لكل الواجهة</small></h4>
+      <div class="range-row">
+        <input type="range" id="scaleRange" min="90" max="135" step="5" value="100" aria-label="حجم الخط">
+        <output class="range-value" id="scaleValue">100%</output>
+      </div>
+      <div class="range-scale"><span>90%</span><span>100%</span><span>135%</span></div>
+      <label class="agree" style="margin-top:10px">
+        <input type="checkbox" id="displayFontToggle">
+        <span data-i18n="settings.displayFont">استخدام خط أميري للعناوين فقط (اختياري)</span>
+      </label>
+    </section>
+
+    <section class="settings-group">
+      <h4><span>🌐</span> <span data-i18n="settings.language">اللغة</span></h4>
+      <div class="settings-inline">
+        <label class="theme-opt is-active" id="langArOpt"><input type="radio" name="uiLang" value="ar" checked style="margin:0"><span>العربية</span></label>
+        <label class="theme-opt" id="langEnOpt"><input type="radio" name="uiLang" value="en" style="margin:0"><span>English</span></label>
+      </div>
+    </section>
+
+    <div class="settings-actions">
+      <button class="btn btn-primary" type="button" data-close-settings data-i18n="settings.done">تم، احفظ الاختيار</button>
+      <button class="btn btn-outline" type="button" id="resetSettings" data-i18n="settings.reset">استعادة الافتراضي</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= نافذة إرسال نسخة يدوية إلى الأكاديمية ======================= -->
+<div class="modal" id="manualModal" hidden>
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-card manual-card" role="dialog" aria-modal="true" aria-labelledby="manualTitle">
+    <button class="modal-close" type="button" data-close-modal aria-label="إغلاق">✕</button>
+    <h3 id="manualTitle">طلبك جاهز للإرسال ✅</h3>
+    <p class="manual-status">طلبك مكتمل وجاهز، وبياناتك ومستنداتك أمامك كاملة. أرسله الآن إلى فريق أكاديمية رحيق في خطوة واحدة.</p>
+    <ol class="manual-steps">
+      <li>أرسل الطلب مباشرة إلى واتساب أكاديمية رحيق من زر «إرسال الطلب على واتساب» (رسالة جاهزة بكل البيانات).</li>
+      <li>أرفق صور المستندات الثلاثة من داخل المحادثة، أو نزّلها من شاشة النجاح أولًا.</li>
+      <li>احتفظ برقم الطلب للرجوع إليه عند المتابعة.</li>
+    </ol>
+    <div class="manual-actions">
+      <button class="btn btn-green btn-block" type="button" id="manualWhatsappBtn">📤 فتح واتساب أكاديمية رحيق برسالة الطلب</button>
+      <a class="btn btn-soft btn-block" id="manualDocsLink" href="#">⬇ فتح شاشة المستندات لتنزيل الصور</a>
+      <button class="btn btn-outline btn-block" type="button" data-close-modal>حسنًا</button>
+    </div>
+    <p class="manual-fine">إن لم يفتح واتساب تلقائيًا، انسخ رسالة الطلب وأرسلها من تطبيق واتساب على نفس الرقم.</p>
+  </div>
+</div>
+
 <!-- ======================= عناصر مساعدة ======================= -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <canvas id="confettiCanvas" aria-hidden="true"></canvas>
@@ -520,9 +616,9 @@
     <h3 id="termsTitle">الشروط والأحكام</h3>
     <ul>
       <li>أقر بأن جميع البيانات المدخلة صحيحة ومطابقة للمستندات الرسمية.</li>
-      <li>تُحفظ صور المستندات فعليًا (بعد ضغطها) داخل متصفحك مع بيانات الحساب، ويمكنك عرضها أو تنزيلها بعد تسجيل الدخول. وعند توفّر خادم المدرسة تُرسل البيانات والصور إليه عبر واجهة الرفع الآمنة، وإلا يبقى الطلب على جهازك فقط.</li>
-      <li>تُحفظ بيانات الحساب وكلمة السر على جهازك داخل المتصفح دون حماية مناسبة للبيانات الحساسة؛ لا تستخدم بيانات حقيقية أو جهازًا مشتركًا.</li>
-      <li>رقم الطلب تجريبي، ولا توجد مراجعة أو وسيلة تواصل تلقائية في هذه النسخة.</li>
+      <li>تُحفظ صور المستندات بعد ضغطها مع بيانات حسابك، ويمكنك عرضها أو تنزيلها في أي وقت بعد تسجيل الدخول. ثم ترسل الطلب كاملًا إلى واتساب أكاديمية رحيق بضغطة واحدة من شاشة النجاح.</li>
+      <li>أنت مسؤول عن سرية كلمة السر الخاصة بحسابك، وعن صحة البيانات والمستندات المرفقة مع الطلب.</li>
+      <li>رقم الطلب يصلك بعد إتمام التسجيل وتستخدمه للمتابعة، والتواصل يتم عبر واتساب أكاديمية رحيق الرسمي الظاهر في الموقع.</li>
     </ul>
     <button class="btn btn-primary btn-block" type="button" data-close-modal>حسنًا، فهمت</button>
   </div>
@@ -547,9 +643,11 @@
 <script src="js/intro.js" defer></script>
 <script src="js/sounds.js" defer></script>
 <script src="js/confetti.js" defer></script>
+<script src="js/i18n.js" defer></script>
 <script src="js/api.js" defer></script>
 <script src="js/uploads.js" defer></script>
 <script src="js/validation.js" defer></script>
+<script src="js/whatsapp.js" defer></script>
 <script src="js/app.js" defer></script>
 </body>
 </html>

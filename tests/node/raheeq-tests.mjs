@@ -32,6 +32,7 @@ const apiSrc = read('js/api.js');
 console.log('\n1) بنية الموقع (أساس متعدد الملفات وليس ملف HTML واحدًا)');
 for (const f of ['index.html', 'css/raheeq.css', 'js/sounds.js', 'js/confetti.js',
                  'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/app.js',
+                 'js/settings.js', 'js/i18n.js', 'js/whatsapp.js',
                  'raheeq.webmanifest', 'assets/brand/raheeq-mark.svg',
                  'assets/brand/raheeq-mark-vector.svg', 'assets/brand/raheeq-mark-vector-white.svg',
                  'server/api.py', 'server/serve.py', 'tests/python/test_api.py']) {
@@ -45,7 +46,7 @@ ok(/<html[^>]*lang="ar"[^>]*dir="rtl"/.test(html), 'الصفحة الأساس ع
   const inlineBytes = inlineStyles.reduce((n, cssBlock) => n + cssBlock.length, 0);
   ok(inlineBytes <= 700, 'لا توجد كتل CSS كبيرة مضمّنة (حجم المضمّن ' + inlineBytes + ' بايت)');
 }
-['js/sounds.js', 'js/confetti.js', 'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/app.js'].forEach(f =>
+['js/sounds.js', 'js/confetti.js', 'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/settings.js', 'js/i18n.js', 'js/whatsapp.js', 'js/app.js'].forEach(f =>
   ok(html.includes('src="' + f + '"'), 'السكربت خارجي: ' + f));
 ok(html.includes('family=Cairo') && css.includes("font-family:'Cairo Local'"), 'خط Cairo من Google Fonts مع نسخة محلية احتياطية');
 ok(read('raheeq.html').includes('location.replace'), 'الرابط القديم raheeq.html يحوّل إلى أساس الموقع');
@@ -82,7 +83,9 @@ ok(/--radius-btn:\s*14px/.test(css), 'زوايا الأزرار 14px');
 ok(css.includes('scale(.97)'), 'الأزرار تتقلص 0.97 عند الضغط');
 ok(css.includes('@keyframes fadeUp'), 'دخول البطاقات Fade-up');
 ok(css.includes('@keyframes slideNext') && css.includes('@keyframes slideBack'), 'انزلاق الخطوات لليسار');
-ok(css.includes('box-shadow:0 0 0 4px rgba(136,18,52,.14)'), 'توهج حدود الحقول عند التركيز');
+ok(/box-shadow:0 0 0 4px rgba\((?:var\(--maroon-rgb\)|136,18,52),?\.?1?4?\)/.test(css) ||
+   /box-shadow:0 0 0 4px rgba\(var\(--maroon-rgb\),\.14\)/.test(css),
+  'توهج حدود الحقول عند التركيز (من لون الثيم)');
 ok(html.includes('class="site-header"') && css.includes('position:sticky'), 'هيدر ثابت');
 [['id="soundToggle"', 'زر الصوت'], ['id="headerLoginBtn"', 'زر دخول ولي الأمر'],
  ['class="hero-badges"', 'شارات الهيرو'], ['id="registerCard"', 'بطاقة التسجيل'],
@@ -120,7 +123,9 @@ ok(confetti.includes('#881234') && confetti.includes('#C9A86A'), 'قصاصات �
 
 console.log('\n4) صياغة السكربتات');
 for (const [name, code] of [['js/sounds.js', sounds], ['js/confetti.js', confetti],
-                            ['js/validation.js', validation], ['js/app.js', app]]) {
+                            ['js/validation.js', validation], ['js/app.js', app],
+                            ['js/settings.js', read('js/settings.js')], ['js/i18n.js', read('js/i18n.js')],
+                            ['js/whatsapp.js', read('js/whatsapp.js')]]) {
   try { new vm.Script(code, { filename: name }); ok(true, name + ' بلا أخطاء صياغة'); }
   catch (err) { ok(false, name + ': ' + err.message); }
 }
@@ -480,6 +485,166 @@ const welcomeHtml = dom.byId.get('welcomeDocs').innerHTML;
 ok(/<img src="data:image\/jpeg;base64,/.test(welcomeHtml), 'بعد تسجيل الدخول تظهر الصور الفعلية المحفوظة');
 ok(welcomeHtml.includes('المستندات المرفوعة') && welcomeHtml.includes('data-doc-view'), 'المعرض يوفّر عرضًا وتنزيلًا للصور المحفوظة');
 ok(!dom.byId.get('welcomeBox').hidden, 'صندوق الترحيب يظهر بعد الدخول');
+
+console.log('\n7.1) إرسال الطلب إلى واتساب أكاديمية رحيق (بدل خطأ 404)');
+const waSrc = read('js/whatsapp.js');
+ok(exists('js/whatsapp.js'), 'وحدة واتساب js/whatsapp.js موجودة');
+ok(html.includes('src="js/whatsapp.js"') && html.indexOf('src="js/whatsapp.js"') < html.indexOf('src="js/app.js"'),
+  'whatsapp.js محمّل قبل app.js');
+{
+  const waBox = { document: { querySelector: () => null, createElement: () => ({ style: {}, setAttribute() {}, select() {} }), body: { appendChild() {}, removeChild() {} } },
+    localStorage: { getItem: () => null, setItem() {} }, navigator: {}, atob: v => Buffer.from(v, 'base64').toString('binary'),
+    Uint8Array, Promise, setTimeout, clearTimeout, JSON, Object, Array, String, RegExp, Math, Date,
+    encodeURIComponent, decodeURIComponent };
+  waBox.window = waBox;
+  vm.runInNewContext(waSrc, waBox, { filename: 'js/whatsapp.js' });
+  const wa = waBox.RaheeqWhatsApp;
+  ok(!!wa, 'واتساب يسجّل نفسه على window.RaheeqWhatsApp');
+  ok(wa.DEFAULT_NUMBER === '201151947735', 'رقم أكاديمية رحيق الافتراضي 201151947735');
+  const sample = { orderNumber: 'RHQ-4444', createdAt: '2026-11-13T09:00:00Z', parentName: 'محمد أحمد علي حسن',
+    nationalId: '12345678901234', relation: 'أب', mobile: '01000000000', whatsapp: '01000000000',
+    email: 'waly@raheeq.edu', studentName: 'عمر محمد أحمد علي', dob: '2015-05-10', gender: 'ذكر',
+    grade: 'KG1', address: 'القاهرة مدينة نصر', docs: {} };
+  const msg = wa.buildMessage(sample);
+  ok(msg.includes('RHQ-4444') && msg.includes('محمد أحمد علي حسن') && msg.includes('عمر محمد أحمد علي'),
+    'رسالة الواتساب تحوي رقم الطلب وولي الأمر والطالب');
+  ok(msg.includes('المستندات') || /docs|documents/i.test(msg), 'الرسالة تذكّر بإرفاق المستندات');
+  const link = wa.buildLink(sample);
+  ok(link.indexOf('https://wa.me/201151947735?text=') === 0, 'رابط واتساب يفتح محادثة رقم أكاديمية رحيق');
+  ok(decodeURIComponent(link.split('?text=')[1]).includes('RHQ-4444'), 'الرابط يحمل الرسالة كاملة (نص مُرمّز)');
+  ok(link.indexOf('/api/') === -1 && !/http(s)?:\/\/[^/]*mistekawe[^?]*\/api/.test(link),
+    'لا يوجد أي نداء لمسار API قد يعطي 404 — فقط رابط wa.me الرسمي');
+  ok(/navigator\.share/.test(waSrc) && /canShare/.test(waSrc), 'مسار مشاركة الصور عبر Web Share موجود كتحسين');
+  ok(/waSent/.test(app), 'الواجهة تتذكر أن واتساب فُتح');
+  ok(html.includes('id="whatsappSendBtn"') && html.includes('id="whatsappShareBtn"') && html.includes('id="waFallback"'),
+    'شاشة النجاح تضم زر واتساب + مشاركة الصور + رابط بديل');
+  ok(html.includes('id="manualModal"') && html.includes('id="manualWhatsappBtn"'), 'نافذة بديلة بدل رسالة 404');
+  ok(!/رسالة توضيحية فقط؛ التواصل غير مفعّل/.test(html), 'أُزيلت عبارة «التواصل غير مفعّل»');
+  ok(/missingServer = true/.test(app) && /openManualModal\(\)/.test(app), 'فشل الخادم ينقل لخيار الإرسال اليدوي بدل خطأ جاف');
+}
+
+console.log('\n7.2) دعماللغتين: العربية والإنجليزية (i18n)');
+{
+  ok(exists('js/i18n.js'), 'قاموس الترجمة js/i18n.js موجود');
+  ok(html.includes('src="js/i18n.js"') && html.indexOf('src="js/i18n.js"') < html.indexOf('src="js/app.js"'),
+    'i18n.js محمّل قبل app.js');
+  ok(html.includes('id="langToggle"'), 'زر تبديل اللغة في الهيدر');
+  const i18nSrc = read('js/i18n.js');
+  const box = { document: { body: null }, addEventListener() {}, MutationObserver: null };
+  box.window = box;
+  vm.runInNewContext(i18nSrc, box, { filename: 'js/i18n.js' });
+  const I = box.RaheeqI18n;
+  ok(!!I && typeof I.t === 'function', 'واجهة الترجمة RaheeqI18n متاحة');
+  ok(Object.keys(I.DICT).length > 150, 'القاموس يحوي أكثر من 150 نصًا (' + Object.keys(I.DICT).length + ')');
+  ok(I.t('رحيق') === 'رحيق', 'العربية هي الافتراضي');
+  const required = ['تسجيل ولي الأمر', 'اسم ولي الأمر', 'رقم الطلب', 'الصف الدراسي', 'شهادة الميلاد',
+    'تم استلام طلبك بنجاح', 'تسجيل طالب آخر', 'مشاركة', 'حجم الخط', 'اللغة', 'واتساب', 'المستندات المطلوبة'];
+  ok(required.filter(k => !I.DICT[k]).length <= 2, 'النصوص الأساسية مغطاة في القاموس');
+}
+ok(read('css/raheeq.css').includes('html[dir="ltr"]') && read('css/raheeq.css').includes('html[lang="en"]'),
+  'تنسيقات LTR للإنجليزية موجودة في CSS');
+ok(/RaheeqI18n\.t|function T\(/.test(app), 'app.js يترجم الرسائل الديناميكية');
+ok(/refreshMessages/.test(read('js/validation.js')), 'رسائل التحقق تتبدّل مع اللغة');
+
+console.log('\n7.3) شخصنة الألوان والخط: ثيمات جاهزة + لون حر + حجم الخط');
+{
+  ok(exists('js/settings.js'), 'وحدة الإعدادات js/settings.js موجودة');
+  ok(html.indexOf('src="js/settings.js"') < html.indexOf('src="js/app.js"'), 'settings.js محمّل قبل app.js (تطبيق الثيم مبكرًا)');
+  ok(html.includes('id="settingsPanel"') && html.includes('id="settingsBtn"'), 'لوحة الإعدادات وزرها موجودان');
+  ok(html.includes('id="themeGrid"') && html.includes('id="customBrand"') && html.includes('id="customGold"') && html.includes('id="customCream"'),
+    'الثيمات الجاهزة + ثلاثة منتقي ألوان حرّة');
+  ok(html.includes('id="scaleRange"') && html.includes('id="scaleValue"'), 'منزلق حجم الخط موجود');
+  const settingsSrc = read('js/settings.js');
+  const store = new Map();
+  const root = { style: { _v: {}, setProperty(k, v) { this._v[k] = v; }, getPropertyValue(k) { return this._v[k] || ''; } }, setAttribute(k, v) { this['attr_' + k] = v; } };
+  const box = { document: { documentElement: root, body: { classList: { toggle() {} } }, querySelector: () => null, readyState: 'complete', addEventListener() {} },
+    localStorage: { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) },
+    CustomEvent: class { constructor(t, o) { this.type = t; this.detail = (o || {}).detail; } },
+    dispatchEvent() {}, addEventListener() {} };
+  box.window = box;
+  vm.runInNewContext(settingsSrc, box, { filename: 'js/settings.js' });
+  const S = box.RaheeqSettings;
+  ok(!!S, 'واجهة الإعدادات RaheeqSettings متاحة');
+  ok(S.THEMES.length >= 6, 'عدد الثيمات الجاهزة ' + S.THEMES.length);
+  ok(S.THEMES[0].maroon === '#881234', 'ثيم رحيق الافتراضي أولًا');
+  ok(root.style.getPropertyValue('--brand-maroon') === '#881234', 'الثيم الافتراضي مطبّق عند التحميل');
+  S.setTheme('royal');
+  ok(root.style.getPropertyValue('--brand-maroon') === '#1D3E8C', 'تغيير الثيم يغيّر متغيرات الهوية فورًا');
+  ok(root.style.getPropertyValue('--brand-maroon-rgb') === '29,62,140', 'ألوان rgba تُشتق من الثيم (خلفيات شفافة)');
+  S.setCustom({ maroon: '#0f5e6e' });
+  ok(root.style.getPropertyValue('--brand-maroon') === '#0f5e6e', 'اللون الحر يتقدّم على الثيم');
+  ok(/^#[0-9a-f]{6}$/.test(root.style.getPropertyValue('--brand-maroon-dark')) &&
+     root.style.getPropertyValue('--brand-maroon-dark') !== '#0f5e6e', 'الدرجة الغامقة تُشتق تلقائيًا للون الحر');
+  S.setScale(1.3);
+  ok(root.style.getPropertyValue('--ui-scale') === '1.3' && root['attr_data-scale'] === '1.3', 'منزلق الحجم يضبط --ui-scale');
+  S.setScale(9);
+  ok(Number(root.style.getPropertyValue('--ui-scale')) === 1.35, 'الحجم محدود بحد أقصى 135%');
+  S.setScale(0.1);
+  ok(Number(root.style.getPropertyValue('--ui-scale')) === 0.9, 'الحجم محدود بحد أدنى 90%');
+  S.reset();
+  ok(root.style.getPropertyValue('--brand-maroon') === '#881234', 'استعادة الافتراضي تعمل');
+  ok(JSON.parse(store.get('raheeq_settings')).theme === 'raheeq', 'الإعدادات تُحفظ في LocalStorage');
+}
+const cssAll = read('css/raheeq.css');
+ok(/--brand-maroon:/.test(cssAll) && /--ui-scale/.test(cssAll), 'CSS مبني على متغيرات ثيم + مقياس خط');
+ok(!/rgba\(136,18,52,\.?\d*\)?\s*[,;}]/.test(cssAll.replace(/\/\*[^*]*\*\//g, '')),
+  'لا توجد ألوان ماروني مثبتة في الشفافيات (كلها من متغيرات الثيم)');
+ok((cssAll.match(/var\(--ui-scale/g) || []).length > 60, 'كل مقاسات الخطوط تتغير مع منزلق الحجم');
+ok(/--font-ui:var\(--font-body\)/.test(cssAll) && /#nationalId,#mobile,#whatsapp,#loginMobile\{font-family:var\(--font-nums\)/.test(cssAll),
+  'خط Cairo موحّد لكل الواجهة (بدل 5 عائلات متفرقة)');
+ok(/body\{font-weight:400\}/.test(cssAll), 'وزن نص مريح للقراءة (400) بدل 700/900');
+
+console.log('\n7.4) خطأ 404 على النسخة الثابتة: لا رسالة مخيفة + توجيه للواتساب');
+{
+  const apiBox = { fetch: () => Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve('Not Found') }),
+    setTimeout, clearTimeout, Promise, JSON, Object, Date, Math, String, Error, AbortController: undefined };
+  apiBox.window = apiBox;
+  vm.runInNewContext(apiSrc, apiBox, { filename: 'js/api.js (404)' });
+  const unit = apiBox.RaheeqApi;
+  const available = await unit.probe();
+  ok(available === false, 'فحص الصحة عند 404 يعتبر الخادم غير مفعّل (بلا استثناء)');
+  const msg404 = unit.errorMessage({ status: 404, code: 'http', message: 'فشل الاتصال بالخادم (HTTP 404)' });
+  ok(msg404.indexOf('404') === -1, 'رسالة الخطأ لا تعرض رقم 404 لولي الأمر: ' + msg404);
+  ok(/واتساب/.test(msg404), 'الرسالة توجّه إلى واتساب أكاديمية رحيق');
+  const msg405 = unit.errorMessage({ status: 405, code: 'http', message: 'x' });
+  ok(msg405 === msg404, '405 يُعامل مثل 404 (نسخة ثابتة)');
+  ok(/syncStatusUI\('info'/.test(app) && /staticHost/.test(app), 'الواجهة تعرض حالة معلومات هادئة بدل تحذير أحمر عند 404');
+}
+ok(read('css/raheeq.css').includes('.sync-status.is-info'), 'تنسيق حالة «معلومات» موجود');
+
+console.log('\n7.5) لغة الموقع: أكاديمية رحيق بلا نصوص «تجريبية» أو «على جهازك» أو «مدرسة»');
+{
+  const uiFiles = ['index.html', 'js/app.js', 'js/i18n.js', 'js/api.js', 'js/whatsapp.js', 'js/settings.js'];
+  const banned = [
+    { re: /تجريب(ية|ي)?\s+(نسخة|على جهازك)?/g, why: 'صيغة «نسخة تجريبية»' },
+    { re: /نسخة تجريبية/g, why: 'عبارة «نسخة تجريبية»' },
+    { re: /لا تدخل بيانات حقيقية/g, why: 'تحذير «لا تدخل بيانات حقيقية»' },
+    { re: /جهاز(ك|ًا)? مشترك/g, why: 'تحذير «جهاز مشترك»' },
+    { re: /بيانات حساسة/g, why: 'عبارة «بيانات حساسة»' },
+    { re: /محفوظ(ة|)? على (هذا ال)?جهاز/g, why: '«محفوظ على جهازك»' },
+    { re: /على هذا الجهاز فقط|على جهازك فقط|على هذا الجهاز،/g, why: '«على هذا الجهاز فقط»' },
+    { re: /غير مفعّل في النسخة التجريبية|التواصل غير مفعّل/g, why: '«التواصل غير مفعّل»' }
+  ];
+  uiFiles.forEach(f => {
+    const text = f.endsWith('.html') ? read(f).replace(/<!--[\s\S]*?-->/g, '') : read(f).replace(/\/\*[\s\S]*?\*\//g, '');
+    banned.forEach(b => {
+      const hits = text.match(b.re);
+      ok(!hits, f + ': لا توجد ' + b.why + (hits ? ' (' + hits.length + ')' : ''));
+    });
+  });
+  /* «مدرسة» ممنوعة في واجهة رحيق — المكان الصحيح «أكاديمية» */
+  uiFiles.forEach(f => {
+    const text = f.endsWith('.html') ? read(f).replace(/<!--[\s\S]*?-->/g, '') : read(f).replace(/\/\*[\s\S]*?\*\//g, '');
+    ok(!/مدرسة/.test(text), f + ': لا توجد كلمة «مدرسة» (المصطلح المعتمد: أكاديمية)');
+  });
+  ok(/أكاديمية رحيق على واتساب|واتساب أكاديمية رحيق/.test(html), 'النصوص تستخدم «أكاديمية رحيق» مع واتساب');
+  ok(/الأكاديمية السابقة/.test(html), 'حقل «الأكاديمية السابقة» بدل «المدرسة السابقة»');
+  /* نصوص بديلة إيجابية في نفس المواضع */
+  ok(/سجّل بياناتك في دقائق/.test(html) && /متابعة القبول مع فريق أكاديمية رحيق/.test(html), 'نص تعريفي إيجابي بدل «نسخة تجريبية»');
+  ok(/طلبك جاهز للإرسال/.test(html), 'نافذة الإرسال اليدوي بصياغة إيجابية');
+  ok(/احتفظ برقم طلبك لمتابعة حالة التسجيل/.test(html), 'نص الختام يشجع على المتابعة بدل «محفوظ على جهازك»');
+  ok(/صور مستنداتك محفوظة في حسابك/.test(app), 'معرض المستندات بلا ذكر «على جهازك فقط»');
+}
 
 console.log('\n8) واجهة الرفع (API): الخادم + ربط الواجهة + الرفع الفعلي');
 const serverSrc = read('server/serve.py');
