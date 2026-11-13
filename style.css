@@ -772,4 +772,4 @@ button, input, select, textarea{ font-family: inherit; }
 .text-center{ text-align: center; }
 
 /* شعار رحيق المقدم من الأكاديمية */
-.raheeq-brand-mark{width:50px;height:58px;object-fit:contain;border:2px solid #C9A86A;border-radius:12px;background:linear-gradient(160deg,#FFFDF7,#F6EBD6);flex:none;box-shadow:0 6px 16px rgba(136,18,52,.18)}
+.raheeq-brand-mark{width:42px;height:50px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35))}
