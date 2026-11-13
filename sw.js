@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  /* واجهات الخادم ولوحة مدير ياسين لا تُخزَّن أبدًا (مفتاح الإيقاف يجب أن يسري فورًا) */
+  /* واجهات الخادم ولوحة مدير رحيق لا تُخزَّن أبدًا (مفتاح الإيقاف يجب أن يسري فورًا) */
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin-yaseen')) return;
   event.respondWith((async () => {
     try {

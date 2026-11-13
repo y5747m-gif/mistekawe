@@ -5,8 +5,8 @@
     GET  /                          موقع رحيق (index.html)
     GET  /api/health                حالة الواجهة وقدراتها
     POST /api/registrations         رفع طلب تسجيل مع صور المستندات (JSON + base64)
-    GET  /api/yaseen-config         مساعد التسجيل ياسين (يُمرَّر إلى server/yaseen-server.js)
-    POST /api/yaseen-chat           محادثة ياسين (منطق البوت على الخادم فقط)
+    GET  /api/yaseen-config         مساعد التسجيل رحيق (يُمرَّر إلى server/yaseen-server.js)
+    POST /api/yaseen-chat           محادثة رحيق (منطق البوت على الخادم فقط)
     GET  /api/registrations         قائمة الطلبات        (يتطلب X-Admin-Token)
     GET  /api/registrations/<order> تفاصيل طلب           (يتطلب X-Admin-Token)
     GET  /api/registrations/<order>/<docKey>  ملف المستند (يتطلب X-Admin-Token)
@@ -79,7 +79,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     data_dir = DEFAULT_DATA_DIR
     admin_token = None
     limiter = raheeq_api.RateLimiter()
-    yaseen_port = None          # منفذ خادم ياسين المحلي (Node) إن كان يعمل
+    yaseen_port = None          # منفذ خادم رحيق المحلي (Node) إن كان يعمل
     trust_proxy = False         # الوثوق بترويسة X-Forwarded-For (خلف وكيل عكسي فقط)
 
     # ------------------------------------------------------------------ أدوات
@@ -121,13 +121,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return forwarded[:64]
         return (self.client_address or ("?",))[0]
 
-    # ------------------------------------------------------------ ياسين
+    # ------------------------------------------------------------ رحيق
     @staticmethod
     def _is_yaseen_path(path):
         return path in ("/api/yaseen-config", "/api/yaseen-chat") or path.startswith("/api/yaseen-admin/")
 
     def _proxy_yaseen(self):
-        """تمرير طلبات ياسين إلى خادمه المحلي؛ منطق البوت وإعداداته لا تُخدَّم كملفات أبدًا."""
+        """تمرير طلبات رحيق إلى خادمه المحلي؛ منطق البوت وإعداداته لا تُخدَّم كملفات أبدًا."""
         if not self.yaseen_port:
             self._json(503, {"ok": False, "error": "yaseen-unavailable"})
             return
@@ -318,7 +318,7 @@ class Server(socketserver.ThreadingTCPServer):
 
 
 def start_yaseen(data_dir):
-    """يشغّل خادم ياسين (Node) على منفذ محلي حر ويعيد رقم المنفذ، أو None إن لم يتوفر Node."""
+    """يشغّل خادم رحيق (Node) على منفذ محلي حر ويعيد رقم المنفذ، أو None إن لم يتوفر Node."""
     node = shutil.which("node")
     script = os.path.join(ROOT, "server", "yaseen-server.js")
     if not node or not os.path.exists(script):
@@ -333,7 +333,7 @@ def start_yaseen(data_dir):
     except OSError:
         return None
     atexit.register(proc.terminate)
-    # atexit لا يعمل مع SIGTERM افتراضيًا: نحوّله إلى خروج عادي حتى لا يبقى خادم ياسين يتيمًا
+    # atexit لا يعمل مع SIGTERM افتراضيًا: نحوّله إلى خروج عادي حتى لا يبقى خادم رحيق يتيمًا
     with contextlib.suppress(ValueError, OSError):
         signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     return port
@@ -348,7 +348,7 @@ def main() -> int:
                     help="مجلد حفظ الطلبات والمستندات (افتراضي: data/)")
     ap.add_argument("--admin-token", default=os.environ.get("RAHEEQ_ADMIN_TOKEN"),
                     help="رمز قراءة الطلبات (أو متغيّر RAHEEQ_ADMIN_TOKEN)")
-    ap.add_argument("--no-yaseen", action="store_true", help="لا تشغّل مساعد التسجيل ياسين")
+    ap.add_argument("--no-yaseen", action="store_true", help="لا تشغّل مساعد التسجيل رحيق")
     ap.add_argument("--trust-proxy", action="store_true",
                     default=os.environ.get("RAHEEQ_TRUST_PROXY") == "1",
                     help="استخدم X-Forwarded-For لعنوان العميل (خلف وكيل عكسي موثوق فقط)")
@@ -371,9 +371,9 @@ def main() -> int:
         else:
             print("  قراءة الطلبات: معطّلة — شغّل بـ RAHEEQ_ADMIN_TOKEN=... لتفعيلها.")
         if Handler.yaseen_port:
-            print("  ياسين:   مفعّل (منطق البوت على الخادم) — لوحة المدير: " + url + "admin-yaseen/")
+            print("  رحيق:   مفعّل (منطق البوت على الخادم) — لوحة المدير: " + url + "admin-yaseen/")
         else:
-            print("  ياسين:   غير مفعّل (يتطلب Node.js 18+).")
+            print("  رحيق:   غير مفعّل (يتطلب Node.js 18+).")
         if not args.no_browser:
             with contextlib.suppress(Exception):
                 webbrowser.open(url)

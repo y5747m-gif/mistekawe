@@ -1,5 +1,5 @@
 'use strict';
-/* ياسين — المصادقة: bcrypt لكلمة سر المدير + TOTP (رمز OTP) + جلسات موقّعة */
+/* رحيق — المصادقة: bcrypt لكلمة سر المدير + TOTP (رمز OTP) + جلسات موقّعة */
 const crypto = require('crypto');
 
 let bcrypt = null;

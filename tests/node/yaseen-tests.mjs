@@ -1,5 +1,5 @@
 /* ============================================================
- * اختبارات ياسين — مساعد التسجيل المقفول
+ * اختبارات رحيق — مساعد التسجيل المقفول
  *   node tests/node/yaseen-tests.mjs
  * تغطي: كشف التلاعب، الحظر خارج الموضوع، الحدود، CAPTCHA،
  *        دخول المدير (كلمة سر + OTP)، السجل، مفتاح الإيقاف،
@@ -100,14 +100,14 @@ const client = fs.readFileSync(path.join(ROOT, 'js/yaseen.js'), 'utf8');
 ok(client.indexOf(system.FIXED.manipulation) < 0 && client.indexOf(system.FIXED.offTopic) < 0, 'كود الواجهة لا يحتوي الردود الثابتة');
 ok(!/انس|تجاهل|jailbreak|blockedWords|keywords/.test(client), 'كود الواجهة بلا قواعد كشف أو كلمات مفتاحية');
 ok(!/innerHTML|insertAdjacentHTML|document\.write|eval\(/.test(client), 'الواجهة لا تحقن HTML');
-ok(!/window\.(Yaseen|RaheeqYaseen)\s*=/.test(client), 'لا واجهة برمجية عامة للتحكم في ياسين');
+ok(!/window\.(Yaseen|RaheeqYaseen)\s*=/.test(client), 'لا واجهة برمجية عامة للتحكم في رحيق');
 ok(!/type\s*=\s*['"]file['"]/.test(client), 'لا رفع ملفات في المحادثة');
 for (const f of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
   ok(fs.readFileSync(path.join(ROOT, f), 'utf8').indexOf('admin-yaseen') < 0, 'لا رابط للوحة المدير في ' + f);
 }
 ok(['js', 'css'].every(d => fs.readdirSync(path.join(ROOT, d)).every(f => fs.readFileSync(path.join(ROOT, d, f), 'utf8').indexOf('admin-yaseen') < 0)), 'لا ذكر للوحة المدير في js/ و css/');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-ok(index.includes('js/yaseen.js') && index.includes('css/yaseen.css'), 'index.html يحمّل ياسين');
+ok(index.includes('js/yaseen.js') && index.includes('css/yaseen.css'), 'index.html يحمّل رحيق');
 ['idle', 'blink', 'talk', 'wave', 'point', 'worried', 'thinking', 'celebrate', 'avatar'].forEach(n => ok(fs.existsSync(path.join(ROOT, 'assets/yaseen', n + '.webp')), 'صورة ' + n));
 
 /* ---------- 9) الخادم: جلسات، حدود، CAPTCHA ---------- */
@@ -199,15 +199,15 @@ ok(JSON.stringify(res.body).indexOf(secret) < 0 && JSON.stringify(res.body).inde
 eq((await get('/api/yaseen-admin/config', { headers: { authorization: 'Bearer ' + tokenA.slice(0, -2) + 'xx' } })).status, 401, 'رمز جلسة مزوّر مرفوض');
 
 const next = JSON.parse(JSON.stringify(res.body.config));
-next.name = 'ياسين الجديد';
+next.name = 'رحيق الجديد';
 next.guide.nationalId = 'لازم 14 رقم';
 next.blockedWords = ['منافس'];
 res = await post('/api/yaseen-admin/config', { config: next }, H);
 eq(res.body.changed, 3, 'ثلاثة تغييرات مسجّلة');
-eq((await get('/api/yaseen-config')).body.name, 'ياسين الجديد', 'التغيير يصل للزوار');
+eq((await get('/api/yaseen-config')).body.name, 'رحيق الجديد', 'التغيير يصل للزوار');
 res = await get('/api/yaseen-admin/logs', H);
 const log = res.body.logs.find(l => l.path === 'name');
-ok(log && log.admin === 'المدير' && log.old === 'ياسين' && log.new === 'ياسين الجديد' && log.at, 'السجل: من + متى + قديم + جديد');
+ok(log && log.admin === 'المدير' && log.old === 'رحيق' && log.new === 'رحيق الجديد' && log.at, 'السجل: من + متى + قديم + جديد');
 ok(res.body.logs.some(l => l.action === 'login-failed') && res.body.logs.some(l => l.action === 'login'), 'محاولات الدخول مسجّلة');
 
 res = await post('/api/yaseen-admin/kill', { enabled: false }, H);

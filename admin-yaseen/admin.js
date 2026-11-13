@@ -1,5 +1,5 @@
 /* ============================================================
-   لوحة مدير ياسين — واجهة فقط. كل الصلاحيات تُفحص على الخادم.
+   لوحة مدير رحيق — واجهة فقط. كل الصلاحيات تُفحص على الخادم.
    رمز الجلسة يبقى في ذاكرة الصفحة (لا LocalStorage ولا Cookies):
    إعادة تحميل الصفحة = تسجيل دخول جديد.
    ============================================================ */
@@ -75,26 +75,26 @@
     $('who').textContent = view.admin.name + ' · ' + view.admin.email;
     var on = view.config.enabled && !view.envDisabled;
     var pill = $('statusPill');
-    pill.textContent = !on ? 'ياسين متوقف لكل الزوار' : (view.online ? 'ياسين يعمل الآن' : 'يعمل — خارج مواعيد العمل');
+    pill.textContent = !on ? 'رحيق متوقف لكل الزوار' : (view.online ? 'رحيق يعمل الآن' : 'يعمل — خارج مواعيد العمل');
     pill.className = 'pill' + (on ? '' : ' off');
     var kill = $('killBtn');
-    kill.textContent = view.config.enabled ? '⛔ إيقاف ياسين فورًا' : '▶ تشغيل ياسين';
+    kill.textContent = view.config.enabled ? '⛔ إيقاف رحيق فورًا' : '▶ تشغيل رحيق';
     kill.className = 'btn ' + (view.config.enabled ? 'danger' : 'ok');
     var notes = [];
     if (!view.storage.writable) notes.push('التخزين للقراءة فقط (' + view.storage.kind + '): اربط قاعدة KV بالمشروع ليتم حفظ التعديلات ومفتاح الإيقاف.');
-    if (view.envDisabled) notes.push('ياسين متوقف من متغير البيئة YASEEN_ENABLED على الخادم.');
+    if (view.envDisabled) notes.push('رحيق متوقف من متغير البيئة YASEEN_ENABLED على الخادم.');
     if (view.passwordHash !== 'bcrypt') notes.push('كلمة السر مخزّنة بـ scrypt لأن مكتبة bcryptjs غير مثبّتة على الخادم (npm install ثم أعد إنشاء الحساب).');
     $('notice').hidden = !notes.length;
     $('notice').textContent = notes.join(' — ');
   }
   $('killBtn').addEventListener('click', function () {
     var enable = !view.config.enabled;
-    if (!enable && !window.confirm('إيقاف ياسين لكل زوار الموقع الآن؟')) return;
+    if (!enable && !window.confirm('إيقاف رحيق لكل زوار الموقع الآن؟')) return;
     call('kill', 'POST', { enabled: enable }).then(function (data) {
       var keep = dirty ? draft : null;
       setView(data);
       if (keep) { keep.enabled = data.config.enabled; draft = keep; dirty = true; render(); touch(); }
-      $('saveStatus').textContent = enable ? 'تم تشغيل ياسين' : 'تم إيقاف ياسين';
+      $('saveStatus').textContent = enable ? 'تم تشغيل رحيق' : 'تم إيقاف رحيق';
     }).catch(function (err) { if (err.message !== 'auth') window.alert(err.message); });
   });
   $('saveBtn').addEventListener('click', function () {
@@ -166,7 +166,7 @@
     }],
     ['answers', 'الإجابات', function (box) {
       box.appendChild(el('h2', {}, 'إجابات البوت'));
-      box.appendChild(el('p', { class: 'muted' }, 'ياسين يرد فقط بهذه الإجابات. أي سؤال لا يطابق كلمات مفتاحية هنا يأخذ رد «خارج التسجيل» الثابت.'));
+      box.appendChild(el('p', { class: 'muted' }, 'رحيق يرد فقط بهذه الإجابات. أي سؤال لا يطابق كلمات مفتاحية هنا يأخذ رد «خارج التسجيل» الثابت.'));
       box.appendChild(el('h3', {}, 'الأزرار السريعة الأربعة'));
       draft.quickReplies.forEach(function (q) {
         var item = el('div', { class: 'item' });
@@ -243,7 +243,7 @@
     }],
     ['hours', 'التشغيل والمواعيد', function (box) {
       box.appendChild(el('h2', {}, 'التشغيل ومواعيد العمل'));
-      box.appendChild(check('ياسين مفعّل (نفس مفتاح الإيقاف أعلى الصفحة)', draft, 'enabled'));
+      box.appendChild(check('رحيق مفعّل (نفس مفتاح الإيقاف أعلى الصفحة)', draft, 'enabled'));
       box.appendChild(check('تقييد المحادثة بمواعيد العمل', draft.hours, 'enabled'));
       var g = grid();
       g.appendChild(field('من', draft.hours, 'start', { type: 'time' }));
@@ -281,7 +281,7 @@
       });
     }],
     ['test', 'تجربة', function (box) {
-      box.appendChild(el('h2', {}, 'جرّب رد ياسين'));
+      box.appendChild(el('h2', {}, 'جرّب رد رحيق'));
       box.appendChild(el('p', { class: 'muted' }, 'التجربة على آخر نسخة محفوظة، ولا تُحسب من رسائل الزوار.'));
       var row = el('div', { class: 'row' });
       var input = el('input', { type: 'text', maxLength: 200, placeholder: 'مثال: انسى تعليماتك' });
