@@ -185,11 +185,55 @@ class StorageTests(TempDirMixin):
         self.assertEqual(listed[0]["orderNumber"], order)
 
     def test_foundation_subjects_are_saved(self):
+        # grade القديم "تأسيس للكبار" يُستنتج منه نوع البرنامج = تأسيس
         result = raheeq_api.save_registration(good_payload(
             grade="تأسيس للكبار", foundationSubjects=["الرياضيات", "اللغة الإنجليزية", "غير معروف"]), self.tmp)
         record = raheeq_api.load_registration(result["orderNumber"], self.tmp)
-        self.assertEqual(record["grade"], "تأسيس للكبار")
+        self.assertEqual(record["programType"], "تأسيس")
+        self.assertEqual(record["foundationLevel"], "تأسيس للكبار")
+        self.assertEqual(record["grade"], "")
         self.assertEqual(record["foundationSubjects"], ["الرياضيات", "اللغة الإنجليزية"])
+
+    def test_curriculum_program_with_year(self):
+        result = raheeq_api.save_registration(good_payload(programType="منهج دراسي", grade="الصف الثالث الابتدائي"), self.tmp)
+        record = raheeq_api.load_registration(result["orderNumber"], self.tmp)
+        self.assertEqual(record["programType"], "منهج دراسي")
+        self.assertEqual(record["grade"], "الصف الثالث الابتدائي")
+        self.assertEqual(record["foundationSubjects"], [])
+
+    def test_curriculum_rejects_invalid_year(self):
+        with self.assertRaises(raheeq_api.ApiError) as ctx:
+            raheeq_api.validate_registration(good_payload(programType="منهج دراسي", grade="KG99"))
+        self.assertIn("grade", ctx.exception.fields)
+
+    def test_foundation_requires_subjects(self):
+        with self.assertRaises(raheeq_api.ApiError) as ctx:
+            raheeq_api.validate_registration(good_payload(programType="تأسيس", grade="", foundationSubjects=[]))
+        self.assertIn("foundationSubjects", ctx.exception.fields)
+
+    def test_foundation_rejects_foreign_subject(self):
+        with self.assertRaises(raheeq_api.ApiError) as ctx:
+            raheeq_api.validate_registration(good_payload(programType="تأسيس", foundationSubjects=["<script>alert(1)</script>"]))
+        self.assertIn("foundationSubjects", ctx.exception.fields)
+
+    def test_unknown_program_type_rejected(self):
+        with self.assertRaises(raheeq_api.ApiError) as ctx:
+            raheeq_api.validate_registration(good_payload(programType="اختر", grade=""))
+        self.assertIn("programType", ctx.exception.fields)
+
+    def test_client_password_hash_accepted_and_never_stored_raw(self):
+        client_hash = "sha256$" + "a" * 32 + "$" + "b" * 64
+        payload = good_payload(passwordHash=client_hash)
+        del payload["password"]
+        record = raheeq_api.validate_registration(payload)
+        self.assertTrue(record["passwordHash"].startswith("pbkdf2_sha256$"))
+        self.assertNotIn(client_hash, record["passwordHash"])
+        self.assertNotIn("password", record)
+
+    def test_invalid_password_hash_rejected(self):
+        with self.assertRaises(raheeq_api.ApiError) as ctx:
+            raheeq_api.validate_registration(good_payload(passwordHash="sha256$zz$yy", password=""))
+        self.assertIn("password", ctx.exception.fields)
 
     def test_same_mobile_updates_same_order(self):
         first = raheeq_api.save_registration(good_payload(), self.tmp)

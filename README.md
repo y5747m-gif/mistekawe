@@ -195,8 +195,11 @@ in `assets/fonts/` احتياطيًا بلا إنترنت.
 ### مزايا المنصة (`index.html`)
 
 * **أصوات** من مجلد `sounds/` (`click` / `hover` / `typing` / `success` / `error` /
-  `step` / `upload` / `toggle`) مع زر 🔊/🔇 في الهيدر واهتزاز على الجوال وقصاصات
-  ماروني + ذهبي عند النجاح. راجع `sounds/README.md` لاستبدال الأصوات بملفات حقيقية.
+  `step` / `upload` / `toggle` + **`intro`** و**`chime`** لعرض البداية) مع زر 🔊/🔇
+  في الهيدر واهتزاز على الجوال وقصاصات ماروني + ذهبي عند النجاح.
+  عرض البداية يشغّل مؤثرات صوتية متزامنة مع الحركة (whoosh عند البدء، نقرات مع صعود
+  الأعمدة، ورنين عند القمة) عبر `js/intro.js` — والمتصفحات تمنع التشغيل قبل أول
+  تفاعل، فعند أول نقرة/لمسة أثناء العرض يُشغَّل whoosh فورًا. راجع `sounds/README.md`.
 
 بدأنا تحويل الموقع إلى **منصة تسجيل دخول لأكاديمية رحيق**:
 
@@ -215,6 +218,28 @@ in `assets/fonts/` احتياطيًا بلا إنترنت.
 > لتغيير أي حساب: عدّل الرابط في `script.js` (`RAHEEQ_SOCIALS`) وفي HTML معًا.
 > أي صفحة جديدة يمكنها استخدام `<div class="socials" data-raheeq-socials></div>`
 > وستُملأ تلقائيًا من `script.js`.
+
+### القائمتان في خطوة «الطالب» (`index.html`)
+
+* قائمة **نوع البرنامج** (`#programType`): «تأسيس» أو «منهج دراسي» (إلزامي).
+* **لو تأسيس** (`#foundationBranch`): قائمة مستوى التأسيس (`#foundationLevel`: للصغار/للكبار)
+  + **قائمة مواد التأسيس** (`input[name="foundationSubjects"]` — مادة أو أكثر إلزامية من
+  القائمة البيضاء: العربية، الإنجليزية، الرياضيات، القراءة والكتابة).
+* **لو منهج دراسي** (`#curriculumBranch`): قائمة **السنة الدراسية** (`#grade`) —
+  KG1/KG2 وكل الصفوف حتى «3 ثانوي» فقط، ويُكمل التسجيل مباشرة.
+* التحقق في `js/validation.js` (`step2`) حسب نوع البرنامج، والبيانات تُحفظ وتُعرض
+  وتُرسل لواتساب والخادم حسب الاختيار (`programType` + `grade` أو `foundationLevel` + `foundationSubjects`).
+
+### أمان الموقع (Hacker pass)
+
+* لا XSS مخزّن: `cart.html`/`shop.html`/`product.html`/`products.js` يهربون كل interpolations
+  قبل `innerHTML` (`escHtml` في `script.js`)، والسلة تُطهَّر عند القراءة من `localStorage`.
+* كلمات السر لا تُخزن نصًا أبدًا: `js/crypto.js` يحسب `sha256$salt$hash` (Web Crypto مع
+  بديل JS خالص)، و`LocalStorage`/Xادم يستقبلان hash فقط (`api.py` يخزن PBKDF2 فوقه).
+* `server/serve.py` يرسل لكل استجابة: `X-Content-Type-Options: nosniff`، `X-Frame-Options: DENY`،
+  `Referrer-Policy: no-referrer`، و`Content-Security-Policy` (مع `object-src 'none'` و`base-uri 'self'`)،
+  ويحجب كملفات ثابتة: `data/` و`server/` و`tests/` و`api/_yaseen/` وكل dotfiles و`package.json`.
+* `vercel.json` يضيف نفس الرؤوس لكل المسارات على Vercel + redirects لـ dotfiles.
 
 ## رحيق YASEEN — مساعد التسجيل المقفول
 

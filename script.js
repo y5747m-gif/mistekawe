@@ -31,9 +31,37 @@ function initRaheeqSocials(){
   });
 }
 
+/* هروب HTML لأي قيمة تُدخل في innerHTML — حماية من XSS المخزّن */
+function escHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+window.escHtml = escHtml;
+
+function sanitizeCartItem(i){
+  if(!i || typeof i !== 'object') return null;
+  var id = String(i.id == null ? '' : i.id);
+  var name = String(i.name == null ? '' : i.name);
+  if(!id || !name) return null;
+  var price = Number(i.price);
+  var qty = parseInt(i.qty, 10);
+  return {
+    id: id,
+    name: name,
+    price: isFinite(price) && price >= 0 ? price : 0,
+    oldPrice: isFinite(Number(i.oldPrice)) && Number(i.oldPrice) > 0 ? Number(i.oldPrice) : null,
+    icon: String(i.icon == null ? '' : i.icon),
+    category: String(i.category == null ? '' : i.category),
+    qty: isFinite(qty) && qty >= 1 ? Math.min(qty, 999) : 1
+  };
+}
+
 function getCart(){
   try{
-    return JSON.parse(localStorage.getItem(NANJAWI_CART_KEY)) || [];
+    const raw = JSON.parse(localStorage.getItem(NANJAWI_CART_KEY)) || [];
+    if(!Array.isArray(raw)) return [];
+    return raw.map(sanitizeCartItem).filter(Boolean);
   }catch(e){
     return [];
   }

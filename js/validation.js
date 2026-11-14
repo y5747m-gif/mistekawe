@@ -28,6 +28,33 @@
     return I && I.t ? I.t(str) : str;
   }
 
+  /* ---------- قائمتان مختلفتان للبرنامج ----------
+     «تأسيس»: قائمة المواد التي سيتأسس فيها الطالب.
+     «منهج دراسي»: قائمة السنة الدراسية. */
+  var PROGRAM_TYPES = ['تأسيس', 'منهج دراسي'];
+  var FOUNDATION_LEVELS = ['تأسيس للصغار', 'تأسيس للكبار'];
+  var FOUNDATION_SUBJECTS = ['اللغة العربية', 'اللغة الإنجليزية', 'الرياضيات', 'القراءة والكتابة'];
+  var CURRICULUM_GRADES = [
+    'KG1', 'KG2',
+    'الصف الأول الابتدائي', 'الصف الثاني الابتدائي', 'الصف الثالث الابتدائي',
+    'الصف الرابع الابتدائي', 'الصف الخامس الابتدائي', 'الصف السادس الابتدائي',
+    'الصف الأول الإعدادي', 'الصف الثاني الإعدادي', 'الصف الثالث الإعدادي',
+    'الصف الأول الثانوي', 'الصف الثاني الثانوي', '3 ثانوي'
+  ];
+
+  /* المواد المختارة فعليًا من قائمة التأسيس —values من القائمة البيضاء فقط */
+  function checkedFoundationSubjects() {
+    var out = [];
+    var els = [];
+    try { els = document.querySelectorAll('input[name="foundationSubjects"]:checked') || []; }
+    catch (e) { els = []; }
+    for (var i = 0; i < els.length; i++) {
+      var v = els[i] && els[i].value;
+      if (FOUNDATION_SUBJECTS.indexOf(v) >= 0 && out.indexOf(v) < 0) out.push(v);
+    }
+    return out;
+  }
+
   var MSG_AR = {
     parentName: 'الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل',
     nationalId: 'الرقم القومي يجب أن يكون 14 رقمًا بالضبط',
@@ -38,7 +65,10 @@
     confirmPassword: 'كلمتا السر غير متطابقتين',
     studentName: 'اسم الطالب يجب أن يتكون من 4 أجزاء على الأقل',
     dob: 'اختر تاريخ ميلاد صحيحًا',
-    grade: 'اختر الصف الدراسي',
+    programType: 'اختر نوع البرنامج: تأسيس أو منهج دراسي',
+    foundationLevel: 'اختر مستوى التأسيس',
+    foundationSubjects: 'اختر مادة أو أكثر من قائمة مواد التأسيس',
+    grade: 'اختر السنة الدراسية من القائمة',
     address: 'أدخل العنوان بالتفصيل',
     birthCert: 'ارفع صورة شهادة الميلاد',
     photo: 'ارفع الصورة الشخصية للطالب',
@@ -87,7 +117,20 @@
       dobOk = !isNaN(d.getTime()) && d.getTime() <= Date.now() && d.getFullYear() > 1900;
     }
     if (!dobOk) errors.dob = MSG.dob;
-    if (!val('grade')) errors.grade = MSG.grade;
+    /* قائمتان مختلفتان حسب نوع البرنامج المختار */
+    var programType = val('programType');
+    if (PROGRAM_TYPES.indexOf(programType) < 0) {
+      errors.programType = MSG.programType;
+    } else if (programType === 'تأسيس') {
+      /* قائمة مواد التأسيس: مادة أو أكثر إلزامية */
+      if (!checkedFoundationSubjects().length) errors.foundationSubjects = MSG.foundationSubjects;
+      var lvl = val('foundationLevel');
+      if (lvl && FOUNDATION_LEVELS.indexOf(lvl) < 0) errors.foundationLevel = MSG.foundationLevel;
+    } else {
+      /* منهج دراسي: السنة الدراسية إلزامية ومن قائمة الصفوف فقط */
+      var g = val('grade');
+      if (!g || CURRICULUM_GRADES.indexOf(g) < 0) errors.grade = MSG.grade;
+    }
     if (val('address').length < 5) errors.address = MSG.address;
     return errors;
   }
@@ -117,6 +160,11 @@
     wordsCount: wordsCount,
     esc: esc,
     val: val,
+    PROGRAM_TYPES: PROGRAM_TYPES,
+    FOUNDATION_LEVELS: FOUNDATION_LEVELS,
+    FOUNDATION_SUBJECTS: FOUNDATION_SUBJECTS,
+    CURRICULUM_GRADES: CURRICULUM_GRADES,
+    checkedFoundationSubjects: checkedFoundationSubjects,
     messages: MSG,
     messagesAr: MSG_AR,
     refreshMessages: refreshMessages,

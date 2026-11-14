@@ -13,6 +13,7 @@
   var WA = window.RaheeqWhatsApp;
   var I = window.RaheeqI18n;
   var SET = window.RaheeqSettings;
+  var CR = window.RaheeqCrypto;
   function $(id) { return document.getElementById(id); }
   /* ترجمة نص عربي إلى لغة الواجهة الحالية (النص العربي هو المفتاح) */
   function T(str) { return I && I.t ? I.t(str) : str; }
@@ -218,6 +219,27 @@
   });
   var dobEl = $('dob');
   if (dobEl) dobEl.max = new Date().toISOString().slice(0, 10);
+
+  /* ---------------- قائمتان مختلفتان: تأسيس / منهج دراسي ---------------- */
+  var programTypeEl = $('programType');
+  function syncProgramBranch() {
+    var t = programTypeEl ? programTypeEl.value : '';
+    var isFound = t === 'تأسيس';
+    var isCurr = t === 'منهج دراسي';
+    var fb = $('foundationBranch');
+    var cb = $('curriculumBranch');
+    if (fb) fb.hidden = !isFound;
+    if (cb) cb.hidden = !isCurr;
+    if (!isFound) { clearFieldError('foundationSubjects'); clearFieldError('foundationLevel'); }
+    if (!isCurr) clearFieldError('grade');
+  }
+  if (programTypeEl) {
+    programTypeEl.addEventListener('change', function () {
+      play('toggle');
+      syncProgramBranch();
+    });
+  }
+  syncProgramBranch();
 
   /* زر الإدخال ينتقل للخطوة التالية بدل إرسال النموذج مبكرًا */
   $('regForm').addEventListener('keydown', function (e) {
@@ -488,12 +510,15 @@
       mobile: V.digitsOnly(V.val('mobile')),
       whatsapp: V.digitsOnly(V.val('whatsapp')) || V.digitsOnly(V.val('mobile')),
       email: V.val('email'),
-      password: V.val('password'),
+      /* كلمة السر لا تُخزن نصًا — Hash فقط (يُحسب في الإرسال) */
       studentName: V.val('studentName'),
       dob: V.val('dob'),
       gender: V.val('gender'),
-      grade: V.val('grade'),
-      foundationSubjects: Array.prototype.map.call(document.querySelectorAll('input[name="foundationSubjects"]:checked'), function (el) { return el.value; }),
+      /* نوع البرنامج: نختار من القائمتين — لا يُرسل حقل القائمة الأخرى */
+      programType: (V.PROGRAM_TYPES || []).indexOf(V.val('programType')) >= 0 ? V.val('programType') : '',
+      grade: V.val('programType') === 'منهج دراسي' ? (V.val('grade') || '') : '',
+      foundationLevel: V.val('programType') === 'تأسيس' ? (V.val('foundationLevel') || '') : '',
+      foundationSubjects: V.val('programType') === 'تأسيس' ? V.checkedFoundationSubjects() : [],
       prevSchool: V.val('prevSchool'),
       address: V.val('address'),
       healthNotes: V.val('healthNotes'),
@@ -506,6 +531,23 @@
     return '<div class="row"><span>' + esc(T(label)) + '</span><span>' + esc(value || '—') + '</span></div>';
   }
   function gradeText(v) { return esc(I && I.isEnglish && I.isEnglish() ? T(v) : v); }
+  /* صفوف البرنامج حسب نوع البرنامج المختار (تأسيس = قائمة المواد، منهج = السنة الدراسية) */
+  function programRows(d) {
+    var out = '';
+    if (d.programType) out += row('نوع البرنامج', T(d.programType));
+    if (d.programType === 'تأسيس') {
+      if (d.foundationLevel) out += row('مستوى التأسيس', T(d.foundationLevel));
+      if (d.foundationSubjects && d.foundationSubjects.length) {
+        out += row('مواد التأسيس', d.foundationSubjects.map(function (x) { return T(x); }).join('، '));
+      }
+    } else if (d.programType === 'منهج دراسي') {
+      if (d.grade) out += row('السنة الدراسية', T(d.grade));
+    } else if (d.grade) {
+      /* سجلات قديمة قبل تقسيم القوائم */
+      out += row('الصف', gradeText(d.grade));
+    }
+    return out;
+  }
 
   /* ---------------- مزامنة الرفع مع الخادم ---------------- */
   function syncStatusUI(state, html) {
@@ -583,8 +625,7 @@
     $('successBox').innerHTML =
       row('اسم ولي الأمر', data.parentName) +
       row('اسم الطالب', data.studentName) +
-      row('الصف', I && I.isEnglish && I.isEnglish() ? T(data.grade) : data.grade) +
-      (data.foundationSubjects && data.foundationSubjects.length ? row('مواد التأسيس', data.foundationSubjects.map(T).join('، ')) : '') +
+      programRows(data) +
       row('رقم الطلب', data.orderNumber) +
       row('رقم الموبايل', data.mobile) +
       row('المستندات المحفوظة', savedDocsCount(data.docs) + ' ' + T('من 4'));
@@ -742,7 +783,20 @@
     data.orderNumber = previous && previous.orderNumber ? previous.orderNumber : makeOrderNumber(users);
     data.createdAt = previous && previous.createdAt ? previous.createdAt : new Date().toISOString();
 
-    saveSubmission(data, users, idx).then(function (ok) {
+    /* كلمة السر لا تُحفظ نصًا: hash فقط (salt + SHA-256) */
+    var pw = V.val('password');
+    /* إن تعذّر تحميل js/crypto.js نرفض الإرسال — لا نخزن كلمة السر نصًا أبدًا */
+    var hashJob = CR && CR.hashPassword
+      ? CR.hashPassword(pw)
+      : Promise.reject(new Error('crypto-unavailable'));
+
+    hashJob.then(function (h) {
+      data.passwordSalt = h.salt;
+      data.passwordHash = h.hash;
+      data.passwordAlgo = h.algo;
+      delete data.password;
+      return saveSubmission(data, users, idx);
+    }).then(function (ok) {
       saving = false;
       refreshSubmit();
       if (!ok) {
@@ -754,9 +808,13 @@
       lastSubmission = data;
       showSuccess(data);
       syncToServer(data);            // رفع فعلي إلى /api/registrations
-    }).catch(function () {
+    }).catch(function (err) {
       saving = false;
       refreshSubmit();
+      if (err && err.message === 'crypto-unavailable') {
+        fail('تعذّر تجهيز كلمة السر بأمان — أعد تحميل الصفحة ثم أعد المحاولة', 'formAlert');
+        return;
+      }
       fail('تعذّر حفظ الصور على الجهاز، جرّب صورًا أصغر', 'formAlert');
     });
   });
@@ -764,6 +822,8 @@
   /* تسجيل طالب آخر */
   $('newRegBtn').addEventListener('click', function () {
     $('regForm').reset();
+    if (programTypeEl) programTypeEl.value = '';
+    syncProgramBranch();
     ['birthCert', 'photo', 'parentCard', 'reportCard'].forEach(clearUpload);
     setFieldErrors({});
     showAlert('formAlert', '');
@@ -802,27 +862,53 @@
     }
     var mobile = V.digitsOnly(V.val('loginMobile'));
     var password = V.val('loginPassword');
-    var user = readUsers().find(function (u) { return u.mobile === mobile && u.password === password; });
-    if (!user) {
+    var allUsers = readUsers();
+    var user = allUsers.find(function (u) { return u.mobile === mobile; });
+    function loginFail() {
       fail('رقم الموبايل أو كلمة السر غير صحيحة. لو ليس لديك حساب، أنشئ حسابًا جديدًا.', 'loginAlert');
-      return;
     }
-    try { localStorage.setItem(LS_SESSION, mobile); } catch (err) {}
-    showAlert('loginAlert', '');
+    function loginFinish(user) {
+      try { localStorage.setItem(LS_SESSION, mobile); } catch (err) {}
+      showAlert('loginAlert', '');
 
-    $('welcomeName').textContent = T('أهلًا بك ') + user.parentName;
-    $('welcomeDetails').innerHTML =
-      row('اسم الطالب', user.studentName) +
-      row('الصف', I && I.isEnglish && I.isEnglish() ? T(user.grade) : user.grade) +
-      (user.foundationSubjects && user.foundationSubjects.length ? row('مواد التأسيس', user.foundationSubjects.map(T).join('، ')) : '') +
-      row('رقم الطلب', user.orderNumber) +
-      row('رقم الموبايل', user.mobile);
-    /* الصور الفعلية المحفوظة مع الحساب تظهر هنا بعد تسجيل الدخول */
-    renderDocsGallery($('welcomeDocs'), user.docs);
-    document.querySelector('.login-box').hidden = true;
-    $('welcomeBox').hidden = false;
-    succeed();                       // نغمة النجاح عند الدخول + اهتزاز
-    showToast(T('🎓 أهلًا بك مجددًا في رحيق'));
+      $('welcomeName').textContent = T('أهلًا بك ') + user.parentName;
+      $('welcomeDetails').innerHTML =
+        row('اسم الطالب', user.studentName) +
+        programRows(user) +
+        row('رقم الطلب', user.orderNumber) +
+        row('رقم الموبايل', user.mobile);
+      /* الصور الفعلية المحفوظة مع الحساب تظهر هنا بعد تسجيل الدخول */
+      renderDocsGallery($('welcomeDocs'), user.docs);
+      document.querySelector('.login-box').hidden = true;
+      $('welcomeBox').hidden = false;
+      succeed();                       // نغمة النجاح عند الدخول + اهتزاز
+      showToast(T('🎓 أهلًا بك مجددًا في رحيق'));
+    }
+    if (!user) { loginFail(); return; }
+    /* التحقق من كلمة السر: hash محفوظ (أو ترقية حساب قديم من نص إلى hash) */
+    var verify = (user.passwordHash && user.passwordSalt && CR && CR.verifyPassword)
+      ? CR.verifyPassword(password, user.passwordSalt, user.passwordHash)
+      : Promise.resolve(false);
+    verify.then(function (okHash) {
+      if (okHash) { loginFinish(user); return; }
+      /* حساب قديم مخزن فيه كلمة سر نصية: نتحقق ثم نرقّيه إلى hash ونحذف النص */
+      if (typeof user.password === 'string' && user.password === password && CR && CR.hashPassword) {
+        CR.hashPassword(password).then(function (h) {
+          var idxU = allUsers.findIndex(function (u) { return u.mobile === mobile; });
+          if (idxU >= 0) {
+            allUsers[idxU].passwordSalt = h.salt;
+            allUsers[idxU].passwordHash = h.hash;
+            allUsers[idxU].passwordAlgo = h.algo;
+            delete allUsers[idxU].password;
+            writeUsers(allUsers);
+          }
+          loginFinish(user);
+        });
+        return;
+      }
+      loginFail();
+    });
+
   });
 
   $('logoutBtn').addEventListener('click', function () {

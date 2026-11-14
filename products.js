@@ -20,21 +20,22 @@ function formatPrice(value){
 }
 
 function productCardHTML(p){
+  const e = (typeof escHtml === 'function') ? escHtml : (s => String(s));
   return `
     <div class="product-card">
-      <a href="product.html?id=${p.id}">
+      <a href="product.html?id=${encodeURIComponent(e(p.id))}">
         <div class="product-thumb">
-          ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ''}
-          <span>${p.icon}</span>
+          ${p.badge ? `<span class="product-badge">${e(p.badge)}</span>` : ''}
+          <span>${e(p.icon)}</span>
         </div>
       </a>
       <div class="product-info">
-        <span class="product-cat">${p.category}</span>
-        <a href="product.html?id=${p.id}"><h3>${p.name}</h3></a>
-        <p class="product-desc">${p.desc}</p>
+        <span class="product-cat">${e(p.category)}</span>
+        <a href="product.html?id=${encodeURIComponent(e(p.id))}"><h3>${e(p.name)}</h3></a>
+        <p class="product-desc">${e(p.desc)}</p>
         <div class="product-foot">
-          <span class="price">${formatPrice(p.price)} ر.س ${p.oldPrice ? `<small style="text-decoration:line-through;margin-inline-start:6px;">${formatPrice(p.oldPrice)}</small>` : ''}</span>
-          <button class="add-btn" title="أضف إلى السلة" data-add-id="${p.id}">+</button>
+          <span class="price">${e(formatPrice(p.price))} ر.س ${p.oldPrice ? `<small style="text-decoration:line-through;margin-inline-start:6px;">${e(formatPrice(p.oldPrice))}</small>` : ''}</span>
+          <button class="add-btn" title="أضف إلى السلة" data-add-id="${e(p.id)}">+</button>
         </div>
       </div>
     </div>

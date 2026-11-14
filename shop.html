@@ -90,7 +90,7 @@
   function renderFilters(){
     const bar = document.getElementById('filters-bar');
     bar.innerHTML = categories.map(cat =>
-      `<button class="filter-chip ${cat === activeCat ? 'active' : ''}" data-cat="${cat}">${cat}</button>`
+      `<button class="filter-chip ${cat === activeCat ? 'active' : ''}" data-cat="${escHtml(cat)}">${escHtml(cat)}</button>`
     ).join('');
     bar.querySelectorAll('.filter-chip').forEach(btn => {
       btn.addEventListener('click', () => {

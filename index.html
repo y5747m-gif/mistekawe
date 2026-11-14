@@ -8,7 +8,7 @@
 <!-- إعدادات المستخدم (الثيم/الخط/اللغة) — تُطبَّق قبل رسم الصفحة بلا وميض -->
 <script src="js/settings.js"></script>
 <meta name="description" content="رحيق RAHEEQ — منصة تسجيل ولي الأمر. سجّل ابنك في ثلاث خطوات بسيطة وآمنة، وتابع طلبك بكل سهولة.">
-<!-- رقم واتساب أكاديمية رحيق (يُقرأ من هنا، ويمكن تغييره من LocalStorage بالمفتاح raheeq_whatsapp_number) -->
+<!-- رقم واتساب أكاديمية رحيق الرسمي (يُقرأ من هذا الـ meta — ولا يمكن تغييره من localStorage لأي سبب) -->
 <meta name="raheeq-whatsapp" content="201151947735">
 <title>رحيق RAHEEQ | تسجيل ولي الأمر</title>
 <link rel="icon" href="assets/brand/favicon-32.png" type="image/png" sizes="32x32">
@@ -286,12 +286,21 @@
                   <option value="أنثى">أنثى</option>
                 </select>
               </div>
-              <div class="field" data-field="grade">
-                <label for="grade">الصف الدراسي <span class="req">*</span></label>
+              <div class="field full" data-field="programType">
+                <label for="programType">نوع البرنامج <span class="req">*</span></label>
+                <select id="programType">
+                  <option value="">اختر نوع البرنامج: تأسيس أم منهج دراسي</option>
+                  <option value="تأسيس">تأسيس</option>
+                  <option value="منهج دراسي">منهج دراسي</option>
+                </select>
+                <span class="err">⚠ اختر نوع البرنامج (تأسيس أو منهج دراسي)</span>
+              </div>
+
+              <!-- القائمة الأولى: منهج دراسي — قائمة السنة الدراسية -->
+              <div class="field program-branch" id="curriculumBranch" data-field="grade" hidden>
+                <label for="grade">السنة الدراسية <span class="req">*</span></label>
                 <select id="grade">
-                  <option value="">اختر الصف الدراسي</option>
-                  <option value="تأسيس للصغار">تأسيس للصغار</option>
-                  <option value="تأسيس للكبار">تأسيس للكبار</option>
+                  <option value="">اختر السنة الدراسية</option>
                   <option value="KG1">KG1</option>
                   <option value="KG2">KG2</option>
                   <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
@@ -307,18 +316,32 @@
                   <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
                   <option value="3 ثانوي">3 ثانوي</option>
                 </select>
-                <span class="err">⚠ اختر الصف الدراسي</span>
+                <span class="err">⚠ اختر السنة الدراسية من القائمة</span>
               </div>
-              <fieldset class="field full foundation-subjects" data-field="foundationSubjects">
-                <legend>مواد التأسيس (اختياري)</legend>
-                <p class="hint">لو اخترت التأسيس للكبار أو الصغار، اختار مادة أو أكثر حسب احتياج الطالب.</p>
-                <div class="foundation-options">
-                  <label><input type="checkbox" name="foundationSubjects" value="اللغة العربية"> <span>اللغة العربية</span></label>
-                  <label><input type="checkbox" name="foundationSubjects" value="اللغة الإنجليزية"> <span>اللغة الإنجليزية</span></label>
-                  <label><input type="checkbox" name="foundationSubjects" value="الرياضيات"> <span>الرياضيات</span></label>
-                  <label><input type="checkbox" name="foundationSubjects" value="القراءة والكتابة"> <span>القراءة والكتابة</span></label>
+
+              <!-- القائمة الثانية: تأسيس — مستوى التأسيس + قائمة المواد التي سيتأسس فيها -->
+              <div class="program-branch" id="foundationBranch" hidden>
+                <div class="field" data-field="foundationLevel">
+                  <label for="foundationLevel">مستوى التأسيس</label>
+                  <select id="foundationLevel">
+                    <option value="">اختر مستوى التأسيس</option>
+                    <option value="تأسيس للصغار">تأسيس للصغار</option>
+                    <option value="تأسيس للكبار">تأسيس للكبار</option>
+                  </select>
+                  <span class="err">⚠ اختر مستوى التأسيس</span>
                 </div>
-              </fieldset>
+                <fieldset class="field full foundation-subjects" data-field="foundationSubjects">
+                  <legend>قائمة مواد التأسيس <span class="req">*</span></legend>
+                  <p class="hint">اختَر من القائمة المواد التي سيتأسس فيها الطالب — مادة واحدة على الأقل.</p>
+                  <div class="foundation-options">
+                    <label><input type="checkbox" name="foundationSubjects" value="اللغة العربية"> <span>اللغة العربية</span></label>
+                    <label><input type="checkbox" name="foundationSubjects" value="اللغة الإنجليزية"> <span>اللغة الإنجليزية</span></label>
+                    <label><input type="checkbox" name="foundationSubjects" value="الرياضيات"> <span>الرياضيات</span></label>
+                    <label><input type="checkbox" name="foundationSubjects" value="القراءة والكتابة"> <span>القراءة والكتابة</span></label>
+                  </div>
+                  <span class="err">⚠ اختر مادة أو أكثر من قائمة مواد التأسيس</span>
+                </fieldset>
+              </div>
               <div class="field" data-field="prevSchool">
                 <label for="prevSchool">الأكاديمية السابقة</label>
                 <input type="text" id="prevSchool" placeholder="اسم الأكاديمية السابقة (اختياري)">
@@ -658,6 +681,7 @@
 <script src="js/confetti.js" defer></script>
 <script src="js/i18n.js" defer></script>
 <script src="js/api.js" defer></script>
+<script src="js/crypto.js" defer></script>
 <script src="js/uploads.js" defer></script>
 <script src="js/validation.js" defer></script>
 <script src="js/whatsapp.js" defer></script>

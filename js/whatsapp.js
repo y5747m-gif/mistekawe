@@ -33,25 +33,16 @@
     return String(v == null ? '' : v).replace(/\D/g, '');
   }
 
-  /* ---------- الرقم ---------- */
-  function getNumber(override) {
-    var fromOverride = digits(override);
-    if (fromOverride) return fromOverride;
-    var fromMeta = digits(getMeta('raheeq-whatsapp'));
-    if (fromMeta) return fromMeta;
-    try {
-      if (global.localStorage) {
-        var stored = digits(global.localStorage.getItem('raheeq_whatsapp_number'));
-        if (stored) return stored;
-      }
-    } catch (e) { /* تجاهل */ }
-    return DEFAULT_NUMBER;
+  /* ---------- الرقم ----------
+     الرقم الرسمي ثابت في الكود (DEFAULT_NUMBER) أو في meta tag بالصفحة فقط.
+     localStorage لا يغيّر الرقم أبدًا: أي قيمة مخزّنة هناك تغيّرها أي سكربت
+     آخر (XSS) لتوجيه كل الطلبات إلى رقم مهاجم. */
+  function saneNumber(v) {
+    var d = digits(v);
+    return /^\d{8,15}$/.test(d) ? d : '';
   }
-  function setNumber(num) {
-    var n = digits(num);
-    if (!n) return false;
-    try { if (global.localStorage) global.localStorage.setItem('raheeq_whatsapp_number', n); } catch (e) {}
-    return true;
+  function getNumber(override) {
+    return saneNumber(override) || saneNumber(getMeta('raheeq-whatsapp')) || DEFAULT_NUMBER;
   }
   function getMeta(name) {
     var meta = document.querySelector('meta[name="' + name + '"]');
@@ -91,7 +82,14 @@
     lines.push('🎒 ' + (isEn() ? 'Student: ' : 'الطالب: ') + (data.studentName || '—'));
     if (data.dob) lines.push('🎂 ' + (isEn() ? 'Date of birth: ' : 'تاريخ الميلاد: ') + data.dob);
     if (data.gender) lines.push('⚧ ' + (isEn() ? 'Gender: ' : 'النوع: ') + genderLabel(data.gender));
-    if (data.grade) lines.push('📚 ' + (isEn() ? 'Grade: ' : 'الصف: ') + (isEn() ? gradeEn(data.grade) : data.grade));
+    if (data.programType) {
+      var ptEn = data.programType === 'تأسيس' ? 'Foundation' : (data.programType === 'منهج دراسي' ? 'Curriculum' : data.programType);
+      lines.push('🏷 ' + (isEn() ? 'Program: ' : 'نوع البرنامج: ') + (isEn() ? ptEn : data.programType));
+    }
+    if (data.programType === 'تأسيس' && data.foundationLevel) {
+      lines.push('🎚 ' + (isEn() ? 'Foundation level: ' : 'مستوى التأسيس: ') + (isEn() ? gradeEn(data.foundationLevel) : data.foundationLevel));
+    }
+    if (data.grade) lines.push('📚 ' + (isEn() ? 'Academic year: ' : 'السنة الدراسية: ') + (isEn() ? gradeEn(data.grade) : data.grade));
     if (Array.isArray(data.foundationSubjects) && data.foundationSubjects.length) lines.push('✏️ ' + (isEn() ? 'Foundation subjects: ' : 'مواد التأسيس: ') + data.foundationSubjects.map(function (v) { return isEn() ? gradeEn(v) : v; }).join('، '));
     if (data.prevSchool) lines.push('🏫 ' + (isEn() ? 'Previous academy: ' : 'الأكاديمية السابقة: ') + data.prevSchool);
     if (data.address) lines.push('📍 ' + (isEn() ? 'Address: ' : 'العنوان: ') + data.address);
@@ -236,7 +234,6 @@
   global.RaheeqWhatsApp = {
     DEFAULT_NUMBER: DEFAULT_NUMBER,
     getNumber: getNumber,
-    setNumber: setNumber,
     buildMessage: buildMessage,
     buildLink: buildLink,
     openLink: openLink,

@@ -99,6 +99,11 @@ ok(html.includes('© 2026 رحيق RAHEEQ - <a href="mailto:info@raheeq.edu">inf
 ok(html.includes('هنتواصل معاك خلال 24-48 ساعة'), 'رسالة المتابعة 24-48 ساعة');
 ok(html.includes('تأسيس للصغار') && html.includes('تأسيس للكبار') && html.includes('name="foundationSubjects"'), 'خيارات التأسيس ومواده في التسجيل');
 ok(html.includes('KG1') && html.includes('3 ثانوي'), 'الصفوف من KG1 إلى 3 ثانوي');
+ok(html.includes('id="programType"') && html.includes('value="تأسيس"') && html.includes('value="منهج دراسي"'), 'قائمة اختيار نوع البرنامج (تأسيس / منهج دراسي)');
+ok(html.includes('id="curriculumBranch"') && html.includes('id="foundationBranch"'), 'فرعا القائمتين: منهج دراسي (السنة الدراسية) وتأسيس (المواد)');
+ok(html.includes('id="foundationLevel"'), 'قائمة مستوى التأسيس');
+ok(!/value="تأسيس للصغار"[\s\S]{0,400}<select id="grade"|id="grade"[\s\S]{0,600}value="تأسيس/.test(html), 'قائمة الصف الدراسي لم تعد مختلطة مع التأسيس');
+ok(html.includes('src="js/crypto.js"') && html.indexOf('src="js/crypto.js"') < html.indexOf('src="js/app.js"'), 'js/crypto.js محمّل قبل app.js لتشفير كلمة السر');
 ok(html.includes('id="agreeTerms"'), 'الموافقة على الشروط');
 ok(['birthCert', 'photo', 'parentCard', 'reportCard'].every(k => html.includes('data-file-input="' + k + '"')), 'مستندات الرفع الأربعة');
 
@@ -138,6 +143,10 @@ function runValidation(fields, agree, files) {
       getElementById(id) {
         if (id === 'agreeTerms') return { checked: !!agree };
         return { value: fields[id] == null ? '' : fields[id] };
+      },
+      querySelectorAll(sel) {
+        if (String(sel).indexOf('foundationSubjects') >= 0) return (fields.__subjects || []).map(v => ({ value: v }));
+        return [];
       }
     },
     Date, Math, JSON, String, RegExp, Array, Object
@@ -160,9 +169,19 @@ ok(!!runValidation({ ...good1, mobile: '010' }).step1().mobile, 'الموباي�
 ok(!!runValidation({ ...good1, email: 'بريد-بدون-علامة' }).step1().email, 'الإيميل بدون @ مرفوض');
 ok(!!runValidation({ ...good1, password: '123' }).step1().password, 'كلمة السر أقل من 6 مرفوضة');
 ok(!!runValidation({ ...good1, confirmPassword: 'اخرى' }).step1().confirmPassword, 'عدم تطابق كلمتي السر مرفوض');
-const good2 = { studentName: 'عمر محمد أحمد علي', dob: '2015-05-10', grade: 'KG1', address: 'القاهرة مدينة نصر' };
+const good2 = { studentName: 'عمر محمد أحمد علي', dob: '2015-05-10', programType: 'منهج دراسي', grade: 'KG1', address: 'القاهرة مدينة نصر' };
 t = runValidation({ ...good1, ...good2 }, true, { birthCert: true, photo: true, parentCard: true });
 ok(Object.keys(t.step2()).length === 0 && Object.keys(t.step3()).length === 0, 'بيانات الطالب والمستندات الصحيحة مقبولة');
+ok(!!runValidation({ ...good1, ...good2, programType: '' }, true, {}).step2().programType, 'غياب نوع البرنامج مرفوض');
+ok(!!runValidation({ ...good1, ...good2, programType: 'تأسيس', __subjects: [] }, true, {}).step2().foundationSubjects, 'التأسيس بدون مادة من القائمة مرفوض');
+{
+  const f = runValidation({ ...good1, ...good2, programType: 'تأسيس', foundationLevel: 'تأسيس للكبار', __subjects: ['الرياضيات', 'اللغة العربية', '<script>'] }, true, {}).step2();
+  ok(Object.keys(f).length === 0, 'التأسيس مع مواد من القائمة مقبول');
+  ok(JSON.stringify(sandbox2less(f)) === '{}', 'لا أخطاء إضافية');
+  function sandbox2less(o) { return o; }
+}
+ok(!!runValidation({ ...good1, ...good2, programType: 'منهج دراسي', grade: '' }, true, {}).step2().grade, 'منهج دراسي بدون سنة دراسية مرفوض');
+ok(!!runValidation({ ...good1, ...good2, programType: 'منهج دراسي', grade: 'KG9' }, true, {}).step2().grade, 'سنة دراسية خارج القائمة مرفوضة');
 ok(!!runValidation(good1, false, { birthCert: true, photo: true, parentCard: true }).step3().agree, 'عدم الموافقة على الشروط مرفوض');
 ok(!!runValidation(good1, true, { photo: true, parentCard: true }).step3().birthCert, 'شهادة الميلاد إلزامية');
 ok(app.includes("localStorage.setItem(LS_USERS") && app.includes('makeOrderNumber'), 'الحفظ في LocalStorage ورقم الطلب RHQ');
@@ -351,7 +370,7 @@ function makeDomEnv() {
     dataMap.set('data-field="' + key + '"', field);
   });
   const fields = ['parentName', 'nationalId', 'relation', 'mobile', 'whatsapp', 'email', 'password',
-    'studentName', 'dob', 'gender', 'grade', 'prevSchool', 'address', 'healthNotes', 'confirmPassword',
+    'studentName', 'dob', 'gender', 'programType', 'grade', 'foundationLevel', 'prevSchool', 'address', 'healthNotes', 'confirmPassword',
     'loginMobile', 'loginPassword'];
   fields.forEach(id => byId.set(id, makeEl('input')));
   ['agreeTerms'].forEach(id => byId.set(id, makeEl('input')));
@@ -377,6 +396,7 @@ function makeDomEnv() {
     querySelectorAll(sel) {
       if (sel === '.form-step') return panels;
       if (sel === '.pstep') return steps;
+      if (String(sel).indexOf('foundationSubjects') >= 0) return [];
       if (sel === '[data-file-input]') return Object.values(boxes).map(b => b.input);
       if (sel === '[data-remove]') return Object.values(boxes).map(b => b.remove);
       if (sel === '.upload-box') return Object.values(boxes).map(b => b.box);
@@ -436,6 +456,7 @@ sandbox2.document.createElement = tag => {
 sandbox2.RaheeqSound = { play() {}, vibrate() {}, preload() {}, bindToggle() {} };
 sandbox2.RaheeqConfetti = { launch() {} };
 vm.runInNewContext(validation, sandbox2, { filename: 'js/validation.js' });
+vm.runInNewContext(read('js/crypto.js'), sandbox2, { filename: 'js/crypto.js' });
 vm.runInNewContext(uploads, sandbox2, { filename: 'js/uploads.js' });
 vm.runInNewContext(app, sandbox2, { filename: 'js/app.js' });
 
@@ -443,7 +464,7 @@ const setVal = (id, v) => { dom.byId.get(id).value = v; };
 Object.entries({ parentName: 'محمد أحمد علي حسن', nationalId: '12345678901234',
   relation: 'الأب', mobile: '01000000000', whatsapp: '01000000000', email: 'waly@raheeq.edu',
   password: 'secret1', confirmPassword: 'secret1', studentName: 'عمر محمد أحمد علي', dob: '2015-05-10',
-  gender: 'ذكر', grade: 'KG1', address: 'القاهرة مدينة نصر' }).forEach(([k, v]) => setVal(k, v));
+  gender: 'ذكر', programType: 'منهج دراسي', grade: 'KG1', address: 'القاهرة مدينة نصر' }).forEach(([k, v]) => setVal(k, v));
 dom.byId.get('agreeTerms').checked = true;
 
 const photoBytes = bytesOf(4200, 11);
@@ -654,7 +675,7 @@ ok(exists('server/api.py'), 'وحدة الرفع server/api.py موجودة');
 ok(serverSrc.includes('"/api/registrations"') && serverSrc.includes('save_registration'), 'الخادم يعرّف POST /api/registrations');
 ok(serverSrc.includes('"/api/health"') && apiSrcPy.includes('def health'), 'مسار فحص /api/health موجود');
 ok(serverSrc.includes('_admin_authorized') && serverSrc.includes('X-Admin-Token'), 'قراءة الطلبات محمية برمز إدارة');
-ok(serverSrc.includes('path.startswith("/data/")'), 'ملفات المستندات المحفوظة غير مكشوفة كملفات ثابتة');
+ok(serverSrc.includes('BLOCKED_PREFIXES') && serverSrc.includes('"/data/"'), 'ملفات المستندات المحفوظة غير مكشوفة كملفات ثابتة');
 ok(apiSrcPy.includes('def parse_data_url') && apiSrcPy.includes('def hash_password'), 'الخادم يتحقق من الصور ويشفّر كلمة السر');
 ok(html.includes('src="js/api.js"') && html.indexOf('src="js/api.js"') < html.indexOf('src="js/app.js"'),
   'js/api.js محمّل قبل app.js');
@@ -719,6 +740,7 @@ const sandboxApi = Object.assign({}, sandbox2, {
 sandboxApi.window = sandboxApi;
 sandboxApi.document.createElement = sandbox2.document.createElement;
 vm.runInNewContext(validation, sandboxApi, { filename: 'js/validation.js' });
+vm.runInNewContext(read('js/crypto.js'), sandboxApi, { filename: 'js/crypto.js' });
 vm.runInNewContext(uploads, sandboxApi, { filename: 'js/uploads.js' });
 vm.runInNewContext(apiSrc, sandboxApi, { filename: 'js/api.js' });
 vm.runInNewContext(app, sandboxApi, { filename: 'js/app.js' });
@@ -727,7 +749,7 @@ const setA = (id, v) => { domApi.byId.get(id).value = v; };
 Object.entries({ parentName: 'محمد أحمد علي حسن', nationalId: '12345678901234', relation: 'الأب',
   mobile: '01000000000', whatsapp: '01000000000', email: 'waly@raheeq.edu', password: 'secret1',
   confirmPassword: 'secret1', studentName: 'عمر محمد أحمد علي', dob: '2015-05-10', gender: 'ذكر',
-  grade: 'KG1', address: 'القاهرة مدينة نصر' }).forEach(([k, v]) => setA(k, v));
+  programType: 'منهج دراسي', grade: 'KG1', address: 'القاهرة مدينة نصر' }).forEach(([k, v]) => setA(k, v));
 domApi.byId.get('agreeTerms').checked = true;
 const apiDocBytes = bytesOf(2600, 17);
 ['birthCert', 'photo', 'parentCard'].forEach((key, i) => {
@@ -745,7 +767,12 @@ ok(sentPayload.docs && Object.keys(sentPayload.docs).length === 3, 'الحمول
 ok(['birthCert', 'photo', 'parentCard'].every(k => String((sentPayload.docs[k] || {}).dataUrl || '').startsWith('data:image/jpeg;base64,')),
   'الحمولة تحوي بيانات الصور الفعلية (Data URL) لا أسماءها');
 ok(sentPayload.mobile === '01000000000' && !!sentPayload.orderNumber, 'الحمولة تحوي بيانات الحساب ورقم الطلب');
-ok(sentPayload.password === 'secret1', 'كلمة السر تُرسل عبر الاتصال ليُشفّرها الخادم');
+ok(sentPayload.password === undefined, 'كلمة السر النصية لا تُرسل أبدًا للخادم');
+ok(/^sha256\$[0-9a-f]{32}\$[0-9a-f]{64}$/.test(sentPayload.passwordHash || ''), 'الخادم يستقبل hash العميل (sha256$salt$hex) فقط');
+ok(sentPayload.programType === 'منهج دراسي' && sentPayload.grade === 'KG1', 'الحمولة تحمل نوع البرنامج والسنة الدراسية');
+const storedUser0 = JSON.parse(storeApi.get('raheeq_users'))[0];
+ok(storedUser0 && storedUser0.password === undefined && !!storedUser0.passwordHash && !!storedUser0.passwordSalt, 'LocalStorage لا يخزن كلمة السر نصًا — hash فقط');
+ok(storedUser0.programType === 'منهج دراسي' && storedUser0.grade === 'KG1' && Array.isArray(storedUser0.foundationSubjects), 'السجل المحلي يحفظ نوع البرنامج والقائمة المختارة');
 ok(storeApi.get('raheeq_users') && JSON.parse(storeApi.get('raheeq_users')).length === 1, 'الحفظ المحلي يبقى يعمل كنسخة احتياطية');
 ok(/is-warn/.test(domApi.byId.get('syncStatus').className) && /تعذّر|فشل|انتهت|خطأ/.test(domApi.byId.get('syncStatus').innerHTML),
   'فشل الاتصال يظهر كتحذير مع بقاء الطلب محفوظًا محليًا');
@@ -757,6 +784,44 @@ ok(/is-ok/.test(domApi.byId.get('syncStatus').className) && domApi.byId.get('syn
 const storedAfterSync = JSON.parse(storeApi.get('raheeq_users'))[0];
 ok(storedAfterSync.server && storedAfterSync.server.orderNumber === 'RHQ-7777',
   'تأكيد الرفع يُسجّل في بيانات الحساب المحلية');
+
+
+console.log('\n9) تدقيق أمني (Hacker pass): هروب HTML + رؤوس أمان + عدم تخزين كلمة السر نصًا');
+{
+  const cart = read('cart.html'), shop = read('shop.html'), product = read('product.html'), scriptSrc = read('script.js'), prodJs = read('products.js');
+  ok(/const e = escHtml/.test(cart) && cart.includes('${e(item.name)}') && cart.includes('${e(item.id)}') && cart.includes('${e(formatPrice(item.price * item.qty))}'),
+    'cart.html يهرب كل حقول السلة قبل innerHTML (لا XSS مخزّن من localStorage)');
+  ok(scriptSrc.includes('function escHtml') && scriptSrc.includes('sanitizeCartItem'), 'script.js يعرّف escHtml ويطهّر عناصر السلة عند القراءة');
+  ok(shop.includes('${escHtml(cat)}') && product.includes('${escHtml(product.name)}') && product.includes('${escHtml(product.desc)}') && prodJs.includes('e(p.name)'),
+    'shop/product/products.js يهربون interpolations قبل innerHTML');
+  ok(!/\$\{item\.(name|id|icon|category)\}/.test(cart), 'لا توجد أي قيمة سلة بدون هروب في cart.html');
+  const studio = read('ai3d/app/studio.js');
+  ok(studio.includes('data:image\\/(jpeg|png|webp|gif);base64') && !/src=\\?\"' \+ \(p\.thumb/.test(studio), 'ai3d studio لا يضع thumb عشوائيًا في src');
+  ok(!/password: V\.val\('password'\)/.test(app) && app.includes('RaheeqCrypto') && app.includes('hashPassword'), 'app.js لا يخزن كلمة السر نصًا — hash فقط عبر RaheeqCrypto');
+  ok(!/password: data\.password/.test(apiSrc) && apiSrc.includes('passwordHash'), 'js/api.js يرسل passwordHash فقط — لا كلمة سر نصية');
+  ok(app.includes("delete data.password"), 'app.js يحذف كلمة السر من البيانات قبل الحفظ');
+  ok(/hash_password\(secret/.test(apiSrcPy) && apiSrcPy.includes('CLIENT_HASH_RE'), 'api.py يقبل hash العميل أو النص القديم ويخزن PBKDF2 فقط');
+  ok(serverSrc.includes('X-Content-Type-Options') && serverSrc.includes('X-Frame-Options') && serverSrc.includes('Referrer-Policy') && serverSrc.includes('Content-Security-Policy'), 'serve.py يرسل رؤوس أمان لكل استجابة');
+  ok(serverSrc.includes('BLOCKED_PREFIXES') && serverSrc.includes('"/tests/"') && serverSrc.includes('"/api/_yaseen/"') && serverSrc.includes('startswith(".")'), 'serve.py يحجب /tests و /api/_yaseen و dotfiles كملفات ثابتة');
+  const vercel = JSON.parse(read('vercel.json'));
+  const globalHdr = (vercel.headers || []).find(h => h.source === '/(.*)');
+  ok(!!globalHdr && globalHdr.headers.some(h => h.key === 'Content-Security-Policy') && globalHdr.headers.some(h => h.key === 'X-Frame-Options') && globalHdr.headers.some(h => h.key === 'X-Content-Type-Options'),
+    'vercel.json يضيف CSP + X-Frame-Options + nosniff لكل المسارات');
+  ok((vercel.redirects || []).some(r => r.source === '/.git/:path*'), 'vercel.json يعيد توجيه dotfiles إلى الجذر');
+  ok(read('sw.js').includes('v9'), 'sw.js: ترقية نسخة الكاش بعد التعديلات');
+}
+
+console.log('\n10) المؤثرات الصوتية لعرض البداية + القائمتان الجديدتان');
+{
+  ok(exists('sounds/intro.wav') && exists('sounds/chime.wav'), 'ملفا صوتا العرض (intro.wav + chime.wav) موجودان');
+  const introSrc = read('js/intro.js');
+  ok(introSrc.includes("playSfx('intro'") && introSrc.includes("'chime'") && /scheduleSfx\(\)/.test(introSrc) && introSrc.includes('catchUpSfx'), 'js/intro.js يجدول المؤثرات الصوتية مع الانيميشن + تعويض عند أول تفاعل');
+  ok(sounds.includes("file: 'sounds/intro.wav'") && sounds.includes("file: 'sounds/chime.wav'"), 'js/sounds.js يعرّف intro/chime للتحميل المسبق');
+  ok(sounds.includes("name === 'intro'") && sounds.includes("name === 'chime'"), 'مولّد Web Audio احتياطي للصوتين');
+  ok(validation.includes('PROGRAM_TYPES') && validation.includes('CURRICULUM_GRADES') && validation.includes('FOUNDATION_SUBJECTS') && validation.includes('checkedFoundationSubjects'), 'validation.js يعرّف القائمتين وقوائم مواد التأسيس والسنوات');
+  ok(app.includes('syncProgramBranch') && app.includes('foundationBranch') && app.includes('curriculumBranch') && app.includes('programRows'), 'app.js يبدّل بين القائمتين ويعرض الصفوف الصحيحة');
+  ok(read('js/whatsapp.js').includes('نوع البرنامج') && read('js/whatsapp.js').includes('السنة الدراسية'), 'رسالة واتساب تحمل نوع البرنامج والسنة/المواد');
+}
 
 if (failed) {
   console.error(`\n❌ فشل ${failed} اختبار في raheeq-tests.mjs`);

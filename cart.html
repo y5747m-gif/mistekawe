@@ -81,23 +81,24 @@
 <script src="script.js"></script>
 <script>
   function cartItemHTML(item){
+    const e = escHtml;
     return `
       <div class="cart-item">
-        <div class="cart-thumb">${item.icon || '🛍️'}</div>
+        <div class="cart-thumb">${e(item.icon || '🛍️')}</div>
         <div>
-          <h3>${item.name}</h3>
-          <span class="product-cat">${item.category || ''}</span>
+          <h3>${e(item.name)}</h3>
+          <span class="product-cat">${e(item.category || '')}</span>
           <div style="margin-top:10px;">
             <div class="qty-control" style="display:inline-flex;">
-              <button data-plus="${item.id}">+</button>
-              <span>${item.qty}</span>
-              <button data-minus="${item.id}">−</button>
+              <button data-plus="${e(item.id)}">+</button>
+              <span>${e(item.qty)}</span>
+              <button data-minus="${e(item.id)}">−</button>
             </div>
           </div>
         </div>
-        <span class="price">${formatPrice(item.price * item.qty)} ر.س</span>
+        <span class="price">${e(formatPrice(item.price * item.qty))} ر.س</span>
         <div>
-          <button class="remove-btn" data-remove="${item.id}">إزالة</button>
+          <button class="remove-btn" data-remove="${e(item.id)}">إزالة</button>
         </div>
       </div>
     `;
