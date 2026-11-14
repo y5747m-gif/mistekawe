@@ -1,5 +1,5 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v10-raheeq-motion';
+const CACHE = 'majlis-shell-v11-raheeq-sprite-motion';
 const SHELL = [
   './',
   './majlis.html',
@@ -18,8 +18,6 @@ const SHELL = [
   './css/yaseen-motion.css',
   './js/yaseen.js',
   './js/yaseen-motion.js',
-  './js/yaseen-3d.js',
-  './js/vendor/three.module.min.js',
   './js/settings.js',
   './js/i18n.js',
   './js/whatsapp.js',
