@@ -6,7 +6,8 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "yaseen:admin": "node server/yaseen-admin-setup.js",
-    "test:yaseen": "node tests/node/yaseen-tests.mjs"
+    "test:yaseen": "node tests/node/yaseen-tests.mjs",
+    "test:yaseen:widget": "node tests/node/yaseen-widget-tests.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3"
