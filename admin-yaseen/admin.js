@@ -228,7 +228,7 @@
     ['motion', 'الحركات والأصوات', function (box) {
       box.appendChild(el('h2', {}, 'الحركات'));
       var g = grid(), a = draft.animations;
-      [['idle', 'تنفّس هادئ'], ['blink', 'رمش العين'], ['tilt', 'ميل الرأس'], ['wave', 'تلويح عند الظهور'], ['point', 'الإشارة للخانة + توهج ذهبي'], ['expressions', 'تعابير الوجه'], ['talk', 'حركة الفم أثناء الكلام'], ['confetti', 'قصاصات الاحتفال']]
+      [['idle', 'تنفّس هادئ'], ['blink', 'رمش العين'], ['tilt', 'ميل الرأس'], ['wave', 'تلويح عند الظهور'], ['point', 'الإشارة للخانة + توهج ذهبي'], ['expressions', 'تعابير الوجه'], ['talk', 'حركة الفم أثناء الكلام'], ['confetti', 'قصاصات الاحتفال'], ['threeD', 'الشخصية ثلاثية الأبعاد'], ['roam', 'تجوّل تلقائي هادئ'], ['walk', 'مشي'], ['run', 'ركض'], ['jump', 'قفز'], ['dance', 'رقص'], ['spin', 'دوران'], ['stretch', 'تمدد'], ['float', 'طفو']]
         .forEach(function (p) { g.appendChild(check(p[1], a, p[0])); });
       box.appendChild(g);
       var g2 = grid();

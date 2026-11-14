@@ -3,13 +3,18 @@
   "private": true,
   "version": "1.0.0",
   "description": "RAHEEQ registration site + Yaseen locked assistant backend",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "yaseen:admin": "node server/yaseen-admin-setup.js",
     "test:yaseen": "node tests/node/yaseen-tests.mjs",
-    "test:yaseen:widget": "node tests/node/yaseen-widget-tests.mjs"
+    "test:yaseen:widget": "node tests/node/yaseen-widget-tests.mjs",
+    "test:yaseen:motion": "node tests/node/yaseen-motion-tests.mjs",
+    "test": "node tests/node/raheeq-tests.mjs && node tests/node/yaseen-tests.mjs && node tests/node/yaseen-widget-tests.mjs && node tests/node/yaseen-motion-tests.mjs && node tests/node/sound-tests.mjs && node tests/node/dom-smoke.mjs && python3 -m unittest discover -s tests/python"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "three": "0.160.1"
   }
 }

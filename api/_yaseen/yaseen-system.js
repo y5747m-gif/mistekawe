@@ -229,7 +229,7 @@ function defaultConfig() {
       { id: 'human', keywords: ['موظف', 'اكلم حد', 'خدمه العملاء', 'الدعم', 'اتصل', 'رقم الاكاديميه', 'رقم المدرسه', 'تواصل'], reply: 'تقدر تكلّم موظف التسجيل مباشرة على واتساب أكاديمية رحيق من الزر ده.', expression: 'happy', handoff: true },
       { id: 'error', keywords: ['مشكله', 'خطا', 'مش شغال', 'مش راضي', 'بيرفض', 'مش بيقبل', 'واقف', 'علقت', 'مش عارف', 'مش فاهم', 'ساعدني', 'مساعده', 'اكتب ايه', 'خانه'], reply: 'ولا يهمك 🙏 دوس على زر «فين المشكلة؟» وأنا أشاورلك على الخانة اللي محتاجة تتظبط.', expression: 'worried' }
     ].concat(parentHelp),
-    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10 },
+    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10, threeD: true, roam: true, walk: true, run: true, jump: true, dance: true, spin: true, stretch: true, float: true },
     sounds: { enabled: true, volume: 0.4, speech: false },
     hours: { enabled: false, start: '08:00', end: '22:00', days: [0, 1, 2, 3, 4, 5, 6], timezone: 'Africa/Cairo' },
     blockedWords: [],
@@ -304,7 +304,10 @@ function validateConfig(input) {
     idle: bool(an.idle, true), blink: bool(an.blink, true), blinkEverySec: num(an.blinkEverySec, 2, 15, 3),
     tilt: bool(an.tilt, true), wave: bool(an.wave, true), point: bool(an.point, true),
     expressions: bool(an.expressions, true), talk: bool(an.talk, true), confetti: bool(an.confetti, true),
-    stuckAfterSec: num(an.stuckAfterSec, 5, 120, 10)
+    stuckAfterSec: num(an.stuckAfterSec, 5, 120, 10),
+    threeD: bool(an.threeD, true), roam: bool(an.roam, true), walk: bool(an.walk, true),
+    run: bool(an.run, true), jump: bool(an.jump, true), dance: bool(an.dance, true),
+    spin: bool(an.spin, true), stretch: bool(an.stretch, true), float: bool(an.float, true)
   };
   const so = src.sounds || {};
   out.sounds = { enabled: bool(so.enabled, true), volume: num(so.volume, 0, 1, 0.4), speech: bool(so.speech, false) };

@@ -137,7 +137,7 @@ ok(!/type\s*=\s*['"]file['"]/.test(client), 'لا رفع ملفات في الم�
 for (const f of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
   ok(fs.readFileSync(path.join(ROOT, f), 'utf8').indexOf('admin-yaseen') < 0, 'لا رابط للوحة المدير في ' + f);
 }
-ok(['js', 'css'].every(d => fs.readdirSync(path.join(ROOT, d)).every(f => fs.readFileSync(path.join(ROOT, d, f), 'utf8').indexOf('admin-yaseen') < 0)), 'لا ذكر للوحة المدير في js/ و css/');
+ok(['js', 'css'].every(d => fs.readdirSync(path.join(ROOT, d), { withFileTypes: true }).filter(entry => entry.isFile()).every(f => fs.readFileSync(path.join(ROOT, d, f.name), 'utf8').indexOf('admin-yaseen') < 0)), 'لا ذكر للوحة المدير في js/ و css/');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 ok(index.includes('js/yaseen.js') && index.includes('css/yaseen.css'), 'index.html يحمّل رحيق');
 ['idle', 'blink', 'talk', 'wave', 'point', 'worried', 'thinking', 'celebrate', 'avatar'].forEach(n => ok(fs.existsSync(path.join(ROOT, 'assets/yaseen', n + '.webp')), 'صورة ' + n));
