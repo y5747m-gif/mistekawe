@@ -11,6 +11,7 @@ models/*.weights
 __pycache__/
 *.py[cod]
 node_modules/
+.cache/
 dist/
 build/
 .venv/

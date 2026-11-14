@@ -724,3 +724,23 @@ html[lang="en"] .subtitle{line-height:1.75}
 .program-branch{display:contents}
 .foundation-subjects .err{display:none;margin-top:6px}
 .foundation-subjects.has-error .err{display:block}
+
+/* ===================== قنوات الأكاديمية —الفوتر ===================== */
+.footer-channels{width:100%;margin:16px 0 10px;padding:24px 0 20px;border-block:1px solid rgba(var(--gold-rgb),.28);scroll-margin-top:110px}
+.footer-channels h2{font-family:var(--font-ui);font-size:calc(20px*var(--ui-scale,1));font-weight:800;color:var(--gold-light);margin:0 0 4px}
+.footer-channels>p{font-size:calc(13px*var(--ui-scale,1));font-weight:400;color:#E9DBC4;margin:0 0 18px}
+.footer-socials{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;max-width:960px;margin:auto}
+.footer-socials .social-link{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid rgba(var(--gold-rgb),.4);border-radius:14px;background:rgba(255,255,255,.055);color:#fff;text-align:start;transition:background .2s,transform .2s,border-color .2s}
+.footer-socials .social-link:hover{background:rgba(var(--gold-rgb),.16);border-color:var(--gold-light);transform:translateY(-3px)}
+.footer-socials .social-link:focus-visible{outline:3px solid var(--gold-light);outline-offset:4px}
+.footer-socials svg{width:25px;height:25px;fill:currentColor;flex:none}
+.footer-socials .social-link>span{font-size:calc(14px*var(--ui-scale,1));font-weight:700;min-width:0}
+.footer-socials small{display:block;font-size:10.5px;font-weight:400;color:#E9DBC4;direction:ltr;overflow-wrap:anywhere;margin-top:3px}
+.footer-socials b{margin-inline-start:auto;color:var(--gold-light);font-size:17px;font-weight:400}
+.social-youtube>svg{color:#FF8A8A}.social-facebook>svg{color:#9FC5FF}.social-instagram>svg{color:#F5A4C7}.social-tiktok>svg{color:#A9EEE7}
+.footer-whatsapp{display:inline-flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px;font-size:calc(13px*var(--ui-scale,1));color:#B9EBC9;font-weight:700}
+.footer-whatsapp:hover{text-decoration:underline;text-underline-offset:4px}
+@media(max-width:850px){.footer-socials{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.footer-socials{gap:8px}.footer-socials .social-link{padding:12px 10px;gap:8px}.footer-socials svg{width:21px;height:21px}.footer-socials b{display:none}}
+@media(prefers-reduced-motion:reduce){.footer-socials .social-link{transition:none}.footer-socials .social-link:hover{transform:none}}
+@media print{.footer-channels{display:none}}

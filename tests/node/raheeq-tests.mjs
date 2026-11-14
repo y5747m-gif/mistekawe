@@ -808,7 +808,7 @@ console.log('\n9) تدقيق أمني (Hacker pass): هروب HTML + رؤوس أ
   ok(!!globalHdr && globalHdr.headers.some(h => h.key === 'Content-Security-Policy') && globalHdr.headers.some(h => h.key === 'X-Frame-Options') && globalHdr.headers.some(h => h.key === 'X-Content-Type-Options'),
     'vercel.json يضيف CSP + X-Frame-Options + nosniff لكل المسارات');
   ok((vercel.redirects || []).some(r => r.source === '/.git/:path*'), 'vercel.json يعيد توجيه dotfiles إلى الجذر');
-  ok(read('sw.js').includes('v9'), 'sw.js: ترقية نسخة الكاش بعد التعديلات');
+  ok(read('sw.js').includes('v10'), 'sw.js: ترقية نسخة الكاش بعد التعديلات');
 }
 
 console.log('\n10) المؤثرات الصوتية لعرض البداية + القائمتان الجديدتان');

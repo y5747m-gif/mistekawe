@@ -78,13 +78,13 @@
       success: 'مبروك! 🎉 طلب التسجيل اتبعت بنجاح، احتفظ برقم الطلب.',
       offHours: 'أنا متاح في مواعيد العمل بس. تقدر تكمّل الاستمارة عادي، ولو محتاج حاجة كلّم الأكاديمية على واتساب.'
     },
-    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10 },
+    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10, threeD: true, roam: true, walk: true, run: true, jump: true, dance: true, spin: true, stretch: true, float: true },
     sounds: { enabled: true, volume: 0.4, speech: false },
     limits: { maxMessages: 20, maxChars: 200 }
   });
 
   var cfg = null;
-  var root = null, mascot = null, charBtn = null, bubble = null, chat = null;
+  var root = null, mascot = null, charBtn = null, bubble = null, chat = null, motion = null;
   var logEl = null, inputEl = null, quickEl = null, captchaEl = null, captchaInput = null, metaLeft = null, metaCount = null, dotEl = null, statusEl = null, soundBtn = null;
   var frames = {};
   var timers = [];
@@ -217,6 +217,9 @@
     chat = buildChat();
     root.appendChild(mascot); root.appendChild(chat);
     document.body.appendChild(root);
+    if (window.RaheeqMotion) {
+      motion = window.RaheeqMotion.mount({ root: root, mascot: mascot, charBtn: charBtn, busy: function () { return busy || chatOpen || !!pointing; }, lastActivity: function () { return lastActivity; }, onAction: function () { release(); lastActivity = Date.now(); } });
+    }
 
     on(charBtn, 'click', function () { toggleChat(); });
     on(bubble, 'click', function () { openChat(bubble.getAttribute('data-quick') || ''); });
@@ -320,6 +323,7 @@
     statusEl.textContent = cfg.online ? 'متصل الآن · مساعد التسجيل' : 'خارج مواعيد العمل';
     mascot.classList.toggle('a-idle', anim('idle'));
     mascot.classList.toggle('a-tilt', anim('tilt'));
+    if (motion) motion.configure(cfg.animations);
 
     while (quickEl.firstChild) quickEl.removeChild(quickEl.firstChild);
     cfg.quickReplies.forEach(function (q) {
@@ -356,11 +360,13 @@
       else if (mouthShut) show = 'talk';
     }
     POSES.forEach(function (name) { frames[name].classList.toggle('is-on', name === show); });
+    if (motion) motion.blink(blinkOn);
   }
   function setPose(name, ms) {
     clearTimeout(poseTimer);
     pose = POSES.indexOf(name) >= 0 ? name : 'idle';
     renderPose();
+    if (motion) motion.pose(pose, ms);
     if (ms) poseTimer = later(function () { pose = pointing ? 'point' : 'idle'; renderPose(); }, ms);
   }
   function express(expression, ms) {
@@ -382,12 +388,14 @@
     stopEvery(talkTimer);
     mouthShut = false;
     mascot.classList.remove('is-bob');
+    if (motion) motion.talking(false);
     if (!anim('talk')) return;
     mascot.classList.add('is-bob');
+    if (motion) motion.talking(true);
     var end = Date.now() + ms;
     talkTimer = every(function () {
       mouthShut = !mouthShut;
-      if (Date.now() >= end) { stopEvery(talkTimer); mouthShut = false; if (mascot) mascot.classList.remove('is-bob'); }
+      if (Date.now() >= end) { stopEvery(talkTimer); mouthShut = false; if (mascot) { mascot.classList.remove('is-bob'); } if (motion) motion.talking(false); }
       renderPose();
     }, 140);
   }
@@ -484,12 +492,14 @@
     if (pointing) pointing.el.classList.remove('ysn-glow');
     pointing = null;
     if (mascot) { mascot.style.transform = ''; mascot.classList.remove('is-below'); }
+    if (motion) { motion.hold(false); motion.home(); }
     if (pose === 'point') setPose('idle');
   }
   function pointTo(name, text, expression) {
     var target = fieldTarget(name);
     if (!anim('point') || !target || !visible(target)) { say(text, { expression: expression === 'point' ? 'happy' : expression }); return; }
     release();
+    if (motion) { motion.home(); motion.hold(true); }
     lastPointed = name;
     target.classList.add('ysn-glow');
     pointing = { el: target, name: name, until: Date.now() + POINT_MS };
@@ -663,6 +673,7 @@
   function openChat(quick) {
     if (!root || !cfg) return;
     chatOpen = true;
+    if (motion) motion.close();
     release();
     bubble.hidden = true;
     chat.hidden = false;
@@ -776,6 +787,7 @@
     clearTimeout(offlineRetry);
     if (!root) return;
     release();
+    if (motion) { motion.destroy(); motion = null; }
     timers.forEach(function (id) { clearTimeout(id); clearInterval(id); });
     timers = [];
     observers.forEach(function (o) { o.disconnect(); });

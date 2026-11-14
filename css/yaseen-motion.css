@@ -1,0 +1,46 @@
+/* رحيق 3D — طبقة حركة مستقلة فوق الشخصية الأصلية (الصور تبقى بديلًا). */
+.ysn-root{--ysn-w:112px}
+.ysn{transition:opacity .3s;animation:ysn-enter .7s cubic-bezier(.34,1.4,.5,1) both}
+.ysn-char{perspective:700px;touch-action:none}
+.ysn-canvas{position:absolute;inset:-8% -12%;width:124%;height:116%;z-index:3;opacity:0;pointer-events:none;transition:opacity .35s}
+.ysn.is-3d .ysn-canvas{opacity:1}
+.ysn.is-3d .ysn-tilt{opacity:0}
+.ysn.is-3d .ysn-shadow{left:22%;right:22%;bottom:1%;height:10px;background:rgba(94,12,36,.22);filter:blur(4px)}
+.ysn.is-running .ysn-shadow{animation:ysn-shadow-run .48s ease-in-out infinite}
+.ysn.is-walking .ysn-shadow{animation:ysn-shadow-run .9s ease-in-out infinite}
+@keyframes ysn-shadow-run{50%{transform:scale(.78);opacity:.55}}
+.ysn-motion-launch{position:fixed;left:18px;bottom:calc(var(--ysn-w) * 1.32 + 24px);z-index:108;border:1px solid var(--ysn-gold);border-radius:999px;background:#fffdf8;color:var(--ysn-maroon-dark);padding:6px 12px;font:700 12px/1.5 var(--font-body,'Cairo','Cairo Local',Tahoma,sans-serif);box-shadow:0 4px 16px rgba(94,12,36,.12);cursor:pointer;transition:background .2s,box-shadow .2s}
+.ysn-motion-launch:hover,.ysn-motion-launch[aria-expanded=true]{background:var(--ysn-cream);box-shadow:0 5px 20px rgba(94,12,36,.2)}
+.ysn-motion-launch:focus-visible,.ysn-motion-panel button:focus-visible{outline:3px solid var(--ysn-gold);outline-offset:3px}
+.ysn-motion-panel{position:fixed;left:14px;bottom:calc(var(--ysn-w) * 1.32 + 66px);z-index:110;width:min(310px,calc(100vw - 28px));padding:16px;background:#fffdf8;border:1px solid var(--ysn-gold);border-radius:18px;box-shadow:0 18px 55px rgba(94,12,36,.23);font-family:var(--font-body,'Cairo','Cairo Local',Tahoma,sans-serif);color:var(--ysn-maroon-dark);animation:ysn-pop .2s ease-out;max-height:calc(100dvh - 210px);overflow:auto}
+.ysn-motion-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px}
+.ysn-motion-close{border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer;width:32px;height:32px;border-radius:8px}
+.ysn-motion-close:hover{background:var(--ysn-cream)}
+.ysn-motion-hint{font-size:11px;font-weight:400;color:#766a5c;margin:5px 0 12px}
+.ysn-motion-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.ysn-motion-choice{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid #e6d9c2;border-radius:11px;background:#fff;color:#5e0c24;padding:9px 3px;font-family:inherit;font-size:11px;font-weight:700;line-height:1.4;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.ysn-motion-choice svg,.ysn-motion-launch svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ysn-motion-launch{display:inline-flex;align-items:center;gap:6px}.ysn-motion-launch svg{width:16px;height:16px}
+.ysn-motion-choice:hover{background:#f8efdf;border-color:#c9a86a;transform:translateY(-2px)}
+.ysn-motion-choice[aria-pressed=true]{background:#881234;border-color:#881234;color:#fff}
+.ysn-motion-choice:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.ysn-motion-tools{display:flex;gap:7px;margin-top:12px}
+.ysn-motion-tools button{flex:1;border:1px solid #d8c8ac;border-radius:9px;background:#f3e8d2;color:#5e0c24;padding:7px 4px;font-family:inherit;font-size:11px;font-weight:700;line-height:1.5;cursor:pointer}
+.ysn-motion-tools button:hover{background:#e9d8b8}
+.ysn-motion-tools button:disabled{opacity:.6;cursor:default}
+.ysn-motion-status{font-size:10px;color:#766a5c;font-weight:400;margin:9px 0 0}
+.ysn-root.is-chat-open .ysn-motion-launch,.ysn-root.is-chat-open .ysn-motion-panel,.ysn-root.is-pending .ysn-motion-launch,.ysn-root.is-pending .ysn-motion-panel{display:none}
+.ysn.is-at-right .ysn-bubble{left:auto;right:0}
+.ysn.is-at-right .ysn-bubble::after{left:auto;right:22px}
+@media(max-width:600px){
+  .ysn-root{--ysn-w:84px}
+  .ysn-motion-launch{left:8px;bottom:126px;font-size:11px;padding:5px 10px}
+  .ysn-motion-panel{left:8px;bottom:164px;max-height:calc(100dvh - 185px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .ysn-canvas,.ysn-motion-choice,.ysn-motion-launch{transition:none}
+  .ysn-motion-panel{animation:none}
+  .ysn-motion-choice:hover{transform:none}
+  .ysn-shadow{animation:none!important}
+}
+@media print{.ysn-motion-launch,.ysn-motion-panel{display:none!important}}
