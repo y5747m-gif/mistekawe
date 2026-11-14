@@ -35,6 +35,7 @@
   var currentStepSeen = 0, celebrated = false;
   var chatOpen = false, chatGreeted = false, busy = false, locked = false, needCaptcha = false;
   var sid = '', muted = false, audioCtx = null;
+  var offline = false;      // true = ظهرت الشخصية قبل أن يستجيب الخادم
 
   try { muted = window.localStorage.getItem('yaseen_muted') === '1'; } catch (e) {}
   try { sid = window.sessionStorage.getItem('yaseen_sid') || ''; } catch (e) {}
@@ -76,19 +77,83 @@
   }
 
   /* ---------------- تحميل الإعدادات الظاهرة من الخادم ---------------- */
+  /* البوت يظهر أولًا في كل الحالات. الاختفاء لا يكون إلا بقرار صريح من المدير
+     (enabled=false) أو من متغيّر البيئة. أي عطل شبكة أو خطأ خادم مؤقت لا يخفيها،
+     بل تظهر بترحيب محلي وتُكمل عملها بعد رجوع الخادم. */
+  var FIRST_RETRY_MS = 6000;      // إعادة محاولة سريعة في أول دقيقة
+  var fastRetries = 0;
+  var OFFLINE = {                  // نصوص بديلة ثابتة للعرض فقط — لا قواعد ولا إجابات هنا
+    name: 'رحيق',
+    greeting: 'أهلًا بيك في أكاديمية رحيق 👋 أنا رحيق، هساعدك تسجّل ابنك خطوة بخطوة.',
+    chatIntro: 'اسألني عن أي حاجة في التسجيل، أو اختار من الأزرار 👇',
+    quickReplies: [],
+    steps: { 1: 'الخطوة 1: بيانات ولي الأمر.', 2: 'الخطوة 2: بيانات الطالب.', 3: 'الخطوة 3: المستندات.' },
+    guide: {},
+    lines: { stuck: 'تحب أساعدك في الخطوة دي؟', fieldFixed: 'تمام كده 👌', success: 'مبروك! 🎉', offHours: 'تقدر تكمّل الاستمارة عادي.' },
+    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10 },
+    sounds: { enabled: true, volume: 0.4, speech: false },
+    limits: { maxMessages: 20, maxChars: 200 }
+  };
+
+  /* هل الاستجابة إعدادات صالحة للعرض؟ (رد ناقص أو مشوّه لا يبنى عليه شيء) */
+  function usable(body) {
+    return !!(body && body.ok === true && body.enabled === true &&
+      typeof body.greeting === 'string' &&
+      body.limits && typeof body.limits.maxChars === 'number' &&
+      body.animations && typeof body.animations === 'object' &&
+      body.sounds && typeof body.sounds === 'object' &&
+      Array.isArray(body.quickReplies));
+  }
+
   function loadConfig() {
     return request(CONFIG_URL, { method: 'GET' }).then(function (res) {
       var body = res.body;
-      if (res.status !== 200 || !body || body.ok !== true || body.enabled !== true) { destroy(); return; }
+      if (body && body.ok === true && body.enabled === false) { destroy(); return; }    // المدير أوقف البوت صراحةً
+      if (res.status !== 200 || !usable(body)) { buildFallback(); return; }               // رد ناقص/خطأ خادم — لا نحذف البوت
+      var wasOffline = offline;
       cfg = freeze(body);
+      fastRetries = 0; offline = false;
       if (!root) build(); else applyConfig();
+      if (wasOffline && root) {
+        renderOfflineCleared();
+        if (!chatOpen && cfg.greeting) later(function () { if (cfg && root && !offline && !chatOpen) say(cfg.greeting, { expression: 'wave', hold: 5600 }); }, 600);
+      }
     }, function () {
-      if (!root) return;            // لا خادم => لا رحيق
-      /* فشل مؤقت في الشبكة بعد الظهور: نبقيها كما هي ونحاول لاحقًا */
+      buildFallback();                                     // تعذّر الاتصال — لا نحذف البوت
+      if (fastRetries < 10) { fastRetries++; later(loadConfig, FIRST_RETRY_MS * fastRetries); }
     });
   }
 
   /* ---------------- البناء ---------------- */
+  /* وضع بلا خادم: نفس الشخصية والشكل تمامًا، والردود تبقى على الخادم متى رجع.
+     pending=true في أول تحميل: نبني بلا أزرار انتظار حتى نعرف فعلاً أن الخادم متأخر. */
+  function buildFallback(pending) {
+    if (!root) { cfg = freeze(OFFLINE); build(); offline = true; }
+    if (pending) {                           // لم يصل أي رد بعد — لا نُقلق الزائر
+      if (dotEl) dotEl.classList.add('is-off');
+      if (statusEl) statusEl.textContent = '…';
+      return;
+    }
+    renderOffline();
+  }
+  function renderOffline() {
+    if (!root || !offline) return;
+    statusEl.textContent = 'جارٍ الاتصال…';
+    dotEl.classList.add('is-off');
+    while (quickEl.firstChild) quickEl.removeChild(quickEl.firstChild);
+    var retry = el('button', null, 'إعادة المحاولة');
+    retry.type = 'button';
+    retry.addEventListener('click', function () { loadConfig(); });
+    quickEl.appendChild(retry);
+    renderSound(); renderCount(); renderLock();
+  }
+  /* عودة الخادم: نمسح أزرار الانتظار ونعيد الحالة الطبيعية دون أي وميض */
+  function renderOfflineCleared() {
+    statusEl.textContent = cfg.online ? 'متصل الآن · مساعد التسجيل' : 'خارج مواعيد العمل';
+    dotEl.classList.toggle('is-off', !cfg.online);
+    renderSound(); renderCount(); renderLock();
+  }
+
   function build() {
     root = el('div', 'ysn-root');
     root.id = 'yaseenAssistant';
@@ -132,8 +197,9 @@
     var tries = 0;
     (function greet() {                                // ننتظر انتهاء انيميشن البداية ثم تلوّح وترحّب
       if (!cfg || !root) return;
+      if (offline) return;                                   // ننتظر رد الخادم قبل الترحيب
       if (document.body.classList.contains('raheeq-intro-lock') && tries++ < 30) { later(greet, 400); return; }
-      later(function () { if (cfg && root && !chatOpen) say(cfg.greeting, { expression: 'wave', hold: 5600 }); }, 900);
+      later(function () { if (cfg && root && !chatOpen && !offline) say(cfg.greeting, { expression: 'wave', hold: 5600 }); }, 900);
     })();
   }
 
@@ -218,8 +284,9 @@
     charBtn.setAttribute('aria-label', 'افتح محادثة ' + cfg.name + ' — مساعد التسجيل');
     chat.setAttribute('aria-label', 'محادثة ' + cfg.name);
     chat.querySelector('.ysn-name').textContent = cfg.name;
-    dotEl.classList.toggle('is-off', !cfg.online);
-    statusEl.textContent = cfg.online ? 'متصل الآن · مساعد التسجيل' : 'خارج مواعيد العمل';
+    var online = cfg.online !== false && !offline;
+    dotEl.classList.toggle('is-off', !online);
+    statusEl.textContent = offline ? 'جارٍ الاتصال…' : (cfg.online ? 'متصل الآن · مساعد التسجيل' : 'خارج مواعيد العمل');
     mascot.classList.toggle('a-idle', anim('idle'));
     mascot.classList.toggle('a-tilt', anim('tilt'));
 
@@ -245,8 +312,9 @@
     metaCount.textContent = inputEl.value.length + ' / ' + cfg.limits.maxChars;
   }
   function renderLock() {
-    var off = locked || !cfg.online || busy;
-    inputEl.disabled = locked || !cfg.online;
+    var online = cfg.online !== false && !offline;
+    var off = locked || !online || busy;
+    inputEl.disabled = locked || !online;
     Array.prototype.forEach.call(chat.querySelectorAll('.ysn-quick button, .ysn-form button'), function (b) { b.disabled = off; });
   }
 
@@ -562,10 +630,10 @@
     if (!chatGreeted) {
       chatGreeted = true;
       addMessage(cfg.greeting, 'bot');
-      addMessage(cfg.online ? cfg.chatIntro : cfg.lines.offHours, 'bot');
+      addMessage(offline ? 'لسه بحاول أوصل للسيرفر… جرّب بعد لحظات 🙏' : (cfg.online ? cfg.chatIntro : cfg.lines.offHours), 'bot');
     }
     renderLock();
-    if (quick && cfg.online && !locked) {
+    if (quick && cfg.online !== false && !offline && !locked) {
       var q = cfg.quickReplies.filter(function (x) { return x.id === quick; })[0];
       if (q) sendMessage({ quickReply: q.id }, q.label);
     } else if (window.innerWidth > 600 && !inputEl.disabled) {
@@ -592,7 +660,7 @@
   }
 
   function sendMessage(payload, shownText) {
-    if (!cfg || busy || locked || !cfg.online) return;
+    if (!cfg || busy || locked || offline || cfg.online === false) return;
     if (needCaptcha && payload.captcha == null) { try { captchaInput.focus(); } catch (e) {} return; }
     busy = true; renderLock();
     if (shownText) addMessage(shownText, 'user');
@@ -669,9 +737,14 @@
   }
 
   function start() {
+    buildFallback(true);      // الشخصية تظهر فورًا؛ الخادم يحدّثها متى رد
     loadConfig();
     setInterval(function () { if (!document.hidden) loadConfig(); }, REFRESH_MS);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) loadConfig(); });
+    /* رجوع الشبكة أو رجوع التبويب: نحاول فورًا بدل انتظار الدورة التالية */
+    document.addEventListener('yaseen:retry', function () { loadConfig(); });
+    window.addEventListener('online', function () { fastRetries = 0; loadConfig(); });
+    window.addEventListener('pageshow', function (e) { if (e && e.persisted) loadConfig(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

@@ -142,6 +142,17 @@ const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 ok(index.includes('js/yaseen.js') && index.includes('css/yaseen.css'), 'index.html يحمّل رحيق');
 ['idle', 'blink', 'talk', 'wave', 'point', 'worried', 'thinking', 'celebrate', 'avatar'].forEach(n => ok(fs.existsSync(path.join(ROOT, 'assets/yaseen', n + '.webp')), 'صورة ' + n));
 
+/* ---------- 8ب) البوت لا يُحذف إلا بقرار صريح من المدير ---------- */
+/* عطل شبكة أو خطأ خادم عند أول تحميل كان يحذف رحيق نهائيًا فلا تظهر في الصفحة
+   إلا بعد إعادة التحميل. القاعدة الآن: الغياب مقصور على enabled === false. */
+const loadFn = client.slice(client.indexOf('function loadConfig'), client.indexOf('function build()'));
+ok(/enabled === false\)\s*\{\s*destroy\(\)/.test(loadFn), 'الإيقاف الصريح فقط هو ما يحذف رحيق');
+ok(!/status !== 200[^\n]*destroy\(\)/.test(loadFn), 'خطأ الخادم لا يحذف رحيق');
+ok(loadFn.includes('buildFallback'), 'تعذّر الاتصال يعرض الشخصية بدل حذفها');
+ok(/offline = true/.test(client) && /renderOfflineCleared/.test(client), 'وضع بلا خادم يبني نفس الشخصية ثم يعود طبيعيًا');
+ok(/usable\(body\)/.test(client), 'الرد الناقص من الخادم لا يُبنى عليه أبدًا');
+ok(/addEventListener\('online'/.test(client), 'رجوع الشبكة يعيد المحاولة فورًا');
+
 /* ---------- 9) الخادم: جلسات، حدود، CAPTCHA ---------- */
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaseen-test-'));
 let clock = Date.parse('2026-11-15T10:00:00Z');

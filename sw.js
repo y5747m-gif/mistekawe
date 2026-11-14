@@ -1,5 +1,5 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v9-raheeq-yaseen';
+const CACHE = 'majlis-shell-v10-raheeq-yaseen';
 const SHELL = [
   './',
   './majlis.html',
