@@ -52,6 +52,47 @@ ok(html.includes('family=Cairo') && css.includes("font-family:'Cairo Local'"), '
 ok(read('raheeq.html').includes('location.replace'), 'الرابط القديم raheeq.html يحوّل إلى أساس الموقع');
 ok(exists('majlis.html') && read('majlis.html').includes('مجلس الصوت'), 'صفحة مجلس الصوت القديمة محفوظة');
 
+console.log('\n1.0) معاينة شعار رحيق عند مشاركة الرابط');
+const shareImage = 'https://mistekawe.vercel.app/assets/brand/raheeq-og.jpg';
+for (const [name, page] of [['index.html', html], ['raheeq.html', read('raheeq.html')]]) {
+  const head = page.split('</head>')[0];
+  for (const [attribute, key, value] of [
+    ['property', 'og:type', 'website'],
+    ['property', 'og:url', 'https://mistekawe.vercel.app/'],
+    ['property', 'og:image', shareImage],
+    ['property', 'og:image:secure_url', shareImage],
+    ['property', 'og:image:type', 'image/jpeg'],
+    ['property', 'og:image:width', '1200'],
+    ['property', 'og:image:height', '661'],
+    ['name', 'twitter:card', 'summary_large_image'],
+    ['name', 'twitter:image', shareImage],
+  ]) {
+    const tag = `<meta ${attribute}="${key}" content="${value}">`;
+    ok(head.includes(tag), `${name}: ${key} متاح في HTML الأولي`);
+    ok(head.split(`${attribute}="${key}"`).length === 2, `${name}: ${key} غير مكرر`);
+  }
+}
+const shareImagePath = 'assets/brand/raheeq-og.jpg';
+ok(exists(shareImagePath), 'صورة شعار المشاركة موجودة');
+if (exists(shareImagePath)) {
+  const image = fs.readFileSync(path.join(ROOT, shareImagePath));
+  // Read the JPEG SOF marker to verify that advertised dimensions match the image.
+  let offset = 2, dimensions;
+  while (offset + 9 < image.length && image[offset] === 0xff) {
+    const marker = image[offset + 1];
+    const size = image.readUInt16BE(offset + 2);
+    if ([0xc0, 0xc1, 0xc2].includes(marker)) {
+      dimensions = [image.readUInt16BE(offset + 7), image.readUInt16BE(offset + 5)];
+      break;
+    }
+    if (size < 2) break;
+    offset += size + 2;
+  }
+  ok(image[0] === 0xff && image[1] === 0xd8 && dimensions?.join('x') === '1200x661',
+    'الصورة JPEG وأبعادها تطابق وسوم المشاركة');
+  ok(image.length < 300 * 1024, 'صورة المشاركة صغيرة بما يكفي للتنزيل السريع');
+}
+
 console.log('\n1.1) انيميشن البداية (Intro) + منظومة الخطوط متعددة العائلات');
 for (const f of ['css/intro.css', 'js/intro.js'])
   ok(exists(f), 'ملف الانميشن موجود: ' + f);
