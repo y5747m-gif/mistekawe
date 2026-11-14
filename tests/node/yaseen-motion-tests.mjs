@@ -11,6 +11,8 @@ const system = require(path.join(ROOT, 'api/_yaseen/yaseen-system.js'));
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 let passed = 0, failed = 0;
 function ok(value, name) { if (value) passed++; else { failed++; console.error('  ✗ ' + name); } }
+
+/* ---------- قنوات الأكاديمية في الفوتر ---------- */
 const html = read('index.html');
 const channels = html.slice(html.indexOf('id="raheeqChannels"'), html.indexOf('</section>', html.indexOf('id="raheeqChannels"')));
 const expected = {
@@ -28,25 +30,35 @@ ok(channels.includes('https://wa.me/201151947735'), 'واتساب الأكادي
 ok(html.includes('href="#raheeqChannels"'), 'رابط قنواتنا في الهيدر');
 ok(html.includes('id="regForm"') && html.includes('id="settingsPanel"') && html.includes('js/app.js'), 'التسجيل والإعدادات الحديثة لم تُزل');
 
-const motion = read('js/yaseen-motion.js'), scene = read('js/yaseen-3d.js'), css = read('css/yaseen-motion.css');
+/* ---------- طبقة الحركة: الشكل القديم (صور ثنائية الأبعاد) + حركات كثيرة ---------- */
+const motion = read('js/yaseen-motion.js'), css = read('css/yaseen-motion.css');
 for (const code of [motion, read('js/yaseen.js'), read('admin-yaseen/admin.js')]) {
   try { new vm.Script(code); ok(true, 'صياغة JavaScript سليمة'); } catch (e) { ok(false, e.message); }
 }
-for (const name of ['idle', 'walk', 'run', 'jump', 'wave', 'dance', 'spin', 'thinking', 'point', 'celebrate', 'stretch', 'float']) {
-  ok(motion.includes("['" + name + "'") && scene.includes("'" + name + "'"), 'حركة متاحة في اللوحة والمجسم: ' + name);
+ok(!fs.existsSync(path.join(ROOT, 'js/yaseen-3d.js')) && !motion.includes('yaseen-3d') && !motion.includes('three.module'),
+  'الشكل القديم رجع: لا مجسم WebGL ولا ثلاثي الأبعاد');
+ok(read('js/yaseen.js').includes('frames[name] = img'), 'الصور الأصلية هي الشخصية نفسها');
+ok(html.includes('js/yaseen-motion.js') && !html.includes('yaseen-3d'), 'الصفحة تحمّل طبقة الحركة فقط');
+
+for (const name of ['idle', 'walk', 'run', 'jump', 'dance', 'spin', 'flip', 'bounce', 'swing', 'stretch', 'float', 'dizzy', 'nod', 'shake', 'wave', 'point', 'thinking', 'worried', 'celebrate']) {
+  ok(motion.includes("['" + name + "'"), 'الحركة موجودة في لوحة الحركات: ' + name);
 }
-ok(motion.includes('prefers-reduced-motion: reduce') && css.includes('prefers-reduced-motion:reduce'), 'احترام تقليل الحركة');
+for (const cls of ['m-jump', 'm-dance', 'm-spin', 'm-flip', 'm-bounce', 'm-swing', 'm-stretch', 'm-float', 'm-dizzy', 'm-nod', 'm-shake', 'm-hop', 'm-lean', 'm-shiver', 'm-drag', 'is-walking', 'is-running']) {
+  ok(css.includes('.' + cls), 'كلاس الحركة مُنسّق في CSS: ' + cls);
+}
+ok(motion.includes('AUTO_POOL') && motion.includes('AUTO_EVERY_MS'), 'العجلة التلقائية للحركات الكثيرة موجودة');
 ok(motion.includes('yaseen_motion_paused') && motion.includes('setPointerCapture'), 'إيقاف الحركة والسحب متاحان');
-ok(motion.includes("import('./yaseen-3d.js')") && scene.includes("./vendor/three.module.min.js"), 'المحرك محلي بلا CDN أو API خارجي');
-ok(fs.existsSync(path.join(ROOT, 'js/vendor/THREE-LICENSE.txt')), 'ترخيص المحرك مضمّن');
-ok(motion.includes('webglcontextlost') === false && scene.includes('webglcontextlost'), 'فقدان WebGL يعيد الشخصية الأصلية');
+ok(motion.includes('prefers-reduced-motion: reduce') && css.includes('prefers-reduced-motion'), 'احترام تقليل الحركة');
 ok(read('js/yaseen.js').includes('motion.destroy()'), 'إيقاف المدير يزيل طبقة الحركة أيضًا');
-ok(read('js/yaseen.js').includes("frames[name] = img"), 'الصور الأصلية تبقى بديلًا');
+
+/* ---------- تطابق إعدادات الحركات محليًا وعلى الخادم ---------- */
 const pub = system.publicConfig(system.defaultConfig(), new Date());
 ok(JSON.stringify(readBase().animations) === JSON.stringify(pub.animations), 'إعدادات الحركة المحلية تطابق الخادم');
-const validated = system.validateConfig({ animations: { run: false, roam: false, threeD: false } });
-ok(validated.animations.run === false && validated.animations.roam === false && validated.animations.threeD === false, 'مفاتيح المدير للحركات الجديدة محفوظة');
-ok(validated.animations.walk === true && validated.animations.idle === true, 'الإعدادات القديمة تحصل على قيم آمنة');
-ok(read('sw.js').includes('v10-raheeq-motion'), 'نسخة الكاش محدثة');
+const validated = system.validateConfig({ animations: { run: false, roam: false, dizzy: false, threeD: false } });
+ok(validated.animations.run === false && validated.animations.roam === false && validated.animations.dizzy === false, 'مفاتيح المدير للحركات الكثيرة محفوظة');
+ok(validated.animations.walk === true && validated.animations.idle === true && validated.animations.flip === true, 'الإعدادات الأخرى تحصل على قيم آمنة');
+ok(!('threeD' in validated.animations), 'مفتاح ثلاثي الأبعاد سقط من مخطط التحقق');
+ok(read('sw.js').includes('v11-raheeq-sprite-motion') && !read('sw.js').includes('yaseen-3d'), 'نسخة الكاش محدثة وبلا ملفات المجسم');
+
 console.log('\nRaheeq channels + motion tests: ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

@@ -78,7 +78,7 @@
       success: 'مبروك! 🎉 طلب التسجيل اتبعت بنجاح، احتفظ برقم الطلب.',
       offHours: 'أنا متاح في مواعيد العمل بس. تقدر تكمّل الاستمارة عادي، ولو محتاج حاجة كلّم الأكاديمية على واتساب.'
     },
-    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10, threeD: true, roam: true, walk: true, run: true, jump: true, dance: true, spin: true, stretch: true, float: true },
+    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10, roam: true, walk: true, run: true, jump: true, dance: true, spin: true, stretch: true, float: true, nod: true, shake: true, swing: true, flip: true, bounce: true, dizzy: true },
     sounds: { enabled: true, volume: 0.4, speech: false },
     limits: { maxMessages: 20, maxChars: 200 }
   });

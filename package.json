@@ -14,7 +14,6 @@
     "test": "node tests/node/raheeq-tests.mjs && node tests/node/yaseen-tests.mjs && node tests/node/yaseen-widget-tests.mjs && node tests/node/yaseen-motion-tests.mjs && node tests/node/sound-tests.mjs && node tests/node/dom-smoke.mjs && python3 -m unittest discover -s tests/python"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "three": "0.160.1"
+    "bcryptjs": "^2.4.3"
   }
 }
