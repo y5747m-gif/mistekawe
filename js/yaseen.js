@@ -20,6 +20,68 @@
   var EXPRESSION_POSE = { happy: 'idle', worried: 'worried', thinking: 'thinking', celebrate: 'celebrate', point: 'point', wave: 'wave' };
   var REFRESH_MS = 45000;
   var POINT_MS = 7000;
+  var RETRY_MS = 8000;
+
+  /* ------------------------------------------------------------
+     الشكل الأساسي لرحيق (BASE)
+     ------------------------------------------------------------
+     نفس النصوص الافتراضية التي يرسلها الخادم، لكنها محليّة هنا
+     حتى تظهر الشخصية فورًا مع أول رسم للصفحة، بدل أن تختفي لو
+     تأخّر الخادم أو فشل الطلب الأول (شبكة بطيئة / حجب / بدء بارد).
+
+     القاعدة لم تتغيّر: الخادم هو المرجع. أوّل رد من الخادم يستبدل
+     هذه القيم كلها (applyConfig)، ولو قال الخادم إن المدير أوقف
+     البوت تُزال رحيق بالكامل (destroy). هذه القيم شكل ونصوص عرض
+     فقط — لا قواعد ولا إجابات ولا كلمات مفتاحية.
+     ------------------------------------------------------------ */
+  var BASE = freeze({
+    ok: true, enabled: true, online: true,
+    name: 'رحيق',
+    greeting: 'أهلًا بيك في أكاديمية رحيق 👋 أنا رحيق، هساعدك تسجّل ابنك خطوة بخطوة.',
+    chatIntro: 'اسألني عن أي حاجة في التسجيل، أو اختار من الأزرار 👇',
+    quickReplies: [
+      { id: 'problem', label: 'فين المشكلة؟' },
+      { id: 'upload', label: 'عايز أرفع مستند' },
+      { id: 'password', label: 'نسيت كلمة السر' },
+      { id: 'human', label: 'عايز أكلم موظف' }
+    ],
+    steps: {
+      1: 'الخطوة 1: بيانات ولي الأمر. ابدأ بالاسم الرباعي والرقم القومي.',
+      2: 'الخطوة 2: بيانات الطالب. اكتب اسم ابنك وتاريخ ميلاده والصف.',
+      3: 'الخطوة 3: المستندات. ارفع شهادة الميلاد وصورة الطالب وبطاقة ولي الأمر.'
+    },
+    guide: {
+      parentName: 'اكتب اسمك رباعي: 4 أسماء على الأقل.',
+      nationalId: 'الرقم القومي لازم 14 رقم بالظبط.',
+      relation: 'اختار صلة القرابة بالطالب.',
+      mobile: 'اكتب رقم الموبايل 11 رقمًا وراجع الأرقام الناقصة أو الزائدة.',
+      whatsapp: 'رقم الواتساب لازم 11 رقم، أو سيبه فاضي لو هو نفس الموبايل.',
+      email: 'اكتب البريد بدون مسافات، مع علامة @ واحدة وبينها نص قبلها وبعدها.',
+      password: 'كلمة السر لازم 6 حروف أو أرقام على الأقل.',
+      confirmPassword: 'اكتب نفس كلمة السر مرة تانية بالظبط.',
+      studentName: 'اكتب اسم الطالب رباعي: 4 أسماء على الأقل.',
+      dob: 'اختار تاريخ ميلاد صحيح للطالب، بعد سنة 1900 وليس في المستقبل.',
+      gender: 'اختار نوع الطالب.',
+      grade: 'اختار الصف الدراسي المطلوب.',
+      prevSchool: 'اسم المدرسة السابقة اختياري.',
+      address: 'اكتب عنوانًا من 5 أحرف على الأقل، مثل المحافظة والمدينة والشارع.',
+      healthNotes: 'لو فيه ملاحظات صحية اكتبها هنا، وده اختياري.',
+      birthCert: 'ارفع صورة واضحة لشهادة الميلاد من هنا.',
+      photo: 'ارفع صورة شخصية حديثة للطالب من هنا.',
+      parentCard: 'ارفع صورة بطاقة الرقم القومي لولي الأمر من هنا.',
+      reportCard: 'آخر شهادة دراسية اختيارية، ارفعها لو موجودة.',
+      agree: 'علّم على الموافقة على الشروط والأحكام عشان تقدر تبعت الطلب.'
+    },
+    lines: {
+      stuck: 'تحب أساعدك في الخطوة دي؟',
+      fieldFixed: 'تمام كده 👌',
+      success: 'مبروك! 🎉 طلب التسجيل اتبعت بنجاح، احتفظ برقم الطلب.',
+      offHours: 'أنا متاح في مواعيد العمل بس. تقدر تكمّل الاستمارة عادي، ولو محتاج حاجة كلّم الأكاديمية على واتساب.'
+    },
+    animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10 },
+    sounds: { enabled: true, volume: 0.4, speech: false },
+    limits: { maxMessages: 20, maxChars: 200 }
+  });
 
   var cfg = null;
   var root = null, mascot = null, charBtn = null, bubble = null, chat = null;
@@ -34,7 +96,8 @@
   var lastActivity = Date.now(), interacted = false, stuckShown = false;
   var currentStepSeen = 0, celebrated = false;
   var chatOpen = false, chatGreeted = false, busy = false, locked = false, needCaptcha = false;
-  var sid = '', muted = false, audioCtx = null;
+  var sid = '', muted = false, audioCtx = null, offlineRetry = 0, offlineTries = 0, revealTimer = 0;
+  var serverSeen = false;      // هل وصل إعداد الخادم مرة واحدة على الأقل؟
 
   try { muted = window.localStorage.getItem('yaseen_muted') === '1'; } catch (e) {}
   try { sid = window.sessionStorage.getItem('yaseen_sid') || ''; } catch (e) {}
@@ -79,17 +142,46 @@
   function loadConfig() {
     return request(CONFIG_URL, { method: 'GET' }).then(function (res) {
       var body = res.body;
-      if (res.status !== 200 || !body || body.ok !== true || body.enabled !== true) { destroy(); return; }
+      /* الخادم قال صراحةً إن المدير أوقف البوت => تُزال رحيق فورًا */
+      if (body && (body.disabled === true || body.enabled === false)) { destroy(); return; }
+      if (res.status !== 200 || !body || body.ok !== true || body.enabled !== true) { offline(); return; }
       cfg = freeze(body);
+      serverSeen = true;
+      offlineTries = 0;
+      clearTimeout(offlineRetry);
       if (!root) build(); else applyConfig();
-    }, function () {
-      if (!root) return;            // لا خادم => لا رحيق
-      /* فشل مؤقت في الشبكة بعد الظهور: نبقيها كما هي ونحاول لاحقًا */
-    });
+      reveal();                     // الخادم رد: نُظهر رحيق بإعداد المدير فورًا
+    }, offline);                    // تعذّر الوصول للخادم: لا تُخفى الشخصية
+  }
+
+  /* ------------------------------------------------------------
+     الخادم غير متاح الآن (شبكة / حجب / بدء بارد / استضافة ثابتة):
+     تظهر رحيق بشكلها الأساسي، وتُستبدل نصوصها بإعداد المدير أول ما
+     يرد الخادم. لا تُخفى الشخصية ولا يبقى ولي الأمر بلا مساعد.
+     ------------------------------------------------------------ */
+  function offline() {
+    if (!root) { cfg = BASE; build(); reveal(); }   // ظاهرة بالفعل؟ لا نلمس ما يراه ولي الأمر
+    clearTimeout(offlineRetry);
+    offlineRetry = later(function () { loadConfig(); }, retryDelay());
+  }
+  /* إظهار رحيق: فورًا مع رد الخادم، أو بعد مهلة قصيرة لو تأخّر/فشل.
+     الغرض: ألا تظهر ولو للحظة لو أمر المدير بإيقافها. */
+  function reveal() {
+    clearTimeout(revealTimer);
+    if (root) root.classList.remove('is-pending');
+  }
+
+  /* تأخير متزايد بين المحاولات حتى لا يتحول انقطاع الخادم إلى وابل طلبات */
+  function retryDelay() {
+    var ms = Math.min(60000, RETRY_MS * Math.pow(2, Math.min(3, offlineTries)));
+    offlineTries += 1;
+    return ms;
   }
 
   /* ---------------- البناء ---------------- */
   function build() {
+    if (root) return;
+    if (!cfg) cfg = BASE;
     root = el('div', 'ysn-root');
     root.id = 'yaseenAssistant';
 
@@ -109,6 +201,12 @@
       img.alt = '';
       img.draggable = false;
       img.decoding = 'async';
+      img.addEventListener('error', function () {        // لو تلف إطار: نرجع للصورة الأصلية بدل شخصية فارغة
+        if (img.getAttribute('data-fallback') === '1') return;
+        img.setAttribute('data-fallback', '1');
+        img.classList.add('is-raw');
+        img.src = ASSETS + 'src/base.jpg';
+      });
       frames[name] = img;
       flip.appendChild(img);
     });
@@ -536,6 +634,17 @@
   }
 
   /* ---------------- المحادثة ---------------- */
+  function whatsappHref() {
+    var num = '';
+    var meta = document.querySelector('meta[name="raheeq-whatsapp"]');
+    if (meta) num = String(meta.getAttribute('content') || '');
+    if (window.RaheeqWhatsApp && typeof window.RaheeqWhatsApp.number === 'function') {
+      try { num = String(window.RaheeqWhatsApp.number() || num); } catch (e) {}
+    }
+    num = num.replace(/[^0-9]/g, '');
+    return /^\d{8,15}$/.test(num) ? 'https://wa.me/' + num : '';
+  }
+
   function addMessage(text, who) {
     var msg = el('div', 'ysn-msg ' + (who === 'user' ? 'is-user' : 'is-bot'), text);
     logEl.appendChild(msg);
@@ -644,7 +753,18 @@
       if (!root) return;
       if (typing.parentNode) typing.parentNode.removeChild(typing);
       busy = false;
-      addMessage('الاتصال ضعيف دلوقتي، جرّب تاني بعد شوية.', 'bot');
+      if (serverSeen) {
+        addMessage('الاتصال ضعيف دلوقتي، جرّب تاني بعد شوية.', 'bot');
+      } else {
+        var msg = addMessage('مش قادر أوصل بمساعد التسجيل دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
+        var wa = whatsappHref();
+        if (wa) {
+          var link = el('a', 'ysn-wa', 'افتح واتساب الأكاديمية');
+          link.href = wa; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          msg.appendChild(document.createElement('br'));
+          msg.appendChild(link);
+        }
+      }
       setPose(anim('expressions') ? 'worried' : 'idle', 2500);
       renderLock();
     });
@@ -653,6 +773,7 @@
   /* ---------------- الإزالة (مفتاح الإيقاف) ---------------- */
   function destroy() {
     cfg = null;
+    clearTimeout(offlineRetry);
     if (!root) return;
     release();
     timers.forEach(function (id) { clearTimeout(id); clearInterval(id); });
@@ -669,6 +790,12 @@
   }
 
   function start() {
+    if (!root && !cfg) {                          // شكل رحيق الأساسي فورًا — قبل أي طلب للخادم
+      cfg = BASE;
+      build();
+      root.classList.add('is-pending');
+      revealTimer = later(reveal, 700);           // مهلة قصيرة: لو الخادم لم يرد بعد نُظهرها بأساسها
+    }
     loadConfig();
     setInterval(function () { if (!document.hidden) loadConfig(); }, REFRESH_MS);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) loadConfig(); });

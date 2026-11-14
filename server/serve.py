@@ -89,6 +89,10 @@ CSP = (
     "frame-ancestors 'none'"
 )
 
+# نسخة CSP للمعاينة المحلية داخل إطار (--preview): تسمح بتضمين نطاق المعاينة فقط
+CSP_PREVIEW = CSP.replace("frame-ancestors 'none'", "frame-ancestors 'self' https://*.e2b.app")
+
+
 # مسارات محظورة كملفات ثابتة: بيانات/كود خادم/اختبارات/dotfiles
 BLOCKED_EXACT = {"/data", "/server", "/tests", "/docs"}
 BLOCKED_PREFIXES = ("/data/", "/server/", "/tests/", "/docs/", "/api/_yaseen/", "/node_modules")
@@ -104,6 +108,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     limiter = raheeq_api.RateLimiter()
     yaseen_port = None          # منفذ خادم رحيق المحلي (Node) إن كان يعمل
     trust_proxy = False         # الوثوق بترويسة X-Forwarded-For (خلف وكيل عكسي فقط)
+    preview = False             # معاينة محلية داخل إطار (--preview) — ليست للنشر
 
     # ------------------------------------------------------------------ أدوات
     def _json(self, status, payload, extra_headers=None):
@@ -318,9 +323,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
+        # المعاينة المحلية (--preview) فقط: لا نمنع التضمين داخل إطار المعاينة
+        if not Handler.preview:
+            self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
-        self.send_header("Content-Security-Policy", CSP)
+        self.send_header("Content-Security-Policy", CSP_PREVIEW if Handler.preview else CSP)
         # السماح بتشغيل مسارات العمل (إن أُضيف WebGPU/Threads لاحقًا)
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header(
@@ -370,6 +377,8 @@ def main() -> int:
     ap.add_argument("--admin-token", default=os.environ.get("RAHEEQ_ADMIN_TOKEN"),
                     help="رمز قراءة الطلبات (أو متغيّر RAHEEQ_ADMIN_TOKEN)")
     ap.add_argument("--no-yaseen", action="store_true", help="لا تشغّل مساعد التسجيل رحيق")
+    ap.add_argument("--preview", action="store_true",
+                    help="معاينة محلية داخل إطار: يسمح بالتضمين من نطاق المعاينة فقط (لا تستخدمه للنشر)")
     ap.add_argument("--trust-proxy", action="store_true",
                     default=os.environ.get("RAHEEQ_TRUST_PROXY") == "1",
                     help="استخدم X-Forwarded-For لعنوان العميل (خلف وكيل عكسي موثوق فقط)")
@@ -379,6 +388,7 @@ def main() -> int:
     Handler.data_dir = data_dir
     Handler.admin_token = (args.admin_token or "").strip() or None
     Handler.trust_proxy = bool(args.trust_proxy)
+    Handler.preview = bool(args.preview)
     Handler.yaseen_port = None if args.no_yaseen else start_yaseen(data_dir)
 
     with Server((args.host, args.port), Handler) as httpd:
