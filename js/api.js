@@ -117,11 +117,16 @@
       mobile: data.mobile || '',
       whatsapp: data.whatsapp || '',
       email: data.email || '',
-      password: data.password || '',
+      /* لا تُرسل كلمة السر نصًا أبدًا — hash العميل فقط */
+      passwordHash: data.passwordHash && data.passwordSalt
+        ? 'sha256$' + data.passwordSalt + '$' + data.passwordHash
+        : '',
       studentName: data.studentName || '',
       dob: data.dob || '',
       gender: data.gender || '',
+      programType: data.programType || '',
       grade: data.grade || '',
+      foundationLevel: data.foundationLevel || '',
       foundationSubjects: Array.isArray(data.foundationSubjects) ? data.foundationSubjects : [],
       prevSchool: data.prevSchool || '',
       address: data.address || '',

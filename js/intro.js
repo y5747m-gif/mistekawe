@@ -19,6 +19,40 @@
   /* قفل التمرير أثناء عرض المشهد */
   document.body.classList.add('raheeq-intro-lock');
 
+  /* ---------- مؤثرات صوتية للعرض ---------- */
+  var S = window.RaheeqSound;
+  var sfxTimers = [];
+  var introSoundPlayed = false;
+  function playSfx(name, vol) {
+    if (!S || finished) return;
+    try { S.play(name, vol != null ? { vol: vol } : undefined); } catch (e) {}
+  }
+  function at(ms, name, vol) {
+    var id = window.setTimeout(function () { playSfx(name, vol); }, ms);
+    sfxTimers.push(id);
+  }
+  /* جدول المؤثرات الصوتية متزامنًا مع حركة الانيميشن:
+     whoosh عند البدء، نقرات خفيفة مع صعود الأعمدة، ورنين عند القمة */
+  function scheduleSfx() {
+    at(reduceMotion ? 60 : 250, 'intro', 0.5);          // whoosh البداية
+    at(reduceMotion ? 120 : 620, 'step', 0.22);         // صعود الأعمدة
+    at(reduceMotion ? 160 : 780, 'step', 0.2);
+    at(reduceMotion ? 220 : 1400, 'chime', 0.45);       // القمة والشعار يتجمّع
+    at(reduceMotion ? 260 : 2100, 'step', 0.16);        // لمسة أخيرة قبل الاختفاء
+  }
+  /* المتصفحات تمنع التشغيل قبل أول تفاعل: عند أول نقرة/لمسة العرض ما زال ظاهرًا
+     نشغّل whoosh مرة واحدة فورًا */
+  function catchUpSfx() {
+    if (introSoundPlayed || finished || !S) return;
+    introSoundPlayed = true;
+    try { S.unlock(); } catch (e) {}
+    playSfx('intro', 0.45);
+  }
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
+    document.addEventListener(ev, catchUpSfx, { passive: true, capture: true });
+  });
+  scheduleSfx();
+
   /* ---------- غبار ذهبي عائم ---------- */
   try {
     var dust = overlay.querySelector('.intro-dust');
@@ -86,6 +120,9 @@
   function finish() {
     if (finished) return;
     finished = true;
+    sfxTimers.forEach(function (id) { window.clearTimeout(id); });
+    sfxTimers = [];
+    playSfx('click', 0.25);
     overlay.classList.add('is-leaving');
     document.body.classList.remove('raheeq-intro-lock');
     window.removeEventListener('resize', layoutTrend);

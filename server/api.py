@@ -47,6 +47,19 @@ DOC_LABELS = {
     "reportCard": "بيان النجاح",
 }
 
+# القائمتان المختلفتان للبرنامج
+PROGRAM_TYPES = ("تأسيس", "منهج دراسي")
+FOUNDATION_LEVELS = ("تأسيس للصغار", "تأسيس للكبار")
+FOUNDATION_SUBJECTS = ("اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "القراءة والكتابة")
+CURRICULUM_GRADES = (
+    "KG1", "KG2",
+    "الصف الأول الابتدائي", "الصف الثاني الابتدائي", "الصف الثالث الابتدائي",
+    "الصف الرابع الابتدائي", "الصف الخامس الابتدائي", "الصف السادس الابتدائي",
+    "الصف الأول الإعدادي", "الصف الثاني الإعدادي", "الصف الثالث الإعدادي",
+    "الصف الأول الثانوي", "الصف الثاني الثانوي", "3 ثانوي",
+)
+CLIENT_HASH_RE = re.compile(r"^sha256\$[0-9a-f]{32}\$[0-9a-f]{64}$")
+
 # نوع MIME المسموح ← (الامتداد، البصمة الفعلية للبايتات)
 ALLOWED_TYPES: dict[str, tuple[str, tuple[bytes, ...]]] = {
     "image/jpeg": (".jpg", (b"\xff\xd8\xff",)),
@@ -187,21 +200,57 @@ def validate_registration(payload: Any) -> dict[str, Any]:
     email = _text(payload.get("email"), 160)
     if not EMAIL_RE.match(email):
         fields["email"] = "البريد الإلكتروني غير صالح"
-    password = payload.get("password")
-    if not isinstance(password, str) or len(password) < 6 or len(password) > 128:
+    # كلمة السر: hash العميل (sha256$salt$hex) أو النص القديم — لا نخزن أيًا منهما كما هو
+    secret = payload.get("passwordHash")
+    if secret is not None and not (isinstance(secret, str) and CLIENT_HASH_RE.match(secret)):
+        secret = None
+    if secret is None:
+        secret = payload.get("password")
+    if not isinstance(secret, str) or len(secret) < 6 or len(secret) > 200:
         fields["password"] = "كلمة السر يجب أن تكون 6 أحرف على الأقل"
     student_name = _text(payload.get("studentName"), 120)
     if _words(student_name) < 4:
         fields["studentName"] = "اكتب اسم الطالب رباعيًا"
-    grade = _text(payload.get("grade"), 40)
-    if not grade:
-        fields["grade"] = "اختر الصف"
     address = _text(payload.get("address"), 400)
     if len(address) < 5:
         fields["address"] = "أدخل العنوان"
     dob = _text(payload.get("dob"), 10)
     if dob and not re.match(r"^\d{4}-\d{2}-\d{2}$", dob):
         fields["dob"] = "تاريخ الميلاد غير صالح"
+
+    # ---- قائمتان مختلفتان: تأسيس (قائمة المواد) أو منهج دراسي (قائمة السنة الدراسية) ----
+    program_type = _text(payload.get("programType"), 20)
+    grade = _text(payload.get("grade"), 40)
+    foundation_level = _text(payload.get("foundationLevel"), 40)
+    subjects_in = payload.get("foundationSubjects")
+    subjects_in = subjects_in if isinstance(subjects_in, list) else []
+
+    if program_type not in PROGRAM_TYPES:
+        # استنتاج تلقائي من grade القديم (عملاء قدامى قبل تقسيم القوائم)
+        if grade in FOUNDATION_LEVELS:
+            program_type = "تأسيس"
+            foundation_level = grade
+            grade = ""
+        elif grade in CURRICULUM_GRADES:
+            program_type = "منهج دراسي"
+
+    if program_type not in PROGRAM_TYPES:
+        fields["programType"] = "اختر نوع البرنامج: تأسيس أو منهج دراسي"
+    elif program_type == "تأسيس":
+        # قائمة مواد التأسيس: مادة أو أكثر إلزامية من القائمة البيضاء
+        if not foundation_level and grade in FOUNDATION_LEVELS:
+            foundation_level = grade
+        if foundation_level and foundation_level not in FOUNDATION_LEVELS:
+            fields["foundationLevel"] = "مستوى التأسيس غير صالح"
+        grade = ""  # السنة الدراسية لا تنطبق على التأسيس
+        subjects = [x for x in subjects_in if isinstance(x, str) and x in FOUNDATION_SUBJECTS][:4]
+        if not subjects:
+            fields["foundationSubjects"] = "اختر مادة أو أكثر من قائمة مواد التأسيس"
+    else:  # منهج دراسي
+        foundation_level = ""
+        subjects = []
+        if grade not in CURRICULUM_GRADES:
+            fields["grade"] = "اختر السنة الدراسية من القائمة"
 
     docs_in = payload.get("docs")
     if not isinstance(docs_in, dict):
@@ -253,13 +302,14 @@ def validate_registration(payload: Any) -> dict[str, Any]:
         "mobile": mobile,
         "whatsapp": _normalize_digits(payload.get("whatsapp")) or mobile,
         "email": email,
-        "passwordHash": hash_password(password),
+        "passwordHash": hash_password(secret if isinstance(secret, str) else ""),
         "studentName": student_name,
         "dob": dob,
         "gender": _text(payload.get("gender"), 20),
+        "programType": program_type,
         "grade": grade,
-        "foundationSubjects": [s for s in (payload.get("foundationSubjects") if isinstance(payload.get("foundationSubjects"), list) else [])
-                               if isinstance(s, str) and s in ("اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "القراءة والكتابة")][:4],
+        "foundationLevel": foundation_level,
+        "foundationSubjects": subjects,
         "prevSchool": _text(payload.get("prevSchool"), 160),
         "address": address,
         "healthNotes": _text(payload.get("healthNotes"), 800),
@@ -368,7 +418,9 @@ def save_registration(payload: Any, data_dir: str) -> dict[str, Any]:
         "studentName": record["studentName"],
         "dob": record["dob"],
         "gender": record["gender"],
+        "programType": record["programType"],
         "grade": record["grade"],
+        "foundationLevel": record.get("foundationLevel", ""),
         "foundationSubjects": record.get("foundationSubjects", []),
         "prevSchool": record["prevSchool"],
         "address": record["address"],
@@ -421,6 +473,7 @@ def list_registrations(data_dir: str) -> list[dict[str, Any]]:
                 "createdAt": entry.get("createdAt"),
                 "updatedAt": entry.get("updatedAt"),
                 "studentName": entry.get("studentName"),
+                "programType": entry.get("programType"),
                 "grade": entry.get("grade"),
                 "parentName": entry.get("parentName"),
                 "mobile": entry.get("mobile"),

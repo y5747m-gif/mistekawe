@@ -14,7 +14,10 @@
     error:   { file: 'sounds/error.mp3',   vol: 0.5 },
     step:    { file: 'sounds/step.mp3',    vol: 0.4 },
     upload:  { file: 'sounds/upload.mp3',  vol: 0.4 },
-    toggle:  { file: 'sounds/toggle.mp3',  vol: 0.3 }
+    toggle:  { file: 'sounds/toggle.mp3',  vol: 0.3 },
+    /* أصوات عرض البداية (العرض الذي يبدأ عند دخول الموقع) */
+    intro:   { file: 'sounds/intro.wav',   vol: 0.5 },
+    chime:   { file: 'sounds/chime.wav',   vol: 0.45 }
   };
 
   var LS_KEY = 'raheeq_sound';
@@ -108,6 +111,16 @@
     else if (name === 'step') { noise(t, 0.4, vol * 0.7); tone(420, t + 0.04, 0.3, 'sine', vol * 0.5); }
     else if (name === 'upload') { tone(900, t, 0.18, 'sine', vol); tone(500, t + 0.06, 0.12, 'sine', vol * 0.7); }
     else if (name === 'toggle') { tone(1000, t, 0.05, 'sine', vol); tone(1500, t + 0.07, 0.05, 'sine', vol); }
+    else if (name === 'intro') {  // whoosh تصاعدي احتياطي لو تعذّر ملف الصوت
+      noise(t, 0.9, vol * 0.8);
+      tone(300, t, 0.7, 'sine', vol * 0.4);
+      tone(700, t + 0.35, 0.5, 'sine', vol * 0.5);
+      tone(1200, t + 0.7, 0.35, 'sine', vol * 0.4);
+    }
+    else if (name === 'chime') {  // رنين عند قمة العرض
+      tone(523, t, 0.9, 'sine', vol); tone(659, t + 0.1, 0.9, 'sine', vol * 0.9);
+      tone(784, t + 0.2, 1.0, 'sine', vol * 0.8); tone(1047, t + 0.32, 1.2, 'sine', vol * 0.6);
+    }
   }
 
   /* ---------- التشغيل ---------- */

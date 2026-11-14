@@ -1,23 +1,104 @@
 {
   "rewrites": [
-    { "source": "/api/yaseen-config", "destination": "/api/yaseen?__r=config" },
-    { "source": "/api/yaseen-chat", "destination": "/api/yaseen?__r=chat" },
-    { "source": "/api/yaseen-admin/:action", "destination": "/api/yaseen?__r=admin-:action" }
+    {
+      "source": "/api/yaseen-config",
+      "destination": "/api/yaseen?__r=config"
+    },
+    {
+      "source": "/api/yaseen-chat",
+      "destination": "/api/yaseen?__r=chat"
+    },
+    {
+      "source": "/api/yaseen-admin/:action",
+      "destination": "/api/yaseen?__r=admin-:action"
+    }
   ],
   "redirects": [
-    { "source": "/api/_yaseen/:path*", "destination": "/", "permanent": false },
-    { "source": "/server/:path*", "destination": "/", "permanent": false },
-    { "source": "/tests/:path*", "destination": "/", "permanent": false },
-    { "source": "/data/:path*", "destination": "/", "permanent": false }
+    {
+      "source": "/api/_yaseen/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/server/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/tests/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/data/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.git/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.github/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.gitignore",
+      "destination": "/",
+      "permanent": false
+    }
   ],
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "bluetooth=(self), microphone=(self), speaker-selection=(self), autoplay=(self)"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        }
+      ]
+    },
+    {
       "source": "/admin-yaseen/(.*)",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
-        { "key": "Cache-Control", "value": "no-store" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "no-referrer" }
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
       ]
     }
   ]

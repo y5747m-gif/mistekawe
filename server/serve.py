@@ -71,6 +71,29 @@ EXTRA_TYPES = {
 }
 
 
+# Content-Security-Policy: طبقة حماية إضافية — object-src/base-uri مغلقان
+# (السكربتات المضمّنة الحالية في صفحات المتجر تحتاج unsafe-inline مؤقتًا)
+CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "img-src 'self' data: blob:; "
+    "media-src 'self' blob:; "
+    "connect-src 'self'; "
+    "worker-src 'self' blob:; "
+    "manifest-src 'self'; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "frame-ancestors 'none'"
+)
+
+# مسارات محظورة كملفات ثابتة: بيانات/كود خادم/اختبارات/dotfiles
+BLOCKED_EXACT = {"/data", "/server", "/tests", "/docs"}
+BLOCKED_PREFIXES = ("/data/", "/server/", "/tests/", "/docs/", "/api/_yaseen/", "/node_modules")
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
@@ -103,8 +126,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self._json(exc.status, payload)
 
     def _admin_authorized(self, query):
-        header = self.headers.get("X-Admin-Token")
-        provided = header or (query.get("token") or [None])[0]
+        # الرمز DER يُرسل في header فقط — لا في query string (لا يسجَّل في logs/الروابط)
+        provided = self.headers.get("X-Admin-Token")
         if not self.admin_token:
             raise raheeq_api.ApiError(
                 403,
@@ -210,17 +233,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
 
-        if path.startswith("/data/") or path == "/data":
-            self.send_error(404)          # لا نكشف ملفات المستندات المحفوظة
-            return
-        if path.startswith("/.git/") or path == "/.git":
-            self.send_error(404)
-            return
-        if path == "/server" or path.startswith("/server/"):
-            self.send_error(404)          # لا نكشف كود الخادم
-            return
-
-        if path in ("/package.json", "/package-lock.json", "/vercel.json") or path.startswith("/node_modules"):
+        # حظر موحّد: أي مكوّن path يبدأ بنقطة (dotfiles) + مجلدات البيانات والكود والاختبارات
+        segments = [seg for seg in path.split("/") if seg]
+        if path in BLOCKED_EXACT or path.startswith(BLOCKED_PREFIXES) or \
+                any(seg.startswith(".") for seg in segments) or \
+                path in ("/package.json", "/package-lock.json", "/vercel.json"):
             self.send_error(404)
             return
         if self._is_yaseen_path(path):
@@ -300,6 +317,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Content-Security-Policy", CSP)
         # السماح بتشغيل مسارات العمل (إن أُضيف WebGPU/Threads لاحقًا)
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header(

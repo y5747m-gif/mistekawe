@@ -98,25 +98,25 @@
   const product = getProductById(id) || NANJAWI_PRODUCTS[0];
   let qty = 1;
 
-  document.title = `${product.name} | ننجاوي`;
+  document.title = `${escHtml(product.name)} | ننجاوي`;
   document.getElementById('breadcrumb').innerHTML =
-    `<a href="majlis.html">مجلس الصوت</a> / <a href="shop.html">المتجر</a> / ${product.name}`;
+    `<a href="majlis.html">مجلس الصوت</a> / <a href="shop.html">المتجر</a> / ${escHtml(product.name)}`;
 
   document.getElementById('pd-container').innerHTML = `
     <div class="pd-gallery">
-      <div class="pd-gallery-main">${product.icon}</div>
+      <div class="pd-gallery-main">${escHtml(product.icon)}</div>
       <div class="pd-thumbs">
-        <div class="active">${product.icon}</div>
+        <div class="active">${escHtml(product.icon)}</div>
         <div>🌿</div>
         <div>📦</div>
       </div>
     </div>
     <div class="pd-info">
-      <span class="product-cat">${product.category}</span>
-      <h1>${product.name}</h1>
+      <span class="product-cat">${escHtml(product.category)}</span>
+      <h1>${escHtml(product.name)}</h1>
       <div class="pd-rating">★★★★★ <span style="color:var(--muted)">(128 تقييم)</span></div>
-      <div class="pd-price">${formatPrice(product.price)} ر.س</div>
-      <p class="pd-desc">${product.desc}</p>
+      <div class="pd-price">${escHtml(formatPrice(product.price))} ر.س</div>
+      <p class="pd-desc">${escHtml(product.desc)}</p>
 
       <div class="qty-row">
         <div class="qty-control">
@@ -133,7 +133,7 @@
       </div>
 
       <div class="pd-meta">
-        <div><span>الفئة</span><span>${product.category}</span></div>
+        <div><span>الفئة</span><span>${escHtml(product.category)}</span></div>
         <div><span>الشحن</span><span>يصل خلال 2-4 أيام عمل</span></div>
         <div><span>الإرجاع</span><span>خلال 7 أيام من الاستلام</span></div>
       </div>

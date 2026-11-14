@@ -970,7 +970,10 @@
     projs.forEach(p => {
       const d = document.createElement('div');
       d.className = 'proj';
-      d.innerHTML = '<img src="' + (p.thumb || '') + '" alt=""><div class="pb"><b></b><small></small></div><div class="pa"></div>';
+      d.innerHTML = '<img alt=""><div class="pb"><b></b><small></small></div><div class="pa"></div>';
+      /* thumbnail من التخزين المحلي: data:image آمنة فقط — لا src عشوائي */
+      const thumbImg = d.querySelector('img');
+      if (/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(String(p.thumb || ''))) thumbImg.src = p.thumb;
       d.querySelector('b').textContent = p.name;
       d.querySelector('small').textContent = p.date + ' • ' + (p.scores ? p.scores.overall + '%' : '') +
         ' • ' + (p.info ? num(p.info.faces) + ' وجه' : '');
