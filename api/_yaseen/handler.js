@@ -16,6 +16,7 @@
    ============================================================ */
 const crypto = require('crypto');
 const system = require('./yaseen-system');
+const ai = require('./ai');
 const auth = require('./auth');
 const { createStore, MAX_LOGS } = require('./store');
 
@@ -56,6 +57,8 @@ function diffConfig(before, after) {
 
 function createHandler(options) {
   const store = (options && options.store) || createStore(options);
+  const env = (options && options.env) || process.env;
+  const fetchImpl = (options && options.fetchImpl) || undefined;
   const now = (options && options.now) || (() => Date.now());
   let memLastOtp = 0;
 
@@ -154,7 +157,31 @@ function createHandler(options) {
     } else if (typeof body.quickReply === 'string') {
       result = system.answerQuick(config, body.quickReply, body.context);
     } else if (typeof body.message === 'string') {
-      result = system.answerText(config, body.message.slice(0, 2000), body.context);
+      const rawMessage = body.message.slice(0, 2000);
+      const base = system.answerText(config, rawMessage, body.context);
+      /* أنواع تُحسم قطعيًا بلا نموذج: تلاعب/حظر/روابط/طول/فراغ — وإلا Groq يجاوب من معرفة الموقع */
+      const HARD_STOP = { manipulation: 1, blocked: 1, link: 1, toolong: 1, empty: 1 };
+      if (HARD_STOP[base.kind] || !ai.enabled(env)) {
+        result = base;
+      } else {
+        try {
+          const out = await ai.askAI(env, { question: rawMessage, context: body.context, config, history: session.history, fetchImpl });
+          result = {
+            reply: out.reply,
+            expression: out.expression,
+            action: out.pointTo ? { type: 'point', field: out.pointTo, step: system.FIELDS[out.pointTo] } : null,
+            handoff: out.handoff ? { whatsapp: config.handoff.whatsapp } : null,
+            kind: 'ai'
+          };
+        } catch (err) {
+          console.warn('[yaseen] AI failed, falling back to rules:', err && err.message);
+          /* لو المحرك القاعدي كان هيرفض خارج الموضوع، نقدّم اعتذارًا واضحًا مع تحويل للواتساب */
+          result = base.kind === 'offtopic'
+            ? { reply: 'حصلت مشكلة في الاتصال بمساعد رحيق الذكي دلوقتي 🙏 لو سؤالك عن التسجيل أعد كتابته، ولو محتاج متابعة كلّم موظف التسجيل على واتساب الأكاديمية من الزر ده.', expression: 'worried', action: null, handoff: { whatsapp: config.handoff.whatsapp }, kind: 'ai-down' }
+            : base;
+        }
+      }
+      ai.pushHistory(session, rawMessage, result.reply);
     } else {
       result = { reply: config.messages.empty, expression: 'thinking', action: null, handoff: null };
     }
@@ -221,6 +248,7 @@ function createHandler(options) {
       online: system.isWithinHours(state.config, new Date(now())),
       storage: { kind: store.kind, writable: store.writable },
       passwordHash: auth.hashKind(admin.passwordHash),
+      ai: { enabled: ai.enabled(env), model: ai.enabled(env) ? ai.modelName(env) : null },
       locked: { limits: system.LIMITS, fixed: system.FIXED, fields: Object.keys(system.FIELDS), expressions: system.EXPRESSIONS }
     };
   }

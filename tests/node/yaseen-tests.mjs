@@ -91,12 +91,12 @@ ok(/الرياضيات/.test(system.answerText(expanded, 'مواد التأسي�
 
 /* ---------- 4) الروابط والطول والتنظيف ---------- */
 ['شوف https://evil.example', 'www.site.com', 'ادخل bit.ly/x او example.com', '<a href=x>'].forEach(m => eq(kind(m), 'link', 'رابط مرفوض: ' + m));
-eq(kind('ا'.repeat(201)), 'toolong', 'أكثر من 200 حرف مرفوض');
+eq(kind('ا'.repeat(401)), 'toolong', 'أكثر من 400 حرف مرفوض');
 eq(kind('   '), 'empty', 'رسالة فارغة');
 eq(system.sanitize('a\u0000b\u202Ec'), 'a bc', 'إزالة محارف التحكم والاتجاه');
 eq(system.sanitize(12345), '', 'غير النص يُهمل');
 eq(system.LIMITS.maxMessages, 20, 'حد 20 رسالة');
-eq(system.LIMITS.maxChars, 200, 'حد 200 حرف');
+eq(system.LIMITS.maxChars, 400, 'حد 400 حرف');
 
 /* ---------- 5) الأزرار السريعة والسياق كبيانات ---------- */
 const q = system.answerQuick(cfg, 'problem', { step: 1, invalid: ['__proto__', 'evil', 'mobile', 'nationalId'] });

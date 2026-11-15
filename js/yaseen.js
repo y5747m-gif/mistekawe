@@ -78,7 +78,7 @@
     },
     animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10, roam: true, walk: true, run: true, jump: true, dance: true, spin: true, stretch: true, float: true, nod: true, shake: true, swing: true, flip: true, bounce: true, dizzy: true },
     sounds: { enabled: true, volume: 0.4, speech: false },
-    limits: { maxMessages: 20, maxChars: 200 }
+    limits: { maxMessages: 20, maxChars: 400 }
   });
 
   var cfg = null;
