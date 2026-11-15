@@ -45,8 +45,12 @@ eq(system.FIXED.offTopic, 'أنا متخصص في التسجيل بس، لو ع�
   .forEach(m => eq(system.answerText(cfg, m).reply, system.FIXED.offTopic, 'خارج الموضوع: ' + m));
 
 /* ---------- 3) أسئلة التسجيل ---------- */
-eq(system.answerText(cfg, 'الرقم القومي كام رقم؟').action.field, 'nationalId', 'الرقم القومي يشير للخانة');
-ok(/14/.test(system.answerText(cfg, 'الرقم القومي كام رقم؟').reply), 'رد الرقم القومي يذكر 14');
+/* الرقم القومي أُزيل من الاستمارة: الرد يوضّح ذلك ولا يشير إلى خانة غير موجودة */
+const noNational = system.answerText(cfg, 'الرقم القومي كام رقم؟');
+ok(noNational.action === null, 'الرقم القومي لم يبقَ له هدف إشارة');
+ok(/اتشالت|مش مطلوب|مش محتاج/.test(noNational.reply), 'رد الرقم القومي يوضّح أنه غير مطلوب');
+ok(!('nationalId' in system.defaultConfig().guide) && !('parentCard' in system.defaultConfig().guide),
+  'دليل الخانات بلا الرقم القومي وبطاقة ولي الأمر');
 eq(kind('عايز اسجل ابني ازاي'), 'answer', 'سؤال التسجيل يُجاب');
 eq(kind('قولي ازاي اسجل ابني'), 'answer', '«قولي ازاي» سؤال عادي وليس تلاعبًا');
 eq(system.answerText(cfg, 'ساكن في مدينة نصر اكتب العنوان ازاي').action.field, 'address', '«مدينة» لا تُحسب «دين»');
@@ -64,7 +68,7 @@ const expanded = system.validateConfig(cfg);
   ['العنوان ناقص', 'address', /5/],
   ['شهادة الميلاد مش بترفع', 'birthCert', /مطلوبة/],
   ['صورة الطالب مش بترفع', 'photo', /طالب/],
-  ['صورة بطاقة ولي الامر', 'parentCard', /البطاقة/],
+  ['ايه المستندات المطلوبه', 'birthCert', /شهادة ميلاد/],
   ['بيان النجاح اختياري', 'reportCard', /اختياري/],
   ['الموافقة على الشروط', 'agree', /الشروط/]
 ].forEach(([question, field, pattern]) => {
@@ -95,8 +99,10 @@ eq(system.LIMITS.maxMessages, 20, 'حد 20 رسالة');
 eq(system.LIMITS.maxChars, 200, 'حد 200 حرف');
 
 /* ---------- 5) الأزرار السريعة والسياق كبيانات ---------- */
-const q = system.answerQuick(cfg, 'problem', { step: 1, invalid: ['__proto__', 'evil', 'nationalId'] });
-eq(q.action.field, 'nationalId', 'فين المشكلة؟ تشير لأول خانة صحيحة الاسم فقط');
+const q = system.answerQuick(cfg, 'problem', { step: 1, invalid: ['__proto__', 'evil', 'mobile', 'nationalId'] });
+eq(q.action.field, 'mobile', 'فين المشكلة؟ تشير لأول خانة صحيحة الاسم فقط');
+eq(system.answerQuick(cfg, 'problem', { step: 3, invalid: ['parentCard'] }).action, null,
+  'بطاقة ولي الأمر لم تبقَ خانة يشير إليها البوت');
 eq(system.answerQuick(cfg, 'problem', { step: 2, invalid: [] }).reply, cfg.messages.allGood, 'لا أخطاء => تمام');
 eq(system.answerQuick(cfg, 'ignore-rules', {}).reply, system.FIXED.offTopic, 'زر غير معروف مرفوض');
 eq(system.cleanContext({ step: 9, invalid: 'x' }).step, 0, 'سياق غير صالح يُهمل');
@@ -232,10 +238,12 @@ eq((await get('/api/yaseen-admin/config', { headers: { authorization: 'Bearer ' 
 
 const next = JSON.parse(JSON.stringify(res.body.config));
 next.name = 'رحيق الجديد';
-next.guide.nationalId = 'لازم 14 رقم';
+next.guide.mobile = 'لازم 11 رقم';
+next.guide.nationalId = 'خانة ملغاة لا تُحفظ';
 next.blockedWords = ['منافس'];
 res = await post('/api/yaseen-admin/config', { config: next }, H);
 eq(res.body.changed, 3, 'ثلاثة تغييرات مسجّلة');
+ok(!('nationalId' in res.body.config.guide), 'إعداد خانة ملغاة (الرقم القومي) لا يُحفظ');
 eq((await get('/api/yaseen-config')).body.name, 'رحيق الجديد', 'التغيير يصل للزوار');
 res = await get('/api/yaseen-admin/logs', H);
 const log = res.body.logs.find(l => l.path === 'name');

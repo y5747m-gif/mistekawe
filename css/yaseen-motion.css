@@ -86,6 +86,9 @@
 .ysn-motion-tools button:disabled{opacity:.6;cursor:default}
 .ysn-motion-status{font-size:10px;color:#766a5c;font-weight:400;margin:9px 0 0}
 
+/* انزلاق الانتقال إلى مكان بعيد (مكان الخطأ): حركة انتقال واحدة ثم تتبع فوري */
+.ysn.is-gliding{transition:translate .55s cubic-bezier(.3,.9,.3,1)}
+
 /* البالون يلتصق بالحافة البعيدة حين تسافر رحيق يمين الشاشة */
 .ysn.is-at-right .ysn-bubble{left:auto;right:0}
 .ysn.is-at-right .ysn-bubble::after{left:auto;right:22px}
@@ -100,6 +103,7 @@
 }
 @media(prefers-reduced-motion:reduce){
   .ysn,.ysn-char,.ysn-tilt,.ysn-body,.ysn-flip,.ysn-shadow{animation:none !important;transition:none !important}
+  .ysn.is-gliding{transition:none !important}
   .ysn-motion-choice,.ysn-motion-launch{transition:none}
   .ysn-motion-panel{animation:none}
   .ysn-motion-choice:hover{transform:none}

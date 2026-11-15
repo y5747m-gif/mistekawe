@@ -1,13 +1,15 @@
-/* شريط الاتصال السريع والواتساب — عائم ومتاح في جميع الصفحات ومطابق لمعايير الموبايل */
+/* شريط الاتصال السريع والواتساب — عائم ومتاح في جميع الصفحات ومطابق لمعايير الموبايل
+   الأزرار على اليمين، ورحيق (البوت) على الشمال — لا تتصادم أبدًا. */
 .floating-contact-bar {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+/* البوت على الشمال وأزرار الاتصال على اليمين: لا تتقاطع حركة رحيق معها */
 .floating-btn {
   display: flex;
   align-items: center;
@@ -43,11 +45,16 @@
 @media (max-width: 600px) {
   .floating-contact-bar {
     bottom: 18px;
-    left: 18px;
+    right: 14px;
     gap: 10px;
   }
   .floating-btn {
     width: 48px;
     height: 48px;
   }
+}
+/* التخطيط من اليسار لليمين لا يقلب مواضع الأزرار: الشمال للبوت واليمين للاتصال */
+html[dir="ltr"] .floating-contact-bar {
+  right: 24px;
+  left: auto;
 }

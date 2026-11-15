@@ -39,7 +39,9 @@ NATIONAL_RE = re.compile(r"^\d{14}$")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+$")
 
 DOC_KEYS = ("birthCert", "photo", "parentCard", "reportCard")
-REQUIRED_DOCS = ("birthCert", "photo", "parentCard")
+# «بطاقة ولي الأمر» ورقة قديمة تُقبل لو أرسلها عميل قديم، لكنها لم تبقَ
+# إلزامية بعد إزالة خانتها (ومعها الرقم القومي) من كل صفحات الموقع.
+REQUIRED_DOCS = ("birthCert", "photo")
 DOC_LABELS = {
     "birthCert": "شهادة الميلاد",
     "photo": "الصورة الشخصية",
@@ -191,8 +193,9 @@ def validate_registration(payload: Any) -> dict[str, Any]:
     parent_name = _text(payload.get("parentName"), 120)
     if _words(parent_name) < 4:
         fields["parentName"] = "اكتب اسم ولي الأمر رباعيًا"
+    # الرقم القومي لم يعد يُطلب في الاستمارة: يُحفظ لو أُرسل صالحًا، ولا يمنع الطلب غيابه
     national_id = _normalize_digits(payload.get("nationalId"))
-    if not NATIONAL_RE.match(national_id):
+    if national_id and not NATIONAL_RE.match(national_id):
         fields["nationalId"] = "الرقم القومي يجب أن يكون 14 رقمًا"
     mobile = _normalize_digits(payload.get("mobile"))
     if not MOBILE_RE.match(mobile):
@@ -254,7 +257,7 @@ def validate_registration(payload: Any) -> dict[str, Any]:
 
     docs_in = payload.get("docs")
     if not isinstance(docs_in, dict):
-        raise ApiError(400, "المستندات مطلوبة", {"docs": "أرفق شهادة الميلاد والصورة الشخصية وبطاقة ولي الأمر"})
+        raise ApiError(400, "المستندات مطلوبة", {"docs": "أرفق شهادة الميلاد والصورة الشخصية للطالب"})
 
     docs: dict[str, dict[str, Any]] = {}
     total = 0

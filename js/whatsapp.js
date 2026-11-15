@@ -71,7 +71,8 @@
     }
     lines.push('');
     lines.push('👤 ' + (isEn() ? 'Parent: ' : 'ولي الأمر: ') + (data.parentName || '—'));
-    lines.push('🪪 ' + (isEn() ? 'National ID: ' : 'الرقم القومي: ') + (data.nationalId || '—'));
+    /* الرقم القومي اختياري بعد إزالة خانته: لا يظهر سطر فارغ في الرسالة */
+    if (data.nationalId) lines.push('🪪 ' + (isEn() ? 'National ID: ' : 'الرقم القومي: ') + data.nationalId);
     if (data.relation) lines.push('🔗 ' + (isEn() ? 'Relation: ' : 'صلة القرابة: ') + relationLabel(data.relation));
     lines.push('📱 ' + (isEn() ? 'Mobile: ' : 'الموبايل: ') + (data.mobile || '—'));
     if (data.whatsapp && data.whatsapp !== data.mobile) {
@@ -97,7 +98,7 @@
     lines.push('');
     var docs = savedDocs(data.docs);
     lines.push('📎 ' + (isEn() ? 'Documents to attach: ' : 'المستندات المرفقة للطلب: ') +
-      (docs.length ? docs.join(' • ') : (isEn() ? 'birth certificate, personal photo, parent ID card' : 'شهادة الميلاد • الصورة الشخصية • بطاقة ولي الأمر')));
+      (docs.length ? docs.join(' • ') : (isEn() ? 'birth certificate, personal photo' : 'شهادة الميلاد • الصورة الشخصية')));
     if (!o.skipFooter) {
       lines.push('');
       lines.push(isEn()
