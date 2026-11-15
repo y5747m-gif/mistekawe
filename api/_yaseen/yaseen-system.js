@@ -19,16 +19,16 @@ const parentHelp = require('./parent-help');
 
 /* ---------------- 1) قواعد مقفولة ---------------- */
 const LIMITS = Object.freeze({
-  maxMessages: 20,        // أقصى عدد رسائل في الجلسة
-  maxChars: 400,          // أقصى طول للرسالة
+  maxMessages: 40,        // أقصى عدد رسائل في الجلسة (مساحة مريحة للحوار والمذاكرة)
+  maxChars: 800,          // أقصى طول للرسالة (يكفي الأسئلة الدراسية والمسائل)
   burstCount: 4,          // أكثر من هذا العدد خلال النافذة => CAPTCHA
   burstWindowMs: 10000,
   minGapMs: 700,          // رسالتان أسرع من ذلك => سبام
-  ipPerHour: 120,         // رسائل لكل عنوان IP في الساعة
-  sessionsPerHour: 12,    // جلسات جديدة لكل عنوان IP في الساعة
+  ipPerHour: 160,         // رسائل لكل عنوان IP في الساعة
+  sessionsPerHour: 16,    // جلسات جديدة لكل عنوان IP في الساعة
   sessionTtlSec: 2 * 60 * 60,
   captchaTtlMs: 5 * 60 * 1000,
-  maxBodyBytes: 4096
+  maxBodyBytes: 12288
 });
 
 const FIXED = Object.freeze({
@@ -42,7 +42,7 @@ const FIXED = Object.freeze({
 const FIELDS = Object.freeze({
   parentName: 1, relation: 1, mobile: 1, whatsapp: 1, email: 1,
   password: 1, confirmPassword: 1,
-  studentName: 2, dob: 2, gender: 2, grade: 2, prevSchool: 2, address: 2, healthNotes: 2,
+  studentName: 2, dob: 2, gender: 2, programType: 2, foundationLevel: 2, foundationSubjects: 2, grade: 2, prevSchool: 2, address: 2, healthNotes: 2,
   birthCert: 3, photo: 3, reportCard: 3, agree: 3
 });
 
@@ -168,7 +168,7 @@ function defaultConfig() {
       allGood: 'كل بيانات الخطوة دي تمام ✅ دوس «التالي» وكمّل.',
       success: 'مبروك! 🎉 طلب التسجيل اتبعت بنجاح، احتفظ برقم الطلب.',
       limit: 'وصلنا لأقصى عدد رسائل في المحادثة دي. لو لسه محتاج مساعدة كلّم موظف التسجيل على واتساب الأكاديمية.',
-      tooLong: 'الرسالة طويلة شوية 🙏 اكتب سؤالك في 400 حرف أو أقل.',
+      tooLong: 'الرسالة طويلة شوية 🙏 اختصر سؤالك في 800 حرف أو أقل أو قسّمه على رسالتين.',
       noLinks: 'مش بقدر أفتح روابط أو ملفات. اكتب سؤالك بالكلام وأنا معاك.',
       spam: 'واحدة واحدة عليّا 😊 استنى ثواني وابعت سؤالك تاني.',
       captcha: 'عشان أتأكد إنك مش برنامج آلي، حل المسألة البسيطة دي:',
@@ -193,6 +193,9 @@ function defaultConfig() {
       studentName: 'اكتب اسم الطالب رباعي: 4 أسماء على الأقل.',
       dob: 'اختار تاريخ ميلاد صحيح للطالب، بعد سنة 1900 وليس في المستقبل.',
       gender: 'اختار نوع الطالب.',
+      programType: 'اختار نوع البرنامج أولًا: تأسيس أو منهج دراسي.',
+      foundationLevel: 'اختار مستوى التأسيس: للصغار أو للكبار.',
+      foundationSubjects: 'علّم على مادة واحدة على الأقل من قائمة مواد التأسيس.',
       grade: 'اختار الصف الدراسي المطلوب.',
       prevSchool: 'اسم المدرسة السابقة اختياري.',
       address: 'اكتب عنوانًا من 5 أحرف على الأقل، مثل المحافظة والمدينة والشارع.',

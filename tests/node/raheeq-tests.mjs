@@ -858,7 +858,7 @@ console.log('\n9) تدقيق أمني (Hacker pass): هروب HTML + رؤوس أ
     'vercel.json يضيف CSP + X-Frame-Options + nosniff لكل المسارات');
   ok((vercel.redirects || []).some(r => r.source === '/.git/:path*'), 'vercel.json يعيد توجيه dotfiles إلى الجذر');
   const swSrc = read('sw.js');
-  ok(swSrc.includes('v12'), 'sw.js: ترقية نسخة الكاش بعد التعديلات');
+  ok(/majlis-shell-v(\d+)/.test(swSrc) && Number(swSrc.match(/majlis-shell-v(\d+)/)[1]) >= 12, 'sw.js: ترقية نسخة الكاش بعد التعديلات');
   ok(!/['"]\.\/js\/app\.js['"]/.test(swSrc) && !/['"]\.\/index\.html['"]/.test(swSrc),
     'sw.js: لا يخزّن استمارة/سكربتات النموذج مسبقًا (كان يسبّب نسخة قديمة)');
   ok(/req\.mode === 'navigate'/.test(swSrc) && /cache: 'no-store'/.test(swSrc),

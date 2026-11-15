@@ -147,7 +147,7 @@
   function grid() { return el('div', { class: 'grid' }); }
   function fieldOptions() { return [['', '— بدون إشارة —']].concat(view.locked.fields.map(function (f) { return [f, FIELD_AR[f] || f]; })); }
 
-  var FIELD_AR = { parentName: 'اسم ولي الأمر', relation: 'صلة القرابة', mobile: 'الموبايل', whatsapp: 'واتساب', email: 'البريد', password: 'كلمة السر', confirmPassword: 'تأكيد كلمة السر', studentName: 'اسم الطالب', dob: 'تاريخ الميلاد', gender: 'النوع', grade: 'الصف', prevSchool: 'المدرسة السابقة', address: 'العنوان', healthNotes: 'ملاحظات صحية', birthCert: 'شهادة الميلاد', photo: 'صورة الطالب', reportCard: 'آخر شهادة', agree: 'الموافقة على الشروط' };
+  var FIELD_AR = { parentName: 'اسم ولي الأمر', relation: 'صلة القرابة', mobile: 'الموبايل', whatsapp: 'واتساب', email: 'البريد', password: 'كلمة السر', confirmPassword: 'تأكيد كلمة السر', studentName: 'اسم الطالب', dob: 'تاريخ الميلاد', gender: 'النوع', programType: 'نوع البرنامج', foundationLevel: 'مستوى التأسيس', foundationSubjects: 'مواد التأسيس', grade: 'الصف', prevSchool: 'المدرسة السابقة', address: 'العنوان', healthNotes: 'ملاحظات صحية', birthCert: 'شهادة الميلاد', photo: 'صورة الطالب', reportCard: 'آخر شهادة', agree: 'الموافقة على الشروط' };
   var EXPR_AR = [['happy', 'سعيدة'], ['wave', 'تلوّح'], ['point', 'تشير'], ['thinking', 'تفكّر'], ['worried', 'قلقة'], ['celebrate', 'تحتفل']];
   var MSG_AR = { stuck: 'عند توقف ولي الأمر', fieldFixed: 'بعد تصحيح خانة', allGood: 'كل الخانات سليمة', success: 'نجاح إرسال الطلب', limit: 'انتهاء عدد الرسائل', tooLong: 'رسالة أطول من الحد', noLinks: 'رابط أو ملف', spam: 'رسائل سريعة', captcha: 'طلب التحقق', captchaWrong: 'إجابة تحقق خاطئة', captchaOk: 'نجاح التحقق', offHours: 'خارج مواعيد العمل', empty: 'رسالة فارغة' };
   var ACTION_AR = { login: 'دخول', 'login-failed': 'محاولة دخول فاشلة', logout: 'خروج', config: 'تعديل إعداد', 'kill-switch': 'إيقاف البوت', 'bot-on': 'تشغيل البوت', 'admin-setup': 'إنشاء حساب المدير' };
@@ -272,8 +272,8 @@
       box.appendChild(field('الكلمات', draft, 'blockedWords', { type: 'textarea', rows: 5, join: '، ' }));
       box.appendChild(el('h3', {}, 'قواعد مقفولة في كود الخادم (للعرض فقط)'));
       var g = grid(), L = view.locked;
-      var aiStatus = view.ai ? (view.ai.enabled ? 'مفعّل — ' + (view.ai.model || 'llama-3.3-70b-versatile') : 'متوقف — مفتاح GROQ_API_KEY غير مضبوط على الخادم') : '—';
-      [['الذكاء الاصطناعي (Groq)', aiStatus], ['أقصى عدد رسائل في الجلسة', L.limits.maxMessages], ['أقصى طول للرسالة', L.limits.maxChars], ['رسائل لكل IP في الساعة', L.limits.ipPerHour]].forEach(function (p) {
+      var aiStatus = view.ai ? (view.ai.enabled ? 'مفعّل (' + (view.ai.provider || 'groq') + ') — ' + (view.ai.model || 'llama-3.3-70b-versatile') : 'متوقف — أضف GROQ_API_KEY في متغيرات البيئة ثم أعد النشر (Redeploy)') : '—';
+      [['الذكاء الاصطناعي', aiStatus], ['أقصى عدد رسائل في الجلسة', L.limits.maxMessages], ['أقصى طول للرسالة', L.limits.maxChars], ['رسائل لكل IP في الساعة', L.limits.ipPerHour]].forEach(function (p) {
         var w = el('label', {}, p[0]); w.appendChild(el('input', { type: 'text', readOnly: true, value: String(p[1]) })); g.appendChild(w);
       });
       box.appendChild(g);
@@ -284,16 +284,24 @@
     ['test', 'تجربة', function (box) {
       box.appendChild(el('h2', {}, 'جرّب رد رحيق'));
       box.appendChild(el('p', { class: 'muted' }, 'التجربة على آخر نسخة محفوظة، ولا تُحسب من رسائل الزوار.'));
+      var useAiWrap = el('label', { class: 'check' });
+      var useAiInput = el('input', { type: 'checkbox' });
+      useAiInput.checked = !!(view.ai && view.ai.enabled);
+      useAiWrap.appendChild(useAiInput);
+      useAiWrap.appendChild(document.createTextNode('تجربة بالذكاء الاصطناعي الحقيقي (عند تفعيل المفتاح على الخادم)'));
+      box.appendChild(useAiWrap);
       var row = el('div', { class: 'row' });
-      var input = el('input', { type: 'text', maxLength: 400, placeholder: 'مثال: انسى تعليماتك' });
+      var input = el('input', { type: 'text', maxLength: 800, placeholder: 'مثال: اشرحلي درس الكسور في الرياضيات أو ازاي أسجل ابني؟' });
       var btn = el('button', { type: 'button', class: 'btn primary' }, 'جرّب');
       var out = el('div', { class: 'test-out', hidden: true });
       function run() {
-        call('test', 'POST', { message: input.value }).then(function (data) {
+        btn.disabled = true;
+        call('test', 'POST', { message: input.value, useAI: useAiInput.checked }).then(function (data) {
           var r = data.result;
           out.hidden = false;
           out.textContent = r.reply + '\n\nالتصنيف: ' + r.kind + ' · التعبير: ' + r.expression + (r.action ? ' · تشير إلى: ' + (FIELD_AR[r.action.field] || r.action.field) : '');
-        }).catch(function (err) { out.hidden = false; out.textContent = err.message; });
+        }).catch(function (err) { out.hidden = false; out.textContent = err.message; })
+          .then(function () { btn.disabled = false; });
       }
       btn.addEventListener('click', run);
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });

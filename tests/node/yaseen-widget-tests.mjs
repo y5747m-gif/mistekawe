@@ -138,5 +138,48 @@ async function settle(env) {
   eq(wa && wa.href, 'https://wa.me/201151947735', 'بلا خادم: الرقم الرسمي من meta');
 }
 
+/* ---------- 7) أزرار المتابعة التفاعلية (followUps) وحفظ ctxToken ---------- */
+{
+  const server = Object.assign({}, system.publicConfig(system.defaultConfig(), new Date()), { ai: true });
+  let sentPayloads = [];
+  const env = loadWidget({
+    fetch: (url, opts) => {
+      if (String(url).indexOf('yaseen-config') >= 0) return Promise.resolve({ status: 200, body: server });
+      sentPayloads.push(opts && opts.body ? JSON.parse(opts.body) : {});
+      return Promise.resolve({
+        status: 200,
+        body: {
+          ok: true,
+          sid: '0123456789abcdef0123456789abcdef',
+          ctxToken: 'tok.sig',
+          remaining: 39,
+          reply: 'أهلًا يا بطل! تحب نذاكر أي مادة النهاردة؟',
+          expression: 'happy',
+          followUps: ['رياضيات', 'لغة إنجليزية']
+        }
+      });
+    },
+    meta: META
+  });
+  await settle(env);
+  const root = widget(env);
+  root.querySelector('.ysn-char').dispatch('click');
+  await settle(env);
+
+  const input = root.querySelector('.ysn-form input');
+  input.value = 'محتاج مساعدة في المذاكرة';
+  root.querySelector('.ysn-form').dispatch('submit');
+  await settle(env);
+
+  const chips = root.querySelectorAll('.ysn-chip');
+  eq(chips.length, 2, 'ظهور اقتراحات المتابعة الذكية كأزرار قابلة للضغط');
+  eq(chips[0].textContent, 'رياضيات', 'نص اقتراح المتابعة الأول');
+  chips[0].dispatch('click');
+  await settle(env);
+  eq(sentPayloads.length, 2, 'الضغط على اقتراح المتابعة يرسل السؤال مباشرة');
+  eq(sentPayloads[1].message, 'رياضيات', 'السؤال المرسل يطابق الاقتراح');
+  eq(sentPayloads[1].ctxToken, 'tok.sig', 'الواجهة تعيد إرسال ctxToken لحفظ ذاكرة المحادثة');
+}
+
 console.log('\nYaseen widget tests: ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);
