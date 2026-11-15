@@ -114,6 +114,15 @@
       ]
     },
     {
+      "source": "/(cart|login|register|raheeq).html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
       "source": "/admin-yaseen/(.*)",
       "headers": [
         {

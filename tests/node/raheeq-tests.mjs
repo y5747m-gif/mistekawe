@@ -630,7 +630,10 @@ console.log('\n7.3) شخصنة الألوان والخط: ثيمات جاهزة 
   ok(!!S, 'واجهة الإعدادات RaheeqSettings متاحة');
   ok(S.THEMES.length >= 6, 'عدد الثيمات الجاهزة ' + S.THEMES.length);
   ok(S.THEMES[0].maroon === '#881234', 'ثيم رحيق الافتراضي أولًا');
-  ok(root.style.getPropertyValue('--brand-maroon') === '#881234', 'الثيم الافتراضي مطبّق عند التحميل');
+  ok(root.style.getPropertyValue('--brand-maroon') === '',
+    'الثيم الافتراضي لا يُكتب كـ style="" داخل <html> (مصدر الصفحة يبقى نظيفًا للزاحف)');
+  ok(/--brand-maroon:#881234/.test(read('css/raheeq.css')), 'الثيم الافتراضي معرّف في CSS على :root');
+  ok(root['attr_data-theme'] === 'raheeq', 'data-theme يظل مضبوطًا للثيم الافتراضي');
   S.setTheme('royal');
   ok(root.style.getPropertyValue('--brand-maroon') === '#1D3E8C', 'تغيير الثيم يغيّر متغيرات الهوية فورًا');
   ok(root.style.getPropertyValue('--brand-maroon-rgb') === '29,62,140', 'ألوان rgba تُشتق من الثيم (خلفيات شفافة)');
@@ -645,7 +648,9 @@ console.log('\n7.3) شخصنة الألوان والخط: ثيمات جاهزة 
   S.setScale(0.1);
   ok(Number(root.style.getPropertyValue('--ui-scale')) === 0.9, 'الحجم محدود بحد أدنى 90%');
   S.reset();
-  ok(root.style.getPropertyValue('--brand-maroon') === '#881234', 'استعادة الافتراضي تعمل');
+  ok(Object.keys(root.style._v).every(function (k) { return root.style._v[k] === ''; }),
+    'استعادة الافتراضي تمسح كل المتغيّرات المكتوبة inline (لا قيمة مخصّصة تبقى)');
+  ok(root.style.getPropertyValue('--brand-maroon') === '', 'اللون الحر/الثيم المخصّص لا يبقى بعد الاستعادة');
   ok(JSON.parse(store.get('raheeq_settings')).theme === 'raheeq', 'الإعدادات تُحفظ في LocalStorage');
 }
 const cssAll = read('css/raheeq.css');
