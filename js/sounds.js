@@ -235,16 +235,29 @@
     play: play,
     vibrate: vibrate,
     unlock: unlock,
-    preload: preload,
+    preload: preloadWhenReady,
     bindToggle: bindToggle,
     bindInteractions: bindInteractions,
     isOn: function () { return soundOn; },
     defs: DEFS
   };
 
+  /* الأداء: ملفات الصوت لا تزاحم رسم الصفحة الأول — تُحمَّل بعد اكتمال تحميل الصفحة،
+     أو فورًا عند أول تفاعل (لا صوت يُشغَّل قبل أول تفاعل أصلًا بسبب قيود المتصفحات). */
+  var preloadScheduled = false;
+  function preloadWhenReady() {
+    if (preloaded || preloadScheduled) return;
+    preloadScheduled = true;
+    if (document.readyState === 'complete') { window.setTimeout(preload, 1200); }
+    else window.addEventListener('load', function () { window.setTimeout(preload, 1200); });
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
+      document.addEventListener(ev, preload, { passive: true, capture: true });
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { preload(); bindInteractions(); });
+    document.addEventListener('DOMContentLoaded', function () { preloadWhenReady(); bindInteractions(); });
   } else {
-    preload(); bindInteractions();
+    preloadWhenReady(); bindInteractions();
   }
 })();

@@ -7,6 +7,8 @@
     "node": ">=18"
   },
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/preview.mjs",
     "yaseen:admin": "node server/yaseen-admin-setup.js",
     "test:yaseen": "node tests/node/yaseen-tests.mjs",
     "test:yaseen:widget": "node tests/node/yaseen-widget-tests.mjs",
@@ -15,5 +17,14 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@fontsource/amiri": "^5.3.0",
+    "@fontsource/cairo": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/reem-kufi": "^5.3.0",
+    "esbuild": "^0.28.2",
+    "html-minifier-terser": "^7.2.0"
   }
 }

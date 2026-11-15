@@ -183,3 +183,10 @@ input[type=range] { accent-color: var(--gold); }
   opacity: 0; transform: translateY(12px); transition: .25s; pointer-events: none; z-index: 40;
 }
 .toast.show { opacity: 1; transform: none; }
+
+/* الجوال الصغير: روابط الرأس تلتف بدل تجاوز عرض الشاشة (منع التمرير الأفقي) */
+@media (max-width: 360px) {
+  .top { flex-wrap: wrap; }
+  .top .links { flex-wrap: wrap; gap: 8px 12px; }
+  .top .links a { padding: 4px 0; }
+}

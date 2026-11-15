@@ -410,3 +410,26 @@ python3 server/serve.py      # http://localhost:8000/studio.html
 ```bash
 node tests/node/run-tests.mjs
 ```
+
+
+## البناء والنشر (أداء + SEO تقني)
+
+المصدر يبقى كما هو للتطوير والاختبارات؛ النشر على Vercel يتم من مجلد `public/` الذي يولّده:
+
+```bash
+npm install
+npm run build      # scripts/build.mjs → public/
+npm run preview    # معاينة محلية بسلوك Vercel (ضغط Brotli + ترويسات وتحويلات vercel.json)
+```
+
+`npm run build` يقوم بـ:
+
+* تصغير HTML/CSS/JS ودمج ملفات كل صفحة في حزمة واحدة داخل `/_b/` باسم يحمل بصمة المحتوى (كاش سنة `immutable`).
+* استضافة خطوط Google محليًا (`@fontsource/*`) بدل الطلبات الخارجية الحاجبة للعرض.
+* روابط نظيفة بلا `.html` (`/shop` بدل `/shop.html`) مع تحويل 301 من القديم (في `vercel.json`).
+* حقن JSON-LD (Organization / LocalBusiness / BreadcrumbList / Service) من `scripts/site.config.mjs`.
+* توليد `robots.txt` و`sitemap.xml` تلقائيًا من صفحات HTML الموجودة في جذر المشروع.
+* فحص SEO يوقف البناء عند: عنوان/وصف مكرر أو ناقص، أكثر من H1، قفزة في ترتيب العناوين،
+  صورة بلا `alt` أو بلا أبعاد، canonical خاطئ، رابط داخلي مكسور، أو Mixed Content.
+
+عند إضافة صفحة HTML جديدة: أضف اسمها إلى قائمتي الصفحات في `vercel.json` (البناء ينبّه إن نُسيت).

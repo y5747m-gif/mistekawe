@@ -744,3 +744,17 @@ html[lang="en"] .subtitle{line-height:1.75}
 @media(max-width:420px){.footer-socials{gap:8px}.footer-socials .social-link{padding:12px 10px;gap:8px}.footer-socials svg{width:21px;height:21px}.footer-socials b{display:none}}
 @media(prefers-reduced-motion:reduce){.footer-socials .social-link{transition:none}.footer-socials .social-link:hover{transform:none}}
 @media print{.footer-channels{display:none}}
+
+/* ---------- الجوال الصغير: منع التمرير الأفقي في رأس الصفحة (بدون تغيير التصميم) ---------- */
+@media (max-width:380px){
+  .header-row{gap:6px}
+  .logo{gap:8px}
+  .header-actions{gap:4px}
+  .btn-gold{max-width:92px;padding:8px 7px}
+}
+@media (max-width:340px){
+  .lang-btn{min-width:36px;padding:0 4px}
+  .settings-btn,.sound-btn{width:36px;height:40px}
+  .logo-text span{letter-spacing:.2em}
+  .btn-gold{max-width:80px;padding:8px 5px}
+}

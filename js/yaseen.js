@@ -197,7 +197,9 @@
     var tilt = el('span', 'ysn-tilt'), body = el('span', 'ysn-body'), flip = el('span', 'ysn-flip');
     POSES.forEach(function (name) {
       var img = el('img', 'ysn-f' + (name === 'idle' ? ' is-on' : ''));
-      img.src = ASSETS + name + '.webp';
+      /* الأداء: وضعية الوقوف تُحمَّل فورًا، وباقي الوضعيات بعد اكتمال تحميل الصفحة */
+      if (name === 'idle' || document.readyState === 'complete' || !window.addEventListener) img.src = ASSETS + name + '.webp';
+      else window.addEventListener('load', function () { if (!img.getAttribute('src')) img.src = ASSETS + name + '.webp'; });
       img.alt = '';
       img.draggable = false;
       img.decoding = 'async';

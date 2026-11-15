@@ -457,7 +457,7 @@ button, input, select, textarea{ font-family: inherit; }
   width: 8px; height: 8px; margin-top: 9px;
   border-radius: 50%; background: var(--gold); flex-shrink: 0;
 }
-.feature-item h4{ font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.feature-item h3{ font-family: inherit; letter-spacing: normal; font-size: 16px; font-weight: 600; margin: 1.33em 0 4px; }
 .feature-item p{ color: var(--muted); font-size: 14px; }
 
 @media (max-width: 900px){ .split{ grid-template-columns: 1fr; gap: 36px; } }
@@ -493,7 +493,7 @@ button, input, select, textarea{ font-family: inherit; }
   padding-bottom: 40px;
   border-bottom: 1px solid var(--line);
 }
-.footer-grid h5{ font-size: 15px; margin-bottom: 16px; color: var(--ivory); }
+.footer-grid h3{ font-family: inherit; letter-spacing: normal; font-weight: 700; font-size: 15px; margin: 1.67em 0 16px; color: var(--ivory); }
 .footer-grid ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .footer-grid a{ color: var(--muted); font-size: 14px; transition: color 0.2s ease; }
 .footer-grid a:hover{ color: var(--gold-light); }
@@ -773,3 +773,13 @@ button, input, select, textarea{ font-family: inherit; }
 
 /* شعار رحيق المقدم من الأكاديمية */
 .raheeq-brand-mark{width:42px;height:50px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35))}
+
+/* الجوال: نموذج النشرة البريدية لا يتجاوز عرض الشاشة (منع التمرير الأفقي) */
+@media (max-width: 480px){
+  .band-form{ flex-wrap: wrap; max-width: 100%; }
+  .band-form input{ min-width: 0; flex: 1 1 180px; }
+}
+
+/* CLS: حجز مساحة لشبكة المنتجات/السلة قبل أن يملأها السكربت — حتى لا يقفز التذييل */
+.product-grid:empty, #cart-wrap:empty{ min-height: 100vh; }
+#pd-container:not(:has(*)){ min-height: 100vh; }
