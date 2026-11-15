@@ -328,6 +328,10 @@
     'تغيير اللغة': 'Change language',
     'العربية / English': 'العربية / English',
     'الصوت': 'Sound',
+    'تشغيل الصوت': 'Turn sound on',
+    'صوت العرض': 'Intro sound',
+    'تشغيل صوت العرض': 'Play the intro sound',
+    'كتم صوت العرض': 'Mute the intro sound',
 
     /* ---------- رسائل ديناميكية (التحقق والرفع) ---------- */
     'انتظر لحظة حتى يكتمل حفظ الصور المرفوعة ثم أرسل الطلب': 'Wait a moment until the uploaded images finish saving, then submit',
@@ -431,7 +435,67 @@
     'مساحة التخزين': 'Storage',
     'خادم الأكاديمية': 'Academy server',
     '✓ تم حفظ «': '✓ Saved «',
-    '» — الصورة جاهزة مع طلبك': '» — the image is ready with your request'
+    '» — الصورة جاهزة مع طلبك': '» — the image is ready with your request',
+
+    /* ---------- قائمة التنقّل (جوال/تابلت) ---------- */
+    'البرامج': 'Programs',
+    'البرامج والتأسيس': 'Programs & foundation',
+    'التنقّل السريع': 'Quick navigation',
+    'لماذا رحيق؟': 'Why Raheeq?',
+    'قنوات الأكاديمية': 'Academy channels',
+    'فتح قائمة التنقّل': 'Open navigation menu',
+    'إغلاق القائمة': 'Close the menu',
+    '🎬 إعادة عرض البداية': '🎬 Replay the intro',
+    '📲 واتساب أكاديمية رحيق': '📲 Raheeq Academy WhatsApp',
+
+    /* ---------- قسم البرامج ---------- */
+    'مسارات التعلّم': 'Learning tracks',
+    'اختَر المسار المناسب لابنك': 'Choose the right track for your child',
+    'مسار «تأسيس» لبناء الأساس من الصفر، ومسار «منهج دراسي» لمتابعة المنهج بالمستوى الدراسي — والاختيار يُملأ تلقائيًا في استمارة التسجيل.':
+      'A “Foundation” track that builds the basics from scratch, and a “Curriculum” track that follows the school syllabus at each grade level — your choice is filled into the registration form automatically.',
+    'مسار التأسيس': 'Foundation track',
+    'لبناء مهارات القراءة والكتابة والحساب من الأساس، بمستويين: تأسيس للصغار وتأسيس للكبار.':
+      'Builds reading, writing and arithmetic skills from the ground up, with two levels: foundation for children and foundation for adults.',
+    'مسار المنهج الدراسي': 'Curriculum track',
+    'متابعة المنهج الرسمي وشرح الدروس والمراجعة، من KG1 حتى الثالث الثانوي.':
+      'Follows the official syllabus with lesson explanations and revision, from KG1 up to the third secondary year.',
+    'الابتدائية': 'Primary',
+    'الإعدادية': 'Preparatory',
+    'الثانوية': 'Secondary',
+    'اختر هذا المسار ←': 'Choose this track ←',
+    'لسه مش متأكد؟ اختار المسار داخل الاستمارة، وفريق أكاديمية رحيق يساعدك في تحديد المستوى المناسب على واتساب.':
+      'Not sure yet? Pick the track inside the form — the Raheeq Academy team will help you choose the right level on WhatsApp.',
+    'ابدأ التسجيل الآن ←': 'Start registration now ←',
+    'استعرض البرامج': 'Browse programs',
+
+    /* ---------- اختيار نوع البرنامج + مواد التأسيس ---------- */
+    'اختيار نوع البرنامج': 'Choose the program type',
+    'قراءة وكتابة ومواد أساسية من الصفر': 'Reading, writing and core subjects from scratch',
+    'متابعة المنهج بالمستوى الدراسي': 'Follow the syllabus at each grade level',
+    'مرحلة رياض الأطفال': 'Kindergarten',
+    'المرحلة الابتدائية': 'Primary stage',
+    'المرحلة الإعدادية': 'Preparatory stage',
+    'المرحلة الثانوية': 'Secondary stage',
+    'تحديد كل المواد': 'Select all subjects',
+    'إلغاء تحديد الكل': 'Clear all subjects',
+
+    /* ---------- ملخّص الطلب الحيّ + زر الإرسال ---------- */
+    'ملخّص طلبك': 'Your request summary',
+    'جاهز للإرسال': 'Ready to send',
+    'بانتظار البيانات': 'Waiting for your details',
+    'سيتحوّل كل ما سبق تلقائيًا إلى رسالة واتساب منسّقة وواضحة تُرسَل إلى أكاديمية رحيق فور الضغط على الزر.':
+      'Everything above is automatically turned into a clean, well-formatted WhatsApp message sent to Raheeq Academy as soon as you tap the button.',
+    'ستظهر هنا بيانات طلبك كاملة بعد إكمال الخطوات — بنفس شكل الرسالة التي ستُرسَل إلى واتساب.':
+      'Your full request details appear here once the steps are complete — exactly as they will be sent to WhatsApp.',
+    'إرسال الطلب على واتساب': 'Send the request on WhatsApp',
+    '⏳ جارٍ حفظ الطلب والصور…': '⏳ Saving the request and images…',
+    '⏳ جارٍ قراءة الصور…': '⏳ Reading images…',
+    'كل بياناتك ومستنداتك تصل منسّقة إلى أكاديمية رحيق فورًا': 'All your details and documents reach Raheeq Academy instantly, neatly organised',
+    '📤 إعادة إرسال طلبي على واتساب': '📤 Resend my request on WhatsApp',
+    '📲 فتحنا واتساب أكاديمية رحيق برسالة طلبك الكاملة — أرسلها الآن': '📲 We opened Raheeq Academy WhatsApp with your full request — send it now',
+    '📲 فتحنا واتساب أكاديمية رحيق برسالة طلبك الكاملة': '📲 We opened Raheeq Academy WhatsApp with your full request',
+    'سجّل الدخول أولًا لعرض طلبك': 'Log in first to view your request',
+    'وصلنا طلبك': 'We received your request'
   };
 
   /* سمات تُترجم أيضًا */

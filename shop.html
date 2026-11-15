@@ -78,7 +78,7 @@
 <header class="site-header">
   <div class="container header-row">
     <a href="majlis.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
-    <nav class="main-nav">
+    <nav class="main-nav" id="mainNavLinks">
       <a href="majlis.html">مجلس الصوت</a>
       <a href="heritage.html">التراث</a>
       <a href="shop.html" class="active">المتجر</a>
@@ -91,7 +91,7 @@
         🛍️
         <span class="cart-count" data-cart-count>0</span>
       </a>
-      <button class="nav-toggle" aria-label="القائمة">☰</button>
+      <button class="nav-toggle" type="button" aria-label="فتح القائمة" aria-expanded="false" aria-controls="mainNavLinks">☰</button>
     </div>
   </div>
 </header>
@@ -105,7 +105,10 @@
 
 <section class="section">
   <div class="container">
-    <div class="filters-bar" id="filters-bar"></div>
+    <div class="filters-wrap">
+      <div class="filters-bar" id="filters-bar" role="group" aria-label="تصفية المنتجات"></div>
+      <p class="shop-count" id="shop-count" role="status" aria-live="polite"></p>
+    </div>
     <div class="product-grid" id="shop-product-grid"></div>
   </div>
 </section>
@@ -157,8 +160,19 @@
   }
 
   function renderShopGrid(){
+    const grid = document.getElementById('shop-product-grid');
     const list = activeCat === 'الكل' ? NANJAWI_PRODUCTS : NANJAWI_PRODUCTS.filter(p => p.category === activeCat);
-    renderProductGrid(document.getElementById('shop-product-grid'), list);
+    /* انتقال ناعم عند تبديل الفلتر بدل القفز المفاجئ */
+    grid.classList.remove('grid-in');
+    void grid.offsetWidth;
+    renderProductGrid(grid, list);
+    grid.classList.add('grid-in');
+    const countBox = document.getElementById('shop-count');
+    if(countBox){
+      countBox.textContent = list.length
+        ? list.length + (list.length === 1 ? ' قطعة' : ' قطع') + ' في ' + activeCat
+        : 'لا توجد قطع في هذا التصنيف';
+    }
   }
 
   renderFilters();

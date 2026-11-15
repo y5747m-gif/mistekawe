@@ -25,7 +25,7 @@
 <meta name="twitter:image" content="https://mistekawe.vercel.app/assets/brand/raheeq-og.jpg">
 <meta name="twitter:image:alt" content="شعار رحيق RAHEEQ — أكاديمية رحيق">
 <!-- إعدادات المستخدم (الثيم/الخط/اللغة) — تُطبَّق قبل رسم الصفحة بلا وميض -->
-<script src="js/settings.js?v=v20261115-2"></script>
+<script src="js/settings.js?v=v20261115-3"></script>
 <meta name="description" content="رحيق RAHEEQ — منصة تسجيل ولي الأمر. سجّل ابنك في ثلاث خطوات بسيطة وآمنة، وتابع طلبك بكل سهولة.">
 <meta name="google-site-verification" content="googleb5d3f8a6b43bc225">
 <!-- رقم واتساب أكاديمية رحيق الرسمي (يُقرأ من هذا الـ meta — ولا يمكن تغييره من localStorage لأي سبب) -->
@@ -40,11 +40,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- منظومة عائلات رحيق: أميري للعناوين · سينجيل للهوية اللاتينية · ريم كوفي للملصقات · آيبوم بلكس مونو للأرقام والرموز · كايرو للنصوص -->
 <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800;900&family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/raheeq.css?v=v20261115-2">
-<link rel="stylesheet" href="css/intro.css?v=v20261115-2">
-<link rel="stylesheet" href="css/yaseen.css?v=v20261115-2">
-<link rel="stylesheet" href="css/yaseen-motion.css?v=v20261115-2">
-<link rel="stylesheet" href="css/contact-bar.css?v=v20261115-2">
+<link rel="stylesheet" href="css/raheeq.css?v=v20261115-3">
+<link rel="stylesheet" href="css/intro.css?v=v20261115-3">
+<link rel="stylesheet" href="css/yaseen.css?v=v20261115-3">
+<link rel="stylesheet" href="css/yaseen-motion.css?v=v20261115-3">
+<link rel="stylesheet" href="css/contact-bar.css?v=v20261115-3">
 <!-- Google tag (gtag.js) - Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-E25G7T2R1N"></script>
 <script>
@@ -151,6 +151,7 @@
 
 <!-- ======================= انيميشن البداية (Intro) ======================= -->
 <div class="raheeq-intro" id="raheeqIntro">
+  <div class="intro-halo" aria-hidden="true"></div>
   <div class="intro-floor"></div>
   <div class="intro-beam"></div>
   <div class="intro-dust" aria-hidden="true"></div>
@@ -236,6 +237,7 @@
       <span class="intro-shard" aria-hidden="true" style="--clip:0.0% 77.7%, 7.8% 71.5%, 30.6% 73.6%, 26.4% 100.0%, 0.0% 100.0%;--sx:-29vmax;--sy:44vmax;--sz:110px;--rx:.8;--ry:.5;--rz:.7;--rr:330deg;--ss:.59;--sd:1.56s"></span>
       <span class="intro-shard" aria-hidden="true" style="--clip:29.1% 73.7%, 51.9% 65.4%, 70.5% 59.2%, 83.0% 77.8%, 74.7% 100.0%, 25.0% 100.0%;--sx:3vmax;--sy:47vmax;--sz:-135px;--rx:.5;--ry:.8;--rz:.7;--rr:-265deg;--ss:.65;--sd:1.62s"></span>
       <span class="intro-shard" aria-hidden="true" style="--clip:69.5% 59.1%, 81.9% 77.7%, 100.0% 73.6%, 100.0% 100.0%, 73.6% 100.0%;--sx:35vmax;--sy:37vmax;--sz:90px;--rx:.6;--ry:.6;--rz:.9;--rr:300deg;--ss:.6;--sd:1.68s"></span>
+      <span class="intro-mark-solid" aria-hidden="true"></span>
       <div class="intro-mark-glow" aria-hidden="true"></div>
       <div class="intro-ring" aria-hidden="true"></div>
       <div class="intro-flash" aria-hidden="true"></div>
@@ -246,6 +248,10 @@
     <p class="intro-tagline">أكاديمية رحيق · بوابة ولي الأمر</p>
   </div>
 
+  <button class="intro-sound-btn" type="button" aria-pressed="true" aria-label="تشغيل صوت العرض">
+    <span class="intro-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="intro-sound-label">الصوت</span>
+  </button>
   <button class="intro-skip" type="button" aria-label="تخطي انيميشن البداية">
     تخطي
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 6l-6 6 6 6M18 6l-6 6 6 6"/></svg>
@@ -262,6 +268,7 @@
       <span class="logo-text"><strong>رحيق</strong><span>RAHEEQ</span></span>
     </a>
     <nav class="header-nav" aria-label="روابط سريعة">
+      <a href="#programs">البرامج</a>
       <a href="#features">قيمنا</a>
       <a href="#registerCard">التسجيل</a>
       <a href="#footer">تواصل معنا</a>
@@ -274,9 +281,33 @@
       </button>
       <button class="sound-btn" id="soundToggle" type="button" aria-pressed="true" aria-label="كتم الصوت" title="الصوت">🔊</button>
       <button class="btn btn-gold" id="headerLoginBtn" type="button">تسجيل دخول ولي الأمر</button>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-controls="mobileMenu" aria-expanded="false" aria-label="فتح قائمة التنقّل">
+        <span class="menu-toggle-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+      </button>
     </div>
   </div>
+
 </header>
+
+  <!-- قائمة التنقّل للجوال والتابلت -->
+  <div class="mobile-menu" id="mobileMenu" hidden>
+    <div class="mobile-menu-backdrop" data-close-menu></div>
+    <nav class="mobile-menu-panel" aria-label="قائمة التنقّل">
+      <div class="mobile-menu-head">
+        <span class="mobile-menu-title">التنقّل السريع</span>
+        <button class="mobile-menu-close" type="button" data-close-menu aria-label="إغلاق القائمة">✕</button>
+      </div>
+      <a class="mobile-menu-link" href="#programs"><span class="mm-icon" aria-hidden="true">🎯</span><span>البرامج والتأسيس</span></a>
+      <a class="mobile-menu-link" href="#features"><span class="mm-icon" aria-hidden="true">💎</span><span>لماذا رحيق؟</span></a>
+      <a class="mobile-menu-link" href="#registerCard"><span class="mm-icon" aria-hidden="true">📝</span><span>تسجيل ولي الأمر</span></a>
+      <a class="mobile-menu-link" href="#raheeqChannels"><span class="mm-icon" aria-hidden="true">📣</span><span>قنوات الأكاديمية</span></a>
+      <a class="mobile-menu-link" href="#footer"><span class="mm-icon" aria-hidden="true">💬</span><span>تواصل معنا</span></a>
+      <div class="mobile-menu-foot">
+        <button class="btn btn-outline btn-block" id="menuReplayIntro" type="button">🎬 إعادة عرض البداية</button>
+        <button class="btn btn-green btn-block" id="menuWhatsappBtn" type="button">📲 واتساب أكاديمية رحيق</button>
+      </div>
+    </nav>
+  </div>
 
 <main id="main">
 
@@ -290,6 +321,10 @@
       <span class="eyebrow">🎓 منصة تسجيل ولي الأمر — أكاديمية رحيق</span>
       <h1>سجّل ابنك في <span class="hl">رحيق</span> بخطوات بسيطة و آمنة</h1>
       <p class="subtitle">ثلاث خطوات واضحة تبدأ ببيانات ولي الأمر، ثم بيانات الطالب، ثم المستندات الرسمية. أكمل طلبك في دقائق، وسيصلك رقم طلبك فورًا لتتابع به حالة التسجيل مع فريق أكاديمية رحيق في أي وقت.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="#registerCard">ابدأ التسجيل الآن ←</a>
+        <a class="btn btn-outline" href="#programs">استعرض البرامج</a>
+      </div>
       <div class="hero-badges" aria-label="مميزات التسجيل">
         <span class="hbadge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9l-7 7z"/></svg>تسجيل آمن</span>
         <span class="hbadge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"/></svg>ثلاث خطوات</span>
@@ -400,6 +435,17 @@
               </div>
               <div class="field full" data-field="programType">
                 <label for="programType">نوع البرنامج <span class="req">*</span></label>
+                <!-- بطاقات اختيار مرئية متزامنة مع القائمة المنسدلة -->
+                <div class="program-types" id="programTypeCards" role="group" aria-label="اختيار نوع البرنامج">
+                  <button class="ptype-card" type="button" data-program="تأسيس" aria-pressed="false">
+                    <span class="ptype-icon" aria-hidden="true">🌱</span>
+                    <span class="ptype-body"><strong>تأسيس</strong><small>قراءة وكتابة ومواد أساسية من الصفر</small></span>
+                  </button>
+                  <button class="ptype-card" type="button" data-program="منهج دراسي" aria-pressed="false">
+                    <span class="ptype-icon" aria-hidden="true">📚</span>
+                    <span class="ptype-body"><strong>منهج دراسي</strong><small>متابعة المنهج بالمستوى الدراسي</small></span>
+                  </button>
+                </div>
                 <select id="programType">
                   <option value="">اختر نوع البرنامج: تأسيس أم منهج دراسي</option>
                   <option value="تأسيس">تأسيس</option>
@@ -413,20 +459,28 @@
                 <label for="grade">السنة الدراسية <span class="req">*</span></label>
                 <select id="grade">
                   <option value="">اختر السنة الدراسية</option>
-                  <option value="KG1">KG1</option>
-                  <option value="KG2">KG2</option>
-                  <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
-                  <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
-                  <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
-                  <option value="الصف الرابع الابتدائي">الصف الرابع الابتدائي</option>
-                  <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
-                  <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
-                  <option value="الصف الأول الإعدادي">الصف الأول الإعدادي</option>
-                  <option value="الصف الثاني الإعدادي">الصف الثاني الإعدادي</option>
-                  <option value="الصف الثالث الإعدادي">الصف الثالث الإعدادي</option>
-                  <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
-                  <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
-                  <option value="3 ثانوي">3 ثانوي</option>
+                  <optgroup label="مرحلة رياض الأطفال">
+                    <option value="KG1">KG1</option>
+                    <option value="KG2">KG2</option>
+                  </optgroup>
+                  <optgroup label="المرحلة الابتدائية">
+                    <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
+                    <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
+                    <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
+                    <option value="الصف الرابع الابتدائي">الصف الرابع الابتدائي</option>
+                    <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
+                    <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
+                  </optgroup>
+                  <optgroup label="المرحلة الإعدادية">
+                    <option value="الصف الأول الإعدادي">الصف الأول الإعدادي</option>
+                    <option value="الصف الثاني الإعدادي">الصف الثاني الإعدادي</option>
+                    <option value="الصف الثالث الإعدادي">الصف الثالث الإعدادي</option>
+                  </optgroup>
+                  <optgroup label="المرحلة الثانوية">
+                    <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
+                    <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
+                    <option value="3 ثانوي">3 ثانوي</option>
+                  </optgroup>
                 </select>
                 <span class="err">⚠ اختر السنة الدراسية من القائمة</span>
               </div>
@@ -446,11 +500,12 @@
                   <legend>قائمة مواد التأسيس <span class="req">*</span></legend>
                   <p class="hint">اختَر من القائمة المواد التي سيتأسس فيها الطالب — مادة واحدة على الأقل.</p>
                   <div class="foundation-options">
-                    <label><input type="checkbox" name="foundationSubjects" value="اللغة العربية"> <span>اللغة العربية</span></label>
-                    <label><input type="checkbox" name="foundationSubjects" value="اللغة الإنجليزية"> <span>اللغة الإنجليزية</span></label>
-                    <label><input type="checkbox" name="foundationSubjects" value="الرياضيات"> <span>الرياضيات</span></label>
-                    <label><input type="checkbox" name="foundationSubjects" value="القراءة والكتابة"> <span>القراءة والكتابة</span></label>
+                    <label class="pill"><input type="checkbox" name="foundationSubjects" value="اللغة العربية"><span class="pill-face"><span class="pill-check" aria-hidden="true">✓</span><span>اللغة العربية</span></span></label>
+                    <label class="pill"><input type="checkbox" name="foundationSubjects" value="اللغة الإنجليزية"><span class="pill-face"><span class="pill-check" aria-hidden="true">✓</span><span>اللغة الإنجليزية</span></span></label>
+                    <label class="pill"><input type="checkbox" name="foundationSubjects" value="الرياضيات"><span class="pill-face"><span class="pill-check" aria-hidden="true">✓</span><span>الرياضيات</span></span></label>
+                    <label class="pill"><input type="checkbox" name="foundationSubjects" value="القراءة والكتابة"><span class="pill-face"><span class="pill-check" aria-hidden="true">✓</span><span>القراءة والكتابة</span></span></label>
                   </div>
+                  <button class="foundation-selectall" id="foundationSelectAll" type="button">تحديد كل المواد</button>
                   <span class="err">⚠ اختر مادة أو أكثر من قائمة مواد التأسيس</span>
                 </fieldset>
               </div>
@@ -522,6 +577,15 @@
                 </label>
               </div>
 
+              <div class="order-preview" id="orderPreview" aria-live="polite">
+                <div class="order-preview-head">
+                  <span class="op-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>ملخّص طلبك</span>
+                  <span class="op-badge" id="orderPreviewCount">جاهز للإرسال</span>
+                </div>
+                <div class="order-preview-body" id="orderPreviewBody"></div>
+                <p class="order-preview-note">سيتحوّل كل ما سبق تلقائيًا إلى رسالة واتساب منسّقة وواضحة تُرسَل إلى أكاديمية رحيق فور الضغط على الزر.</p>
+              </div>
+
               <p class="sync-hint" id="syncHint">أكمل بياناتك ومستنداتك، وسيصل طلبك كاملًا إلى فريق أكاديمية رحيق على واتساب فور الإرسال.</p>
 
               <div class="field full" data-field="agree">
@@ -541,7 +605,11 @@
           <div class="step-nav">
             <button class="btn btn-outline" id="prevStepBtn" type="button" hidden>السابق</button>
             <button class="btn btn-primary" id="nextStepBtn" type="button">التالي ←</button>
-            <button class="btn btn-primary" id="submitBtn" type="submit" hidden>إرسال طلب التسجيل ✓</button>
+            <button class="btn btn-green btn-lg" id="submitBtn" type="submit" hidden>
+              <span class="submit-ico" aria-hidden="true">💬</span>
+              <span class="submit-label">إرسال الطلب على واتساب</span>
+              <span class="submit-sub">كل بياناتك ومستنداتك تصل منسّقة إلى أكاديمية رحيق فورًا</span>
+            </button>
           </div>
         </form>
       </div>
@@ -577,6 +645,7 @@
           <p class="welcome-sub" id="welcomeName"></p>
           <div class="welcome-details" id="welcomeDetails"></div>
           <div class="docs-gallery" id="welcomeDocs" hidden></div>
+          <button class="btn btn-green btn-block" id="welcomeWhatsappBtn" type="button">📤 إعادة إرسال طلبي على واتساب</button>
           <button class="btn btn-outline btn-block" id="logoutBtn" type="button">تسجيل الخروج</button>
         </div>
       </div>
@@ -614,6 +683,47 @@
       </div>
 
     </div>
+  </div>
+</section>
+
+<!-- ======================= البرامج ======================= -->
+<section class="programs" id="programs">
+  <div class="container">
+    <span class="section-eyebrow">مسارات التعلّم</span>
+    <h2 class="section-title fade-up">اختَر المسار المناسب لابنك</h2>
+    <p class="section-sub fade-up">مسار «تأسيس» لبناء الأساس من الصفر، ومسار «منهج دراسي» لمتابعة المنهج بالمستوى الدراسي — والاختيار يُملأ تلقائيًا في استمارة التسجيل.</p>
+
+    <div class="programs-grid">
+      <article class="program-card fade-up" data-program-card="تأسيس">
+        <span class="program-badge">تأسيس</span>
+        <div class="program-icon" aria-hidden="true">🌱</div>
+        <h3>مسار التأسيس</h3>
+        <p>لبناء مهارات القراءة والكتابة والحساب من الأساس، بمستويين: تأسيس للصغار وتأسيس للكبار.</p>
+        <ul class="program-list">
+          <li>اللغة العربية</li>
+          <li>اللغة الإنجليزية</li>
+          <li>الرياضيات</li>
+          <li>القراءة والكتابة</li>
+        </ul>
+        <button class="btn btn-primary btn-block program-pick" type="button" data-program="تأسيس">اختر هذا المسار ←</button>
+      </article>
+
+      <article class="program-card fade-up" data-program-card="منهج دراسي">
+        <span class="program-badge">منهج دراسي</span>
+        <div class="program-icon" aria-hidden="true">📚</div>
+        <h3>مسار المنهج الدراسي</h3>
+        <p>متابعة المنهج الرسمي وشرح الدروس والمراجعة، من KG1 حتى الثالث الثانوي.</p>
+        <div class="program-stages">
+          <button class="stage-chip" type="button" data-grade="KG1">KG1</button>
+          <button class="stage-chip" type="button" data-grade="KG2">KG2</button>
+          <button class="stage-chip" type="button" data-stage="primary">الابتدائية</button>
+          <button class="stage-chip" type="button" data-stage="prep">الإعدادية</button>
+          <button class="stage-chip" type="button" data-stage="secondary">الثانوية</button>
+        </div>
+        <button class="btn btn-primary btn-block program-pick" type="button" data-program="منهج دراسي">اختر هذا المسار ←</button>
+      </article>
+    </div>
+    <p class="programs-note fade-up">لسه مش متأكد؟ اختار المسار داخل الاستمارة، وفريق أكاديمية رحيق يساعدك في تحديد المستوى المناسب على واتساب.</p>
   </div>
 </section>
 
@@ -809,17 +919,17 @@
   </a>
 </div>
 
-<script src="js/intro.js?v=v20261115-2" defer></script>
-<script src="js/sounds.js?v=v20261115-2" defer></script>
-<script src="js/confetti.js?v=v20261115-2" defer></script>
-<script src="js/i18n.js?v=v20261115-2" defer></script>
-<script src="js/api.js?v=v20261115-2" defer></script>
-<script src="js/crypto.js?v=v20261115-2" defer></script>
-<script src="js/uploads.js?v=v20261115-2" defer></script>
-<script src="js/validation.js?v=v20261115-2" defer></script>
-<script src="js/whatsapp.js?v=v20261115-2" defer></script>
-<script src="js/app.js?v=v20261115-2" defer></script>
-<script src="js/yaseen-motion.js?v=v20261115-2" defer></script>
-<script src="js/yaseen.js?v=v20261115-2" defer></script>
+<script src="js/sounds.js?v=v20261115-3" defer></script>
+<script src="js/intro.js?v=v20261115-3" defer></script>
+<script src="js/confetti.js?v=v20261115-3" defer></script>
+<script src="js/i18n.js?v=v20261115-3" defer></script>
+<script src="js/api.js?v=v20261115-3" defer></script>
+<script src="js/crypto.js?v=v20261115-3" defer></script>
+<script src="js/uploads.js?v=v20261115-3" defer></script>
+<script src="js/validation.js?v=v20261115-3" defer></script>
+<script src="js/whatsapp.js?v=v20261115-3" defer></script>
+<script src="js/app.js?v=v20261115-3" defer></script>
+<script src="js/yaseen-motion.js?v=v20261115-3" defer></script>
+<script src="js/yaseen.js?v=v20261115-3" defer></script>
 </body>
 </html>

@@ -94,7 +94,7 @@
 <header class="site-header">
   <div class="container header-row">
     <a href="majlis.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
-    <nav class="main-nav">
+    <nav class="main-nav" id="mainNavLinks">
       <a href="majlis.html">مجلس الصوت</a>
       <a href="heritage.html">التراث</a>
       <a href="shop.html" class="active">المتجر</a>
@@ -107,7 +107,7 @@
         🛍️
         <span class="cart-count" data-cart-count>0</span>
       </a>
-      <button class="nav-toggle" aria-label="القائمة">☰</button>
+      <button class="nav-toggle" type="button" aria-label="فتح القائمة" aria-expanded="false" aria-controls="mainNavLinks">☰</button>
     </div>
   </div>
 </header>
@@ -202,6 +202,8 @@
         <button class="btn btn-primary" id="add-to-cart-btn" style="flex:1;">أضف إلى السلة</button>
         <a href="cart.html" class="btn btn-outline">عرض السلة</a>
       </div>
+      <button class="btn btn-wa btn-block pd-buy-now" id="buy-now-btn" type="button">💬 اطلب الآن على واتساب</button>
+      <p class="pd-buy-note">اطلب هذه القطعة مباشرة برسالة جاهزة فيها الاسم والسعر والكمية — بدون أي خطوات إضافية.</p>
 
       <div class="pd-meta">
         <div><span>الفئة</span><span>${escHtml(product.category)}</span></div>
@@ -212,16 +214,51 @@
   `;
 
   document.getElementById('qty-plus').addEventListener('click', () => {
-    qty += 1;
+    qty = Math.min(99, qty + 1);
     document.getElementById('qty-value').textContent = qty;
+    refreshBuyNow();
   });
   document.getElementById('qty-minus').addEventListener('click', () => {
     qty = Math.max(1, qty - 1);
     document.getElementById('qty-value').textContent = qty;
+    refreshBuyNow();
   });
   document.getElementById('add-to-cart-btn').addEventListener('click', () => {
     addToCart({ id: product.id, name: product.name, price: product.price, icon: product.icon, category: product.category }, qty);
   });
+
+  /* ---------- الطلب المباشر على واتساب لهذه القطعة ---------- */
+  const buyNowBtn = document.getElementById('buy-now-btn');
+  const buyNowNote = document.querySelector('.pd-buy-note');
+  function singleOrder(){
+    return {
+      orderNumber: 'NJ-' + String(Date.now()).slice(-6),
+      items: [{ name: product.name, category: product.category, qty: qty, price: product.price }],
+      shipping: product.price * qty > 300 ? 0 : 25,
+      discount: 0,
+      customer: readCustomerForProduct()
+    };
+  }
+  function readCustomerForProduct(){
+    try{
+      const raw = JSON.parse(localStorage.getItem('nanjawi_customer_v1'));
+      return raw && typeof raw === 'object' ? raw : {};
+    }catch(err){ return {}; }
+  }
+  function refreshBuyNow(){
+    if(!buyNowNote) return;
+    const total = product.price * qty;
+    const ship = total > 300 ? 0 : 25;
+    buyNowNote.textContent = 'الإجمالي: ' + formatPrice(total) + ' ر.س' +
+      (ship === 0 ? ' — الشحن مجاني' : ' + شحن ' + formatPrice(ship) + ' ر.س') +
+      ' — اضغط لإرسال الطلب كاملًا إلى واتساب ننجاوي.';
+  }
+  if(buyNowBtn){
+    buyNowBtn.addEventListener('click', () => {
+      sendOrderToWhatsApp(singleOrder());
+    });
+    refreshBuyNow();
+  }
 
   const related = NANJAWI_PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
   renderProductGrid(document.getElementById('related-grid'), related.length ? related : NANJAWI_PRODUCTS.slice(0, 4));

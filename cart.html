@@ -66,7 +66,7 @@
 <header class="site-header">
   <div class="container header-row">
     <a href="majlis.html" class="brand"><span class="brand-mark"></span><span class="kufi">ننجاوي</span></a>
-    <nav class="main-nav">
+    <nav class="main-nav" id="mainNavLinks">
       <a href="majlis.html">مجلس الصوت</a>
       <a href="heritage.html">التراث</a>
       <a href="shop.html">المتجر</a>
@@ -79,7 +79,7 @@
         🛍️
         <span class="cart-count" data-cart-count>0</span>
       </a>
-      <button class="nav-toggle" aria-label="القائمة">☰</button>
+      <button class="nav-toggle" type="button" aria-label="القائمة">☰</button>
     </div>
   </div>
 </header>
@@ -123,8 +123,50 @@
 <script src="products.js"></script>
 <script src="script.js"></script>
 <script>
+  /* ============================================================
+     سلة المشتريات: بيانات العميل + كود خصم فعّال + فاتورة واتساب مباشرة
+     كل القيم الديناميكية تُهرَّب عبر escHtml قبل أي innerHTML.
+     ============================================================ */
+  /* هروب آمن: escHtml من script.js، مع نسخة احتياطية محلية إن تعذّر تحميله */
+  function escFallback(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  /* escHtml معرّف في script.js المحمّل قبل هذا السكربت — نسخة احتياطية احتياطية فقط */
+  const e = escHtml;
+  function moneyText(value){
+    if(typeof window.moneyText === 'function'){ try{ return window.moneyText(value); }catch(err){} }
+    const n = Number(value) || 0;
+    return Number.isInteger(n) ? String(n) : n.toFixed(2);
+  }
+  const CUSTOMER_KEY = 'nanjawi_customer_v1';
+  let appliedPromo = '';
+  /* دوال مساعدة من script.js (متاحة دائمًا لأنها تُحمَّل قبله) */
+  function promoList(){ return (typeof NANJAWI_PROMOS !== 'undefined') ? NANJAWI_PROMOS : {}; }
+  function promoAmount(code, subtotal){
+    if(typeof promoDiscount === 'function'){ try{ return promoDiscount(code, subtotal); }catch(err){ /* احتياطي */ } }
+    const key = String(code||'').trim().toUpperCase();
+    const promo = promoList()[key];
+    if(!promo) return 0;
+    const amount = promo.type === 'percent' ? (subtotal * promo.value) / 100 : promo.value;
+    return Math.min(subtotal, Math.round(amount * 100) / 100);
+  }
+  function promoLabel(code){ const p = promoList()[String(code||'').trim().toUpperCase()]; return p ? p.label : ''; }
+
+  function readCustomer(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(CUSTOMER_KEY));
+      return raw && typeof raw === 'object' ? raw : {};
+    }catch(err){ return {}; }
+  }
+  function saveCustomer(data){
+    try{ localStorage.setItem(CUSTOMER_KEY, JSON.stringify(data)); }catch(err){ /* وضع خاص */ }
+  }
+
+  function shippingFor(subtotal){ return subtotal > 300 ? 0 : 25; }
+
   function cartItemHTML(item){
-    const e = escHtml;
     return `
       <div class="cart-item">
         <div class="cart-thumb">${e(item.icon || '🛍️')}</div>
@@ -133,16 +175,34 @@
           <span class="product-cat">${e(item.category || '')}</span>
           <div style="margin-top:10px;">
             <div class="qty-control" style="display:inline-flex;">
-              <button data-plus="${e(item.id)}">+</button>
+              <button type="button" data-plus="${e(item.id)}" aria-label="زيادة الكمية">+</button>
               <span>${e(item.qty)}</span>
-              <button data-minus="${e(item.id)}">−</button>
+              <button type="button" data-minus="${e(item.id)}" aria-label="تقليل الكمية">−</button>
             </div>
           </div>
         </div>
         <span class="price">${e(formatPrice(item.price * item.qty))} ر.س</span>
         <div>
-          <button class="remove-btn" data-remove="${e(item.id)}">إزالة</button>
+          <button class="remove-btn" type="button" data-remove="${e(item.id)}">إزالة</button>
         </div>
+      </div>
+    `;
+  }
+
+  function customerFormHTML(c){
+    return `
+      <div class="customer-box" id="customerBox">
+        <h3>بيانات الاستلام</h3>
+        <p class="customer-lead">املأ بياناتك مرة واحدة، ثم أرسل الطلب كاملًا إلى واتساب ننجاوي بضغطة واحدة.</p>
+        <div class="customer-grid">
+          <label class="cf"><span>الاسم <b>*</b></span><input type="text" id="cName" autocomplete="name" placeholder="اسمك الكريم" value="${e(c.name || '')}"></label>
+          <label class="cf"><span>الموبايل <b>*</b></span><input type="tel" id="cPhone" inputmode="numeric" autocomplete="tel" placeholder="01xxxxxxxxx" value="${e(c.phone || '')}"></label>
+          <label class="cf"><span>البريد الإلكتروني</span><input type="email" id="cEmail" autocomplete="email" dir="ltr" placeholder="you@example.com" value="${e(c.email || '')}"></label>
+          <label class="cf"><span>المدينة <b>*</b></span><input type="text" id="cCity" autocomplete="address-level2" placeholder="المدينة" value="${e(c.city || '')}"></label>
+          <label class="cf cf--full"><span>العنوان التفصيلي <b>*</b></span><input type="text" id="cAddress" autocomplete="street-address" placeholder="الحي — الشارع — رقم المبنى" value="${e(c.address || '')}"></label>
+          <label class="cf cf--full"><span>ملاحظات الطلب</span><textarea id="cNotes" rows="2" placeholder="أي ملاحظات على التوصيل (اختياري)">${e(c.notes || '')}</textarea></label>
+        </div>
+        <p class="cf-err" id="cfErr" hidden></p>
       </div>
     `;
   }
@@ -163,34 +223,41 @@
     }
 
     const subtotal = cartTotal();
-    const shipping = subtotal > 300 ? 0 : 25;
-    const total = subtotal + shipping;
+    const shipping = shippingFor(subtotal);
+    const discount = appliedPromo ? promoAmount(appliedPromo, subtotal) : 0;
+    const total = Math.max(0, subtotal - discount + shipping);
+    const c = readCustomer();
 
     wrap.innerHTML = `
       <div class="cart-grid">
         <div class="cart-list">${cart.map(cartItemHTML).join('')}</div>
         <div class="summary-box">
           <h3>ملخص الطلب</h3>
-          <div class="summary-row"><span>المجموع الفرعي</span><span>${formatPrice(subtotal)} ر.س</span></div>
-          <div class="summary-row"><span>الشحن</span><span>${shipping === 0 ? 'مجاني' : formatPrice(shipping) + ' ر.س'}</span></div>
+          <div class="summary-row"><span>المجموع الفرعي</span><span>${e(formatPrice(subtotal))} ر.س</span></div>
+          <div class="summary-row"><span>الشحن</span><span>${shipping === 0 ? 'مجاني' : e(formatPrice(shipping)) + ' ر.س'}</span></div>
+          ${discount > 0 ? `<div class="summary-row promo-applied"><span>الخصم (${e(appliedPromo)})</span><span>−${e(formatPrice(discount))} ر.س</span></div>` : ''}
           <div class="promo-row">
-            <input type="text" placeholder="كود الخصم">
-            <button class="btn btn-outline">تطبيق</button>
+            <input type="text" id="promoInput" placeholder="كود الخصم" value="${e(appliedPromo)}" autocomplete="off">
+            <button class="btn btn-outline" type="button" id="promoBtn">${discount > 0 ? 'تغيير' : 'تطبيق'}</button>
           </div>
-          <div class="summary-row total"><span>الإجمالي</span><span class="price">${formatPrice(total)} ر.س</span></div>
-          <button class="btn btn-primary btn-block" style="margin-top:20px;" onclick="showToast('سيتم تحويلك لصفحة الدفع قريباً')">إتمام الشراء</button>
+          <p class="promo-msg" id="promoMsg" ${discount > 0 ? '' : 'hidden'}>${discount > 0 ? '✓ تم تطبيق كود الخصم بنجاح' : ''}</p>
+          <div class="summary-row total"><span>الإجمالي</span><span class="price">${e(formatPrice(total))} ر.س</span></div>
+          <button class="btn btn-primary btn-block" type="button" id="checkoutBtn" style="margin-top:20px;">💬 إتمام الطلب على واتساب</button>
+          <p class="summary-note">سيفتح واتساب ننجاوي برسالة فاتورة منسّقة فيها كل أصناف طلبك وبياناتك — أرسلها لتأكيد الطلب.</p>
           <a href="shop.html" class="btn btn-outline btn-block" style="margin-top:12px;">متابعة التسوّق</a>
         </div>
+        ${customerFormHTML(c)}
       </div>
     `;
 
     wrap.querySelectorAll('[data-plus]').forEach(btn => btn.addEventListener('click', () => {
       const item = getCart().find(i => i.id === btn.dataset.plus);
-      updateQty(btn.dataset.plus, item.qty + 1);
+      if(item) updateQty(btn.dataset.plus, item.qty + 1);
       renderCartPage();
     }));
     wrap.querySelectorAll('[data-minus]').forEach(btn => btn.addEventListener('click', () => {
       const item = getCart().find(i => i.id === btn.dataset.minus);
+      if(!item) return;
       if(item.qty <= 1){ removeFromCart(btn.dataset.minus); }
       else{ updateQty(btn.dataset.minus, item.qty - 1); }
       renderCartPage();
@@ -199,7 +266,93 @@
       removeFromCart(btn.dataset.remove);
       renderCartPage();
     }));
+
+    /* كود الخصم */
+    const promoBtn = document.getElementById('promoBtn');
+    const promoInput = document.getElementById('promoInput');
+    const promoMsg = document.getElementById('promoMsg');
+    function applyPromo(){
+      const code = String(promoInput.value || '').trim().toUpperCase();
+      promoMsg.hidden = false;
+      if(!code){
+        appliedPromo = '';
+        promoMsg.textContent = 'أدخل كود الخصم أولًا';
+        promoMsg.className = 'promo-msg is-warn';
+        return;
+      }
+      const amount = promoAmount(code, cartTotal());
+      if(amount <= 0){
+        appliedPromo = '';
+        promoMsg.textContent = '✕ كود الخصم غير صحيح أو منتهي';
+        promoMsg.className = 'promo-msg is-err';
+        showToast('كود الخصم غير صحيح');
+        return;
+      }
+      appliedPromo = code;
+      showToast('✓ تم تطبيق ' + (promoLabel(code) || 'كود الخصم'));
+      renderCartPage();
+    }
+    if(promoBtn) promoBtn.addEventListener('click', applyPromo);
+    if(promoInput) promoInput.addEventListener('keydown', (ev) => {
+      if(ev.key === 'Enter'){ ev.preventDefault(); applyPromo(); }
+    });
+
+    /* الإتمام المباشر على واتساب: نافذة فورًا داخل الضغطة ثم تحقق */
+    document.getElementById('checkoutBtn').addEventListener('click', () => {
+      const data = {
+        name: document.getElementById('cName').value.trim(),
+        phone: waDigits(document.getElementById('cPhone').value),
+        email: document.getElementById('cEmail').value.trim(),
+        city: document.getElementById('cCity').value.trim(),
+        address: document.getElementById('cAddress').value.trim(),
+        notes: document.getElementById('cNotes').value.trim()
+      };
+      const errBox = document.getElementById('cfErr');
+      const problems = [];
+      if(data.name.length < 3) problems.push('الاسم');
+      if(!/^01\d{9}$/.test(data.phone)) problems.push('رقم موبايل صحيح (11 رقمًا يبدأ بـ 01)');
+      if(data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) problems.push('بريد إلكتروني صحيح');
+      if(data.city.length < 2) problems.push('المدينة');
+      if(data.address.length < 6) problems.push('العنوان التفصيلي');
+      if(problems.length){
+        errBox.hidden = false;
+        errBox.textContent = '⚠ أكمل: ' + problems.join(' • ');
+        showToast('أكمل بيانات الاستلام أولًا', true);
+        const first = document.getElementById('cName');
+        if(first && first.focus) first.focus();
+        return;
+      }
+      errBox.hidden = true;
+      saveCustomer(data);
+      const order = {
+        orderNumber: 'NJ-' + String(Date.now()).slice(-6),
+        items: getCart(),
+        shipping,
+        discount,
+        promoCode: appliedPromo,
+        customer: data
+      };
+      sendOrderToWhatsApp(order);
+    });
   }
+
+  /* تنظيف الأرقام أثناء الكتابة + تنسيق البريد عند الخروج */
+  document.addEventListener('input', (ev) => {
+    const t = ev.target;
+    if(!t || !t.id) return;
+    if(t.id === 'cPhone'){
+      const clean = waDigits(t.value).slice(0, 11);
+      if(clean !== t.value) t.value = clean;
+    }
+  });
+  document.addEventListener('blur', (ev) => {
+    const t = ev.target;
+    if(!t || !t.id) return;
+    if(t.id === 'cEmail' && t.value) t.value = t.value.trim().toLowerCase();
+    if((t.id === 'cName' || t.id === 'cCity' || t.id === 'cAddress') && t.value){
+      t.value = t.value.replace(/\s+/g, ' ').trim();
+    }
+  }, true);
 
   renderCartPage();
 </script>

@@ -127,14 +127,177 @@ function showToast(message){
   window.__nanjawiToastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
 }
 
-// ---------- القائمة الجانبية على الجوال ----------
+// ---------- القائمة الجانبية على الجوال (فتح/إغلاق + خارج + Escape) ----------
+function closeNav(){
+  const nav = document.querySelector('.main-nav');
+  const toggle = document.querySelector('.nav-toggle');
+  if(nav) nav.classList.remove('open');
+  if(toggle){
+    toggle.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  document.body.classList.remove('nav-open');
+}
+
 function initNavToggle(){
   const toggle = document.querySelector('.nav-toggle');
   const nav = document.querySelector('.main-nav');
   if(!toggle || !nav) return;
-  toggle.addEventListener('click', () => {
-    nav.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', 'mainNavLinks');
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = !nav.classList.contains('open');
+    nav.classList.toggle('open', open);
+    toggle.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.classList.toggle('nav-open', open);
   });
+  // إغلاق عند اختيار أي رابط
+  nav.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeNav));
+  // إغلاق عند الضغط خارج القائمة
+  document.addEventListener('click', (e) => {
+    if(!nav.classList.contains('open')) return;
+    if(nav.contains(e.target) || toggle.contains(e.target)) return;
+    closeNav();
+  });
+  // إغلاق بزر Escape
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeNav();
+  });
+  window.addEventListener('resize', () => {
+    if(window.innerWidth > 880) closeNav();
+  });
+}
+
+// ---------- واتساب: أرقام وتسجيل الطلبات ----------
+// الرقم الرسمي لأكاديمية رحيق — لا يُقرأ من أي تخزين محلي
+const RAHEEQ_WA_NUMBER = '201151947735';
+
+/* تنسيق نص العميل: يقلّص المسافات الزائدة ويوحّد الأرقام العربية إلى لاتينية */
+function waClean(v){
+  return String(v == null ? '' : v)
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* أرقام فقط (للموبايل) — يقبل الأرقام العربية والفارسية */
+function waDigits(v){
+  return String(v == null ? '' : v)
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/\D/g, '');
+}
+window.waClean = waClean;
+window.waDigits = waDigits;
+
+/* أكواد الخصم المتاحة (تُعرَّف قبل أي استخدام) */
+const NANJAWI_PROMOS = {
+  'NANJAWI10': { type: 'percent', value: 10, label: 'خصم 10%' },
+  'RAHEEQ15': { type: 'percent', value: 15, label: 'خصم 15%' },
+  'WELCOME20': { type: 'fixed', value: 20, label: 'خصم 20 ر.س' }
+};
+window.NANJAWI_PROMOS = NANJAWI_PROMOS;
+
+/* تنسيق السعر — products.js يعرّفه عادةً، وهذا احتياطي مستقل */
+function moneyText(value){
+  /* أرقام لاتينية دائمًا في الفواتير — أوضح للقراءة وللنسخ */
+  const n = Number(value) || 0;
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+}
+window.moneyText = moneyText;
+
+/* تنظيف بنود السلة إلى سطور فاتورة واضحة (كل القيم مهروبة عند العرض) */
+function invoiceItems(cart){
+  return (Array.isArray(cart) ? cart : []).map((item, idx) => {
+    const price = Number(item.price) || 0;
+    const qty = Math.max(1, parseInt(item.qty, 10) || 1);
+    return {
+      line: idx + 1,
+      name: waClean(item.name),
+      category: waClean(item.category),
+      qty,
+      unit: price,
+      total: price * qty
+    };
+  });
+}
+
+/* بناء رسالة الطلب/الفاتورة الكاملة المنظّمة على واتساب */
+function buildOrderMessage(order){
+  const o = order || {};
+  const items = invoiceItems(o.items);
+  const subtotal = items.reduce((s, i) => s + i.total, 0);
+  const shipping = typeof o.shipping === 'number' ? o.shipping : 0;
+  const discount = typeof o.discount === 'number' ? o.discount : 0;
+  const total = Math.max(0, subtotal - discount + shipping);
+  const L = [];
+  L.push('🛍️ *ننجاوي — طلب جديد*');
+  L.push('━━━━━━━━━━━━━━━━━━');
+  if(o.orderNumber) L.push('🧾 *رقم الطلب:* ' + o.orderNumber);
+  L.push('📅 *التاريخ:* ' + new Date().toISOString().slice(0, 10));
+  if(o.customer && (o.customer.name || o.customer.phone || o.customer.address)){
+    L.push('');
+    L.push('👤 *بيانات العميل*');
+    if(o.customer.name) L.push('• الاسم: ' + waClean(o.customer.name));
+    if(o.customer.phone) L.push('• الموبايل: ' + waDigits(o.customer.phone));
+    if(o.customer.email) L.push('• البريد: ' + waClean(o.customer.email).toLowerCase());
+    if(o.customer.city) L.push('• المدينة: ' + waClean(o.customer.city));
+    if(o.customer.address) L.push('• العنوان: ' + waClean(o.customer.address));
+    if(o.customer.notes) L.push('• ملاحظات: ' + waClean(o.customer.notes));
+  }
+  L.push('');
+  L.push('📦 *تفاصيل الطلب*');
+  if(!items.length){
+    L.push('• لا توجد أصناف');
+  } else {
+    items.forEach((i) => {
+      const cat = i.category ? ' — ' + i.category : '';
+      L.push(i.line + '. ' + i.name + cat);
+      L.push('   ' + i.qty + ' × ' + moneyText(i.unit) + ' ر.س = ' + moneyText(i.total) + ' ر.س');
+    });
+  }
+  L.push('━━━━━━━━━━━━━━━━━━');
+  L.push('• المجموع الفرعي: ' + moneyText(subtotal) + ' ر.س');
+  if(discount > 0) L.push('• الخصم' + (o.promoCode ? ' (' + o.promoCode + ')' : '') + ': −' + moneyText(discount) + ' ر.س');
+  L.push('• الشحن: ' + (shipping === 0 ? 'مجاني' : moneyText(shipping) + ' ر.س'));
+  L.push('💰 *الإجمالي: ' + moneyText(total) + ' ر.س*');
+  L.push('━━━━━━━━━━━━━━━━━━');
+  L.push('✨ مُرسَل مباشرة من متجر ننجاوي.');
+  return L.join('\n').slice(0, 3500);
+}
+
+/* رابط واتساب المباشر للفاتورة */
+function buildOrderLink(order){
+  return 'https://wa.me/' + RAHEEQ_WA_NUMBER + '?text=' + encodeURIComponent(buildOrderMessage(order));
+}
+
+/* فتح واتساب مباشرة (نافذة جديدة، ثم تحويل في نفس التبويب لو حُجبت) */
+function openWhatsApp(url){
+  if(!url) return false;
+  let win = null;
+  try { win = window.open(url, '_blank', 'noopener,noreferrer'); } catch(e) { win = null; }
+  if(win) return true;
+  try { window.location.href = url; return true; } catch(e) { return false; }
+}
+
+/* إرسال الطلب مباشرة إلى واتساب أكاديمية رحيق */
+function sendOrderToWhatsApp(order){
+  const link = buildOrderLink(order);
+  openWhatsApp(link);
+  showToast('📲 فتحنا واتساب أكاديمية رحيق برسالة طلبك كاملة');
+  return link;
+}
+
+function promoDiscount(code, subtotal){
+  const key = String(code || '').trim().toUpperCase();
+  const promo = NANJAWI_PROMOS[key];
+  if(!promo) return 0;
+  const amount = promo.type === 'percent' ? (subtotal * promo.value) / 100 : promo.value;
+  return Math.min(subtotal, Math.round(amount * 100) / 100);
 }
 
 // ---------- التحقق من النماذج ----------
@@ -160,9 +323,11 @@ function initLoginForm(){
     e.preventDefault();
     const emailField = document.getElementById('login-email-field');
     const passField = document.getElementById('login-password-field');
-    const email = document.getElementById('login-email').value.trim();
+    const email = waClean(document.getElementById('login-email').value).toLowerCase();
     const password = document.getElementById('login-password').value;
 
+    const emailInput = document.getElementById('login-email');
+    if(emailInput && emailInput.value !== email) emailInput.value = email;
     const emailOk = validateField(emailField, isValidEmail(email), 'يرجى إدخال بريد إلكتروني صحيح');
     const passOk = validateField(passField, password.length >= 6, 'كلمة المرور يجب ألا تقل عن 6 أحرف');
 
@@ -183,12 +348,14 @@ function initRegisterForm(){
     const passField = document.getElementById('reg-password-field');
     const confirmField = document.getElementById('reg-confirm-field');
 
-    const name = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
+    const name = waClean(document.getElementById('reg-name').value);
+    const email = waClean(document.getElementById('reg-email').value).toLowerCase();
     const password = document.getElementById('reg-password').value;
     const confirm = document.getElementById('reg-confirm').value;
 
     const nameOk = validateField(nameField, name.length >= 3, 'الاسم يجب ألا يقل عن 3 أحرف');
+    const emailInput = document.getElementById('login-email');
+    if(emailInput && emailInput.value !== email) emailInput.value = email;
     const emailOk = validateField(emailField, isValidEmail(email), 'يرجى إدخال بريد إلكتروني صحيح');
     const passOk = validateField(passField, password.length >= 6, 'كلمة المرور يجب ألا تقل عن 6 أحرف');
     const confirmOk = validateField(confirmField, confirm === password && confirm.length > 0, 'كلمتا المرور غير متطابقتين');

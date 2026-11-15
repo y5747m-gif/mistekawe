@@ -774,3 +774,237 @@ button, input, select, textarea{ font-family: inherit; }
 
 /* شعار رحيق المقدم من الأكاديمية */
 .raheeq-brand-mark{width:42px;height:50px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35))}
+
+/* ============================================================
+   تحسينات المتجر: قائمة الجوال • بيانات الاستلام • كود الخصم
+   فاتورة واتساب المباشرة • ترتيب الفلاتر
+   ============================================================ */
+
+/* ---------------- قائمة الجوال: أيقونة تتحول إلى ✕ ---------------- */
+.nav-toggle{position:relative;transition:background .2s,border-color .2s,transform .15s;font-size:16px;line-height:1}
+.nav-toggle:hover{border-color:var(--gold);background:var(--surface-2)}
+.nav-toggle:active{transform:scale(.97)}
+
+@media (max-width: 880px){
+  .main-nav{
+    z-index: 90;
+    max-height: calc(100vh - 78px);
+    overflow-y: auto;
+    box-shadow: 0 24px 50px rgba(0,0,0,.42);
+    border-inline: 1px solid var(--line);
+    border-radius: 0 0 var(--radius-m) var(--radius-m);
+    transition: opacity .24s ease, transform .26s cubic-bezier(.2,.9,.3,1);
+  }
+  .main-nav.open{ transform: translateY(0); }
+  .main-nav a{
+    width: 100%;
+    padding: 11px 4px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-size: 16px;
+  }
+  .main-nav a:last-child{ border-bottom: 0; }
+  .main-nav a:hover, .main-nav a.active{ color: var(--gold); }
+  .nav-toggle{ display: flex; align-items: center; justify-content: center; }
+  body.nav-open{ overflow: hidden; }
+}
+
+/* ---------------- بيانات الاستلام (بطاقة العميل) ---------------- */
+.customer-box{
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 26px 26px 22px;
+  margin-top: 6px;
+}
+.customer-box h3{ font-size: 19px; margin-bottom: 6px; }
+.customer-lead{ color: var(--muted); font-size: 14px; margin-bottom: 18px; line-height: 1.8; }
+.customer-grid{ display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px 16px; }
+.cf{ display: flex; flex-direction: column; gap: 7px; font-size: 13.5px; color: var(--muted); }
+.cf > span{ font-weight: 500; }
+.cf b{ color: var(--gold); }
+.cf input, .cf textarea{
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  padding: 11px 14px;
+  color: var(--ivory);
+  font-size: 14.5px;
+  font-family: inherit;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.cf input:focus, .cf textarea:focus{
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,106,.18);
+  background: var(--surface-raised);
+}
+.cf input::placeholder, .cf textarea::placeholder{ color: #7d7368; }
+.cf textarea{ resize: vertical; min-height: 72px; }
+.cf--full{ grid-column: 1 / -1; }
+.cf-err{
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-s);
+  background: rgba(190,64,64,.14);
+  border: 1px solid rgba(190,64,64,.42);
+  color: #F0B4B4;
+  font-size: 13.5px;
+  line-height: 1.75;
+}
+
+/* ---------------- كود الخصم ---------------- */
+.promo-row input{ transition: border-color .2s, box-shadow .2s; }
+.promo-row input:focus{ outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,106,.16); }
+.promo-msg{ font-size: 13px; margin: -8px 0 14px; color: #8FD9A8; }
+.promo-msg.is-err{ color: #F0B4B4; }
+.promo-msg.is-warn{ color: var(--gold); }
+.summary-row.promo-applied{ color: #8FD9A8; }
+.summary-row.promo-applied span:last-child{ font-weight: 600; }
+.summary-note{
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.8;
+  text-align: center;
+}
+
+/* ---------------- زر إتمام الطلب على واتساب ---------------- */
+#checkoutBtn{
+  box-shadow: 0 14px 30px rgba(30,138,73,.28);
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s, box-shadow .22s, filter .2s;
+}
+#checkoutBtn:hover{ transform: translateY(-2px); filter: brightness(1.06); }
+#checkoutBtn:active{ transform: scale(.98); }
+
+/* ---------------- بطاقة سلّة فارغة ---------------- */
+.cart-empty{
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+/* ---------------- استجابة ---------------- */
+@media (max-width: 980px){
+  .cart-grid{ grid-template-columns: 1fr; gap: 26px; }
+  .summary-box{ position: static; top: auto; }
+}
+@media (max-width: 640px){
+  .customer-grid{ grid-template-columns: 1fr; }
+  .customer-box{ padding: 20px 16px 18px; border-radius: var(--radius-s); }
+  .cart-item{ grid-template-columns: 64px 1fr; gap: 12px; row-gap: 10px; }
+  .cart-thumb{ width: 64px; height: 64px; font-size: 24px; }
+  .cart-item .price, .cart-item .remove-btn{ grid-column: 2; justify-self: end; }
+  .summary-box{ padding: 20px 16px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .main-nav, .cf input, .cf textarea, #checkoutBtn{ transition: none; }
+}
+
+/* ---------------- زر الطلب المباشر على واتساب (صفحة المنتج) ---------------- */
+.btn-wa{
+  background: linear-gradient(135deg, #1E8A49, #25A85A);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 26px rgba(30,138,73,.26);
+  transition: transform .18s, filter .2s, box-shadow .22s;
+}
+.btn-wa:hover{ transform: translateY(-2px); filter: brightness(1.07); }
+.btn-wa:active{ transform: scale(.98); }
+.pd-buy-now{ width: 100%; margin-top: 12px; padding: 13px 18px; font-size: 15.5px; font-weight: 700; }
+.pd-buy-note{
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.8;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce){
+  .btn-wa, .pd-buy-now{ transition: none; }
+}
+
+/* ---------------- شريط الفلاتر: انتقالات ومؤشر العدد ---------------- */
+.filters-wrap{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-bottom: 34px;
+}
+.filters-wrap .filters-bar{ margin-bottom: 0; }
+.filter-chip{
+  position: relative;
+  transition: border-color .2s ease, color .2s ease, background .2s ease, transform .18s ease, box-shadow .2s ease;
+}
+.filter-chip:hover{ transform: translateY(-2px); }
+.filter-chip:active{ transform: scale(.97); }
+.filter-chip.active{ box-shadow: 0 8px 18px rgba(192,138,62,.16); }
+.shop-count{
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: .2px;
+}
+#shop-product-grid.grid-in{ animation: gridFadeIn .34s cubic-bezier(.2,.9,.3,1) both; }
+@keyframes gridFadeIn{
+  from{ opacity: 0; transform: translateY(10px) scale(.995); }
+  to{ opacity: 1; transform: none; }
+}
+@media (max-width: 640px){
+  .filters-wrap{ flex-direction: column; align-items: stretch; }
+  .shop-count{ text-align: center; }
+  .filters-bar{
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-chip{ flex: 0 0 auto; }
+}
+@media (prefers-reduced-motion: reduce){
+  #shop-product-grid.grid-in{ animation: none; }
+  .filter-chip{ transition: none; }
+  .filter-chip:hover{ transform: none; }
+}
+
+/* ---------------- صفحات الدخول/التسجيل: رجوع للتسجيل + تنسيق الحقول ---------------- */
+.auth-back{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 9px 16px;
+  border: 1px solid rgba(201,168,106,.42);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--gold);
+  background: rgba(201,168,106,.07);
+  transition: background .2s, border-color .2s, transform .18s, color .2s;
+}
+.auth-back:hover{
+  background: rgba(201,168,106,.16);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  transform: translateX(-3px);
+}
+html[dir="ltr"] .auth-back:hover{ transform: translateX(3px); }
+.auth-box .field input{ transition: border-color .2s, box-shadow .2s, background .2s; }
+.auth-box .field input:focus{
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,106,.16);
+}
+.auth-box .field.invalid input{ border-color: #BE4040; background: rgba(190,64,64,.06); }
+.auth-box .field .field-error{ transition: opacity .2s; }
+@media (max-width: 700px){
+  .auth-box .field input{ font-size: 16px; scroll-margin-top: 90px; }
+  .auth-back{ font-size: 12.5px; padding: 8px 13px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .auth-back, .auth-box .field input{ transition: none; }
+  .auth-back:hover{ transform: none; }
+}

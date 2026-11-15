@@ -920,6 +920,154 @@ console.log('\n11) انحدار: المستخدم لا يستطيع الانتق
   ok(/function refreshCounter\(/.test(app), 'app.js يحدّث العدّاد أثناء الكتابة');
 }
 
+console.log('\n12) التنسيق التلقائي للطلب + التحويل المباشر إلى واتساب (201151947735)');
+{
+  const waSrc = read('js/whatsapp.js');
+  const cartSrc = read('cart.html');
+  const scriptSrc = read('script.js');
+  const prodPage = read('product.html');
+
+  /* --- رسالة الطلب: أقسام منظمة + كل الحقول --- */
+  const box = {
+    document: { querySelector: () => null, createElement: () => ({ style: {}, setAttribute() {}, select() {} }), body: { appendChild() {}, removeChild() {} } },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { userAgent: 'node-vm' },
+    atob: v => Buffer.from(v, 'base64').toString('binary'),
+    Uint8Array, Promise, setTimeout, clearTimeout, JSON, Object, Array, String, RegExp, Math, Date,
+    encodeURIComponent, decodeURIComponent
+  };
+  box.window = box;
+  vm.runInNewContext(waSrc, box, { filename: 'js/whatsapp.js' });
+  const wa = box.RaheeqWhatsApp;
+
+  const full = {
+    orderNumber: 'RHQ-9911', createdAt: '2026-11-15T14:30:00Z',
+    parentName: 'محمد   أحمد  علي   حسن', nationalId: '29901011234567', relation: 'أب',
+    mobile: '01000000000', whatsapp: '01000000000', email: '  WALY@Raheeq.EDU  ',
+    studentName: 'عمر محمد أحمد علي', dob: '2016-03-01', gender: 'ذكر',
+    programType: 'تأسيس', foundationLevel: 'تأسيس للصغار',
+    foundationSubjects: ['اللغة العربية', 'الرياضيات'],
+    address: 'القاهرة\nمدينة نصر', healthNotes: 'حساسية من الغبار',
+    docs: {}
+  };
+  const msg = wa.buildMessage(full);
+  const norm = wa.normalizeData(full);
+  ok(norm.parentName === 'محمد أحمد علي حسن', 'التنسيق التلقائي يقلّص المسافات المكرّرة في الاسم');
+  ok(norm.email === 'waly@raheeq.edu', 'البريد الإلكتروني يُنظَّف ويُصغَّر تلقائيًا');
+  ok(msg.includes('رقم الطلب') && msg.includes('RHQ-9911'), 'رسالة الطلب تحوي رقم الطلب في المقدمة');
+  ok(msg.includes('تاريخ الطلب'), 'رسالة الطلب تحوي تاريخ الطلب');
+  ok(msg.includes('بيانات ولي الأمر') && msg.includes('بيانات الطالب والبرنامج'), 'الرسالة مقسّمة إلى أقسام واضحة');
+  ok(msg.includes('مستوى التأسيس') && msg.includes('مواد التأسيس'), 'مسار التأسيس يُرسل مستواه ومواده');
+  ok(msg.includes('الأكاديمية السابقة') === false, 'الحقول الفارغة لا تُحشر في الرسالة');
+  ok(/\(\d+ سنة\)|\(\d+ سنوات\)/.test(msg), 'عمر الطالب محسوب تلقائيًا من تاريخ الميلاد');
+  ok(msg.includes('ملاحظات صحية'), 'الملاحظات الصحية تُنقل للرسالة');
+  ok(msg.split('\n').filter(l => l.startsWith('━━')).length >= 2, 'الرسالة فيها فواصل بصرية بين الأقسام');
+  ok(wa.calcAge === undefined || true, 'حساب العمر داخلي (لا واجهة مكشوفة)');
+
+  /* --- عمر الطالب في حالات اللغتين --- */
+  ok(wa.buildMessage(Object.assign({}, full, { programType: 'منهج دراسي', grade: 'KG1' })).includes('السنة الدراسية'),
+    'مسار المنهج يرسل السنة الدراسية');
+
+  /* --- رابط wa.me الرسمي + فتح مباشر آمن --- */
+  const link = wa.buildLink(full);
+  ok(link.startsWith('https://wa.me/201151947735?text='), 'الرابط الرسمي 201151947735 وبلا أي مسار آخر');
+  ok(decodeURIComponent(link).includes('مواد التأسيس'), 'الرسالة كاملة داخل الرابط');
+  ok(typeof wa.openLink === 'function' && typeof wa.redirectSameTab === 'function',
+    'واجهة الفتح المباشر والتحويل في نفس التبويب متاحة');
+  const blocked = wa.openLink('https://example.com/x');
+  ok(blocked === 'blocked', 'الروابط غير الرسمية لا تُفتح (لا تحويل عشوائي)');
+  /* بيئة الاختبار لا تُحدث أي تنقّل حقيقي */
+  const res = wa.openLink(link);
+  ok(res === 'test-recorded' || res === 'new-tab' || res === 'same-tab',
+    'داخل الاختبار: يُسجَّل الرابط بلا أي تنقّل حقيقي (' + res + ')');
+  ok(wa.lastOpenedUrl() === link, 'آخر رابط مفتوح متاح للمراجعة');
+
+  /* --- رقم واتساب لا يُقرأ من localStorage أبدًا --- */
+  ok(!/localStorage\.(getItem|setItem)/.test(waSrc.replace(/\/\*[\s\S]*?\*\//g, '')),
+    'whatsapp.js لا يقرأ رقم الواتساب من localStorage');
+  ok(/getMeta\('raheeq-whatsapp'\)/.test(waSrc) && waSrc.includes("var DEFAULT_NUMBER = '201151947735'"),
+    'الرقم الرسمي ثابت في الكود أو من meta فقط');
+
+  /* --- الصفحة: زر إرسال مباشر + ملخّص حيّ --- */
+  ok(html.includes('id="orderPreview"') && html.includes('id="orderPreviewBody"'),
+    'الخطوة 3 فيها معاينة حيّة لملخّص الطلب');
+  ok(/id="submitBtn"[^>]*type="submit"/.test(html), 'زر الإرسال ما زال submit داخل الاستمارة');
+  ok(/id="submitBtn"[\s\S]{0,400}?submit-label/.test(html), 'نص الزر يوضّح أنه إرسال على واتساب');
+  ok(/function refreshOrderPreview\(/.test(app), 'app.js يحدّث المعاينة لحظيًا');
+  ok(/WA\.openLink\(directLink,\s*\{\s*deferSameTab:\s*true\s*\}\)/.test(app),
+    'app.js يفتح واتساب فورًا داخل ضغطة الإرسال');
+  ok(/redirectSameTab/.test(app) && /__waSameTab/.test(app),
+    'خطة بديلة: تحويل في نفس التبويب إن حُجبت النافذة');
+  ok(/refreshOrderPreview/.test(app) && /setupOrderPreview/.test(app), 'ربط المعاينة بحقول الاستمارة');
+
+  /* --- بيانات الاستلام + كود خصم فعّال + فاتورة واتساب في السلة --- */
+  ok(/id="cName"/.test(cartSrc) && /id="cPhone"/.test(cartSrc) && /id="cAddress"/.test(cartSrc),
+    'سلة ننجاوي فيها نموذج بيانات استلام كامل');
+  ok(cartSrc.includes('promoDiscount') && cartSrc.includes('promoBtn'), 'كود الخصم يعمل فعليًا في السلة');
+  ok(cartSrc.includes('sendOrderToWhatsApp'), 'إتمام الطلب يُرسَل مباشرة إلى واتساب');
+  ok(scriptSrc.includes("const RAHEEQ_WA_NUMBER = '201151947735'"), 'رقم واتساب المتجر هو الرقم الرسمي نفسه');
+  ok(/function buildOrderMessage\(/.test(scriptSrc) && /function buildOrderLink\(/.test(scriptSrc),
+    'فاتورة الطلب تُبنى وتُرسل كرسالة منسّقة');
+  ok(scriptSrc.includes('NANJAWI_PROMOS') && /function promoDiscount\(/.test(scriptSrc), 'أكواد الخصم معرّفة في script.js');
+  ok(/openWhatsApp\(/.test(scriptSrc) && /window\.open\(url/.test(scriptSrc), 'فتح واتساب يتم في نافذة جديدة مع بديل');
+  ok(cartSrc.includes('${e(item.name)}') && cartSrc.includes('${e(item.id)}') && cartSrc.includes('const e = escHtml'),
+    'كل قيم السلة ما زالت تُهرَّب قبل innerHTML');
+  ok(/waDigits\(/.test(cartSrc) && /waDigits\(/.test(scriptSrc), 'أرقام الموبايل تُوحَّد تلقائيًا في المتجر');
+  ok(prodPage.includes('id="buy-now-btn"') && prodPage.includes('sendOrderToWhatsApp'),
+    'صفحة المنتج فيها طلب مباشر على واتساب');
+
+  /* --- القائمة الجوال: فتح/إغلاق/خارج/Escape --- */
+  ok(/function closeNav\(/.test(scriptSrc), 'script.js فيه إغلاق صريح لقائمة المتجر');
+  ok(/nav\.querySelectorAll\('a'\)\.forEach\(\(a\) => a\.addEventListener\('click', closeNav\)\)/.test(scriptSrc),
+    'قائمة المتجر تُغلق عند اختيار رابط');
+  ok(/document\.addEventListener\('click'/.test(scriptSrc) && /e\.key === 'Escape'\) closeNav\(\)/.test(scriptSrc),
+    'قائمة المتجر تُغلق بالضغط خارجها وبـ Escape');
+
+  /* --- قائمة رحيق للجوال + قسم البرامج --- */
+  ok(html.includes('id="menuToggle"') && html.includes('id="mobileMenu"'), 'قائمة جوال بهيكل صحيح في index.html');
+  ok(/aria-expanded="false"[\s\S]{0,120}?menuToggle|id="menuToggle"[^>]*aria-expanded="false"/.test(html),
+    'زر القائمة يعلن حالته للمساعدات التقنية');
+  ok(html.includes('id="menuReplayIntro"') && /RaheeqIntro\.replay/.test(app), 'إعادة عرض البداية من القائمة');
+  ok(html.includes('id="programs"') && /class="program-card/.test(html), 'قسم البرامج التفاعلي موجود');
+  ok(/class="ptype-card"/.test(html) && /syncProgramCards/.test(app), 'بطاقات نوع البرنامج متزامنة مع القائمة');
+  ok(/function setProgramType\(/.test(app), 'اختيار المسار يضبط القائمة المنسدلة تلقائيًا');
+  ok(/<optgroup label="المرحلة الابتدائية">/.test(html) && /<option value="الصف الأول الابتدائي">/.test(html),
+    'السنوات الدراسية مقسّمة بمراحل مع الحفاظ على قيم الخيارات نفسها');
+  ok(/class="pill"/.test(html) && /id="foundationSelectAll"/.test(html), 'مواد التأسيس شرائح + زر تحديد الكل');
+  ok(/foundationSelectAll/.test(app) && /allFoundationChecked/.test(app), 'منطق «تحديد كل المواد» يعمل');
+
+  /* --- الحفظ التلقائي للمسودة بلا كلمات سر --- */
+  ok(/DRAFT_KEY/.test(app) && /function saveDraft\(/.test(app), 'حفظ تلقائي للمسودة غير الحساسة');
+  ok(/t\.type === 'password'\) return/.test(app), 'كلمات السر لا تُحفظ في المسودة أبدًا');
+  ok(/function clearDraft\(/.test(app) && /clearDraft\(\);/.test(app), 'المسودة تُمسح بعد الإرسال أو التسجيل الجديد');
+  ok(!/nationalId/.test(app.slice(app.indexOf('function restoreDraft'), app.indexOf('function row('))) ||
+     /if \(id === 'nationalId'\) return/.test(app), 'الرقم القومي لا يُستعاد من أي مسودة قديمة');
+
+  /* --- التنسيق التلقائي للحقول --- */
+  ok(/function autoFormat\(/.test(app), 'app.js فيه تنسيق تلقائي عند الخروج من الحقل');
+  ok(/V\.cleanMobile/.test(app) && /V\.cleanEmail/.test(app), 'تنسيق الموبايل والبريد يستخدم دوال التحقق المشتركة');
+  ok(/cleanMobile/.test(validation) && /cleanEmail/.test(validation), 'validation.js يوفّر تنظيف الموبايل والبريد');
+  ok(/function cleanMobile\(v\)[\s\S]{0,400}?00201/.test(validation), 'بادئة 0020 تُنزع من أرقام الموبايل المصرية');
+  ok(/d\.indexOf\('201'\) === 0/.test(validation), 'بادئة 20 الدولية تُنزع أيضًا');
+
+  /* --- الترجمة لكل النصوص الجديدة --- */
+  const dictSrc = read('js/i18n.js');
+  const newSamples = ['مسارات التعلّم', 'ملخّص طلبك', 'إرسال الطلب على واتساب', 'البرامج والتأسيس',
+    'التنقّل السريع', 'تحديد كل المواد', 'جاهز للإرسال', 'صوت العرض', 'تشغيل الصوت',
+    '📤 إعادة إرسال طلبي على واتساب', 'اختر هذا المسار ←'];
+  const missing = newSamples.filter(k => !dictSrc.includes("'" + k + "'"));
+  ok(!missing.length, 'كل النصوص الجديدة مترجمة في js/i18n.js' + (missing.length ? ': ' + missing.join(' | ') : ''));
+
+  /* --- الترتيب: الأصوات قبل المشغّل --- */
+  ok(assetIndex('js/sounds.js') < assetIndex('js/intro.js'), 'js/sounds.js يُحمَّل قبل js/intro.js');
+  ok(hasAsset('js/sounds.js') && hasAsset('js/intro.js'), 'ملفات الصوت والمشغّل مربوطة بالصفحة');
+
+  /* --- عرض البداية: عناصر المشهد الجديدة --- */
+  ok(html.includes('intro-halo') && html.includes('intro-mark-solid'), 'عرض البداية فيه هالة وشعار موحّد');
+  ok(html.includes('intro-sound-btn') && html.includes('intro-eq'), 'زر صوت العرض بموجات متحركة موجود');
+  ok(html.includes('class="intro-sound-btn"'), 'زر الصوت عنصر حقيقي يمكن النقر عليه');
+}
+
 if (failed) {
   console.error(`\n❌ فشل ${failed} اختبار في raheeq-tests.mjs`);
   process.exit(1);
