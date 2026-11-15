@@ -46,13 +46,12 @@
       { id: 'human', label: 'عايز أكلم موظف' }
     ],
     steps: {
-      1: 'الخطوة 1: بيانات ولي الأمر. ابدأ بالاسم الرباعي والرقم القومي.',
+      1: 'الخطوة 1: بيانات ولي الأمر. ابدأ بالاسم الرباعي ورقم الموبايل.',
       2: 'الخطوة 2: بيانات الطالب. اكتب اسم ابنك وتاريخ ميلاده والصف.',
-      3: 'الخطوة 3: المستندات. ارفع شهادة الميلاد وصورة الطالب وبطاقة ولي الأمر.'
+      3: 'الخطوة 3: المستندات. ارفع شهادة الميلاد وصورة الطالب.'
     },
     guide: {
       parentName: 'اكتب اسمك رباعي: 4 أسماء على الأقل.',
-      nationalId: 'الرقم القومي لازم 14 رقم بالظبط.',
       relation: 'اختار صلة القرابة بالطالب.',
       mobile: 'اكتب رقم الموبايل 11 رقمًا وراجع الأرقام الناقصة أو الزائدة.',
       whatsapp: 'رقم الواتساب لازم 11 رقم، أو سيبه فاضي لو هو نفس الموبايل.',
@@ -68,7 +67,6 @@
       healthNotes: 'لو فيه ملاحظات صحية اكتبها هنا، وده اختياري.',
       birthCert: 'ارفع صورة واضحة لشهادة الميلاد من هنا.',
       photo: 'ارفع صورة شخصية حديثة للطالب من هنا.',
-      parentCard: 'ارفع صورة بطاقة الرقم القومي لولي الأمر من هنا.',
       reportCard: 'آخر شهادة دراسية اختيارية، ارفعها لو موجودة.',
       agree: 'علّم على الموافقة على الشروط والأحكام عشان تقدر تبعت الطلب.'
     },
@@ -218,7 +216,7 @@
     root.appendChild(mascot); root.appendChild(chat);
     document.body.appendChild(root);
     if (window.RaheeqMotion) {
-      motion = window.RaheeqMotion.mount({ root: root, mascot: mascot, charBtn: charBtn, busy: function () { return busy || chatOpen || !!pointing; }, lastActivity: function () { return lastActivity; }, onAction: function () { release(); lastActivity = Date.now(); } });
+      motion = window.RaheeqMotion.mount({ root: root, mascot: mascot, charBtn: charBtn, busy: function () { return busy || chatOpen || !!pointing; }, lastActivity: function () { return lastActivity; }, onAction: function () { release(); lastActivity = Date.now(); }, onDrag: dropPoint });
     }
 
     on(charBtn, 'click', function () { toggleChat(); });
@@ -316,7 +314,8 @@
     if (!root || !cfg) return;
     var max = cfg.limits.maxChars;
     inputEl.maxLength = max;
-    charBtn.setAttribute('aria-label', 'افتح محادثة ' + cfg.name + ' — مساعد التسجيل');
+    charBtn.setAttribute('aria-label', 'افتح محادثة ' + cfg.name + ' — مساعد التسجيل. اسحبني لأي مكان في الشاشة، أو حرّكني بالأسهم');
+    charBtn.setAttribute('title', 'اسحبني لأي مكان في الشاشة · نقرة قصيرة تفتح المحادثة');
     chat.setAttribute('aria-label', 'محادثة ' + cfg.name);
     chat.querySelector('.ysn-name').textContent = cfg.name;
     dotEl.classList.toggle('is-off', !cfg.online);
@@ -464,9 +463,14 @@
     if (!node || !node.getClientRects) return false;
     return node.getClientRects().length > 0;
   }
+  /* رحيق تنتقل فعلًا إلى الخانة نفسها (في أي مكان بالصفحة) وتقف بجانبها:
+     داخل حدود الشاشة دائمًا، وتتبعها لو تحرّكت — مع موجّه في بالون الكلام
+     لأنها قد تكون في أعلى الصفحة أو أسفلها. */
   function placeAtTarget() {
     if (!pointing || !mascot) return;
     var r = pointing.el.getBoundingClientRect();
+    if (!r.width && !r.height) return;
+    if (motion) { motion.follow(pointing.el); return; }        // طبقة الحركة تتولى الموضع كاملًا
     var m = charBtn.getBoundingClientRect();
     var w = m.width || 96, h = m.height || 126;
     var vw = window.innerWidth, vh = window.innerHeight;
@@ -475,6 +479,7 @@
     var homeTop = vh - (parseFloat(style.bottom) || 14) - h;
     var x = r.left - w - 4, y = r.top + r.height / 2 - h * 0.6;
     if (x < 4) { x = Math.max(4, r.left + 6); y = r.top - h + 14; }       // لا مساحة بجانب الخانة: تقف فوق طرفها
+    if (y < 4) y = r.bottom + 8;
     y = Math.min(vh - h - 6, Math.max(6, y));
     x = Math.min(vw - w - 6, x);
     mascot.style.transform = 'translate(' + Math.round(x - homeLeft) + 'px,' + Math.round(y - homeTop) + 'px)';
@@ -490,16 +495,26 @@
   function release() {
     cancelAnimationFrame(pointRaf);
     if (pointing) pointing.el.classList.remove('ysn-glow');
+    var wasPointing = !!pointing;
     pointing = null;
     if (mascot) { mascot.style.transform = ''; mascot.classList.remove('is-below'); }
-    if (motion) { motion.hold(false); motion.home(); }
+    if (motion) { motion.hold(false); if (wasPointing) motion.bringBack(); }   // تعود لمكانها المختار
     if (pose === 'point') setPose('idle');
+  }
+  /* إفلات الإشارة دون سحب الشخصية إلى مكانها السابق (عند السحب باليد) */
+  function dropPoint() {
+    cancelAnimationFrame(pointRaf);
+    if (pointing) { try { pointing.el.classList.remove('ysn-glow'); } catch (e) {} }
+    pointing = null;
+    if (mascot) { mascot.style.transform = ''; mascot.classList.remove('is-below'); }
+    if (pose === 'point') setPose('idle');
+    if (motion) motion.hold(false);
   }
   function pointTo(name, text, expression) {
     var target = fieldTarget(name);
     if (!anim('point') || !target || !visible(target)) { say(text, { expression: expression === 'point' ? 'happy' : expression }); return; }
     release();
-    if (motion) { motion.home(); motion.hold(true); }
+    if (motion) { motion.hold(true); motion.follow(target, true); }   // تنزلق إلى الخانة في أي مكان
     lastPointed = name;
     target.classList.add('ysn-glow');
     pointing = { el: target, name: name, until: Date.now() + POINT_MS };
@@ -532,7 +547,7 @@
       if (step === 1 && V) out = Object.keys(V.step1());
       else if (step === 2 && V) out = Object.keys(V.step2());
       else if (step === 3) {
-        ['birthCert', 'photo', 'parentCard'].forEach(function (k) {
+        ['birthCert', 'photo'].forEach(function (k) {
           var box = document.querySelector('[data-upload="' + k + '"]');
           if (!box || !box.classList.contains('has-file')) out.push(k);
         });

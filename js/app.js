@@ -26,7 +26,7 @@
   var currentStep = 1;
   var mode = 'register';
   /* كل ملف يُحفظ كسجل يحوي بيانات الصورة الفعلية (dataUrl)، وليس الاسم فقط */
-  var uploadedFiles = { birthCert: null, photo: null, parentCard: null, reportCard: null };
+  var uploadedFiles = { birthCert: null, photo: null, reportCard: null };
   var uploadSeq = {};          /* يمنع نتائج القراءة القديمة إن استُبدل الملف */
   var pendingUploads = {};
   var lastSubmission = null;
@@ -213,7 +213,7 @@
     var el = $(id);
     if (!el) return;
     el.addEventListener('input', function () {
-      var clean = V.digitsOnly(el.value).slice(0, id === 'nationalId' ? 14 : 11);
+      var clean = V.digitsOnly(el.value).slice(0, 11);
       if (clean !== el.value) el.value = clean;
     });
   });
@@ -272,7 +272,7 @@
   }
   /* التحقق لا يقبل إلا سجلًا يحوي بيانات فعلية (ليس اسمًا فقط) */
   function readyFiles() {
-    var out = { birthCert: null, photo: null, parentCard: null, reportCard: null };
+    var out = { birthCert: null, photo: null, reportCard: null };
     if (!U) return out;
     U.DOC_KEYS.forEach(function (k) {
       var d = uploadedFiles[k];
@@ -505,6 +505,7 @@
   function collectData() {
     return {
       parentName: V.val('parentName'),
+      /* خانة الرقم القومي أُزيلت من الاستمارة: تُرسل فارغة لو لم توجد */
       nationalId: V.digitsOnly(V.val('nationalId')),
       relation: V.val('relation') || 'ولي أمر',
       mobile: V.digitsOnly(V.val('mobile')),
@@ -753,7 +754,7 @@
     }
     var ready = readyFiles();
     var errors = V.step3(ready);
-    var nameOnly = ['birthCert', 'photo', 'parentCard'].filter(function (k) {
+    var nameOnly = ['birthCert', 'photo'].filter(function (k) {
       return uploadedFiles[k] && !ready[k];
     });
     if (nameOnly.length && !Object.keys(errors).length) {
@@ -824,7 +825,7 @@
     $('regForm').reset();
     if (programTypeEl) programTypeEl.value = '';
     syncProgramBranch();
-    ['birthCert', 'photo', 'parentCard', 'reportCard'].forEach(clearUpload);
+    ['birthCert', 'photo', 'reportCard'].forEach(clearUpload);
     setFieldErrors({});
     showAlert('formAlert', '');
     currentStep = 1;

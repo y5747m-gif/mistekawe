@@ -5,7 +5,12 @@
  * ولا محركات خارجية. فوق الشكل تتحرك طبقة حركات كثيرة بأنماط CSS: مشي وركض
  * بانتقال فعلي على الشاشة، قفز، رقص، دوران، شقلبة، نطّة، أرجحة، تمدد، طفو،
  * دوخة، إيماءة «نعم» وهزّ رأس «لا»، مع التعابير الأصلية (تلويح، إشارة،
- * تفكير، قلق، احتفال) باستخدام إطارات الصور نفسها. */
+ * تفكير، قلق، احتفال) باستخدام إطارات الصور نفسها.
+ *
+ * رحيق حرّة في أي مكان على الشاشة: ولي الأمر يسحبها بيده إلى أي نقطة
+ * (بما فيها أعلى الصفحة وأركانها)، وتتنقّل بنفسها بمشي/ركض، وتقفز إلى
+ * مكان الخطأ عند اكتشافه. المواضع كلها محفوظة بالبكسل داخل نافذة العرض
+ * ولا تخرج عن حدود الشاشة، وتُستعاد بعد تغيير حجمها. */
 (function () {
   'use strict';
 
@@ -80,8 +85,8 @@
     var mascot = opts.mascot, charBtn = opts.charBtn, root = opts.root;
     var scenes = charBtn.querySelectorAll('.ysn-f');    // إطارات الصور الأصلية بنفس ترتيب POSES
     var cfg = {}, dead = false, paused = false, reduced = false, held = false;
-    var raf = 0, actionTimer = 0, fxTimer = 0, frameTimer = 0, autoTimer = 0, lastAuto = '';
-    var x = 0, y = 0, dragged = false, suppressClick = false;
+    var raf = 0, actionTimer = 0, fxTimer = 0, frameTimer = 0, autoTimer = 0, lastAuto = '', glideTimer = 0, roamTimer = 0;
+    var x = 0, y = 0, prevX = 0, prevY = 0, dragged = false, suppressClick = false;
     var cleanups = [];
     function listen(target, type, fn, options) { target.addEventListener(type, fn, options); cleanups.push(function () { target.removeEventListener(type, fn, options); }); }
     try { paused = localStorage.getItem('yaseen_motion_paused') === '1'; } catch (e) {}
@@ -102,16 +107,49 @@
         !document.body.classList.contains('raheeq-intro-lock') &&
         !document.querySelector('.modal:not([hidden]),.settings:not([hidden]),.doc-modal:not([hidden])');
     }
+    /* التنقل الحر (سحب/قفز إلى مكان الخطأ) لا يتوقف بسبب hold: رحيق تصل للخطأ. */
+    function mayTravel() {
+      return !dead && !paused && !reduced && !document.hidden &&
+        !root.classList.contains('is-chat-open') &&
+        !document.body.classList.contains('raheeq-intro-lock') &&
+        !document.querySelector('.modal:not([hidden]),.settings:not([hidden]),.doc-modal:not([hidden])');
+    }
+    /* حدود الشاشة كلها: رحيق تتحرك من أعلى الصفحة إلى أسفلها ومن حافة لحافة.
+       أزرار الاتصال على اليمين تبقى فوقها (z-index أعلى) فلا تمنع السحب إليها. */
     function bounds() {
       var w = charBtn.getBoundingClientRect().width || 96, h = charBtn.getBoundingClientRect().height || 128;
       var left = parseFloat(getComputedStyle(mascot).left) || 14;
       var bottom = parseFloat(getComputedStyle(mascot).bottom) || 14;
-      return { minX: 8 - left, maxX: Math.max(8 - left, innerWidth - w - left - 8), minY: 8 - (innerHeight - bottom - h), maxY: 0 };
+      var homeTop = innerHeight - bottom - h;                  // موضع الركن الشمال قبل أي إزاحة
+      return {
+        minX: 8 - left,
+        maxX: Math.max(8 - left, innerWidth - w - left - 8),
+        minY: 8 - homeTop,
+        maxY: Math.max(8 - homeTop, innerHeight - 4 - homeTop - h)
+      };
     }
     function position(nx, ny) {
-      var b = bounds(); x = Math.max(b.minX, Math.min(b.maxX, nx)); y = Math.max(b.minY, Math.min(b.maxY, ny));
+      var b = bounds();
+      x = Math.max(b.minX, Math.min(b.maxX, isFinite(nx) ? nx : 0));
+      y = Math.max(b.minY, Math.min(b.maxY, isFinite(ny) ? ny : 0));
       mascot.style.translate = x.toFixed(1) + 'px ' + y.toFixed(1) + 'px';
       mascot.classList.toggle('is-at-right', x > b.maxX / 2);
+    }
+    /* انزلاق قصير عند الانتقال إلى مكان بعيد (مكان الخطأ): تصل رحيق عينًا
+       وهي تنتقل، ثم يُطفأ الانتقال حتى تتبع الخانة فورًا إن تحرّكت. */
+    function glide() {
+      if (reduced || dead) return;
+      mascot.classList.add('is-gliding');
+      clearTimeout(glideTimer);
+      glideTimer = setTimeout(function () { mascot.classList.remove('is-gliding'); }, 640);
+    }
+    /* نقطة الهدف بدل الإزاحة: js/yaseen.js يقفز إلى خانة الخطأ في أي مكان */
+    function jumpTo(px, py) {
+      if (!mayTravel()) return false;
+      clearTimeout(actionTimer); dragged = true; stopTravel();
+      glide();
+      position(px, py);
+      return true;
     }
 
     /* إطفاء أي حركة جارية قبل حركة جديدة أو عند الإيقاف */
@@ -142,7 +180,7 @@
     function stopTravel() { cancelAnimationFrame(raf); raf = 0; }
     function travel(tx, ty, mode, done) {
       stopTravel();
-      if (!mayMove() || !allowed(mode)) { if (done) done(); return; }
+      if (!mayTravel() || !allowed(mode)) { if (done) done(); return; }
       var sx = x, sy = y, distance = Math.hypot(tx - sx, ty - sy);
       if (distance < 3) { if (done) done(); return; }
       var duration = Math.max(650, distance / (mode === 'run' ? .48 : .16)), start = performance.now();
@@ -154,7 +192,7 @@
         if (done && !dead) done();
       }
       function tick(now) {
-        if (!mayMove() || !allowed(mode)) { finish(); return; }
+        if (!mayTravel() || !allowed(mode)) { finish(); return; }   // تبقى في مكانها الحالي
         var p = Math.min(1, (now - start) / duration), ease = p * p * (3 - 2 * p);
         position(sx + (tx - sx) * ease, sy + (ty - sy) * ease);
         if (p < 1) raf = requestAnimationFrame(tick); else finish();
@@ -165,7 +203,8 @@
       var b = bounds(), target = x > (b.minX + b.maxX) / 2 ? b.minX : b.maxX;
       travel(target, 0, mode, then);
     }
-    function home() { dragged = false; stopTravel(); clearFx(); position(0, 0); }
+    /* العودة للمكان الذي اختاره ولي الأمر آخر مرة، وإن لم يحرّكها تعود لركنها. */
+    function home() { dragged = false; stopTravel(); clearFx(); position(prevX, prevY); }
 
     function act(name, automatic) {
       if (dead || !allowed(name) || (automatic && !mayMove())) return;
@@ -197,8 +236,6 @@
       if (Date.now() - opts.lastActivity() < AUTO_IDLE_MS) return;
       var pool = AUTO_POOL.filter(function (name) { return allowed(name) && name !== lastAuto; });
       if (!pool.length) return;
-      if (innerWidth < 640) pool = pool.filter(function (n) { return !TRAVEL[n]; });
-      if (!pool.length) return;
       var pick = pool[Math.floor(Math.random() * pool.length)];
       lastAuto = pick;
       status.textContent = 'الحركة: ' + (LABELS.filter(function (l) { return l[0] === pick; })[0] || LABELS[0])[1];
@@ -213,7 +250,7 @@
     var heading = node('strong', '', 'خلّينا نتحرّك!');
     var close = node('button', 'ysn-motion-close', '×'); close.type = 'button'; close.setAttribute('aria-label', 'إغلاق لوحة الحركات');
     var head = node('div', 'ysn-motion-head'); head.appendChild(heading); head.appendChild(close); panel.appendChild(head);
-    panel.appendChild(node('p', 'ysn-motion-hint', 'كان نفسك تلعب؟ عندك ' + LABELS.length + ' حركة — اختَر أي واحدة، أو اسحب رحيق لمكان آخر.'));
+    panel.appendChild(node('p', 'ysn-motion-hint', 'كان نفسك تلعب؟ عندك ' + LABELS.length + ' حركة — اختَر أي واحدة، أو اسحب رحيق بيدك إلى أي مكان في الشاشة، أو حرّكها بالأسهم.'));
     var grid = node('div', 'ysn-motion-grid');
     LABELS.forEach(function (item) {
       var b = node('button', 'ysn-motion-choice'); b.type = 'button'; b.dataset.motion = item[0];
@@ -243,32 +280,63 @@
     if (mq) listen(mq, 'change', function (e) { reduced = e.matches; if (reduced) { stopTravel(); home(); } renderPause(); });
     renderPause();
 
-    /* ---------------- السحب بحرّية (عرض فقط، ولا يفتح المحادثة بالخطأ) ---------------- */
+    /* ---------------- السحب بحرّية إلى أي مكان في الشاشة ----------------
+       السحب يعمل بالفأرة واللمس (Pointer Events)، ويستمر حتى لو خرج الإصبع
+       خارج الشخصية بفضل setPointerCapture. لا يفتح المحادثة بالخطأ: نقرة
+       قصيرة تفتح، وأي حركة 7 بكسل أو أكثر تُعدّ سحبًا. */
+    function remember() {
+      if (typeof x === 'number' && typeof y === 'number') { prevX = x; prevY = y; }
+    }
     var drag = null;
     listen(charBtn, 'pointerdown', function (e) {
-      if (e.button !== 0 || paused || reduced) return;
+      if (e.button !== 0 || dead) return;                     // لا وقف للحركة: اليد أقوى من التلقائي
       drag = { id: e.pointerId, x: e.clientX, y: e.clientY, ox: x, oy: y, moved: false };
+      try { charBtn.setPointerCapture(e.pointerId); } catch (err) {}
+      if (e.pointerType === 'mouse') { try { e.preventDefault(); } catch (err) {} }   // لا تحديد نص أثناء السحب
     });
     listen(charBtn, 'pointermove', function (e) {
       if (!drag || drag.id !== e.pointerId) return;
       var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 7) return;
-      if (!drag.moved) { drag.moved = true; stopTravel(); clearFx(); try { charBtn.setPointerCapture(e.pointerId); } catch (err) {} mascot.classList.add('m-drag'); }
-      e.preventDefault(); dragged = true; position(drag.ox + dx, drag.oy + dy);
+      if (!drag.moved) {
+        drag.moved = true; stopTravel(); clearTimeout(actionTimer); clearFx();
+        /* اليد أقوى من الإشارة: إفلات الخانة قبل متابعة السحب */
+        if (opts.onDrag) { try { opts.onDrag(); } catch (err) {} }
+        drag.ox = x; drag.oy = y;                       // نُكمل من الموضع الحالي بعد الإفلات
+        try { charBtn.setPointerCapture(e.pointerId); } catch (err) {}
+        mascot.classList.add('m-drag', 'is-dragging');
+      }
+      if (e.cancelable) e.preventDefault();
+      dragged = true;
+      dx = e.clientX - drag.x; dy = e.clientY - drag.y;     // من الموضع الحالي (بعد إفلات أي إشارة)
+      position(drag.ox + dx, drag.oy + dy);
     });
     function endDrag(e) {
       if (!drag || drag.id !== e.pointerId) return;
-      suppressClick = drag.moved; drag = null; mascot.classList.remove('m-drag');
-      if (suppressClick) setTimeout(function () { suppressClick = false; }, 0);
+      var moved = drag.moved;
+      drag = null; mascot.classList.remove('m-drag', 'is-dragging');
+      try { charBtn.releasePointerCapture(e.pointerId); } catch (err) {}
+      if (moved) {                       // مكان جديد اختاره ولي الأمر: يبقى محفوظًا
+        remember();
+        suppressClick = true;
+        setTimeout(function () { suppressClick = false; }, 0);
+        /* بعد دقيقة من الهدوء تعود الحركات التلقائية تلعب في المكان الجديد نفسه */
+        clearTimeout(roamTimer);
+        roamTimer = setTimeout(function () { dragged = false; }, 60000);
+      }
     }
     listen(charBtn, 'pointerup', endDrag); listen(charBtn, 'pointercancel', endDrag);
+    listen(charBtn, 'lostpointercapture', function (e) { if (drag && drag.id === e.pointerId) endDrag(e); });
     listen(charBtn, 'click', function (e) { if (suppressClick) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+    /* لوحة المفاتيح: الأسهم تنقل رحيق خطوة 20 بكسل في أي اتجاه */
     listen(charBtn, 'keydown', function (e) {
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.key) < 0 || paused || reduced) return;
-      e.preventDefault(); dragged = true; stopTravel();
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.key) < 0 || dead) return;
+      e.preventDefault(); dragged = true; stopTravel(); clearTimeout(actionTimer);
       position(x + (e.key === 'ArrowLeft' ? -20 : e.key === 'ArrowRight' ? 20 : 0), y + (e.key === 'ArrowUp' ? -20 : e.key === 'ArrowDown' ? 20 : 0));
+      remember();
     });
-    listen(window, 'resize', function () { position(x, y); });
+    /* عند تغيّر حجم النافذة تُقرَّب رحيق داخل الحدود الجديدة بدل أن تختفي خارجها */
+    listen(window, 'resize', function () { position(x, y); remember(); });
     listen(document, 'visibilitychange', function () { if (document.hidden) { stopTravel(); clearTimeout(actionTimer); } });
 
     autoTimer = setInterval(autoplay, AUTO_EVERY_MS);
@@ -283,6 +351,36 @@
     return {
       configure: configure,
       action: act,
+      /* js/yaseen.js يطلب من رحيق الذهاب إلى خانة الخطأ في أي مكان بالصفحة */
+      moveTo: function (px, py) { return jumpTo(px, py); },
+      /* العنصر المرئي نفسه: نُبقي رحيق بجانبه حتى لو تحرّك/تغيّر حجمه */
+      follow: function (el, force) {
+        if (!el || dead) return;
+        try {
+          var r = el.getBoundingClientRect();
+          var w = charBtn.getBoundingClientRect().width || 96;
+          var h = charBtn.getBoundingClientRect().height || 128;
+          var left = parseFloat(getComputedStyle(mascot).left) || 14;
+          var bottom = parseFloat(getComputedStyle(mascot).bottom) || 14;
+          /* الوقوف بجانب الخانة: يسارها إن أمكن، وإلا فوقها/تحتها — داخل حدود الشاشة دائمًا */
+          var xLeft = r.left - w - 6;
+          var px, py;
+          if (xLeft >= 8) { px = xLeft; py = r.top + r.height / 2 - h * 0.6; }
+          else {
+            var xRight = r.right + 6;
+            if (xRight + w <= innerWidth - 8) { px = xRight; py = r.top + r.height / 2 - h * 0.6; }
+            else { px = Math.max(8, Math.min(innerWidth - w - 8, r.left)); py = r.top - h - 8; }
+          }
+          if (py < 8) py = r.bottom + 8;
+          var ny = py - (innerHeight - bottom - h);
+          /* البالون يميل تحت الشخصية قرب أعلى الشاشة */
+          mascot.classList.toggle('is-below', py < 110);
+          if (force) jumpTo(px - left, ny);                     // حركة أولى منزلقة
+          else position(px - left, ny);                          // ثم تتبع فوري للخانة المتحركة
+        } catch (err) {}
+      },
+      /* إعادة رحيق إلى مكانها المختار بعد انتهاء الإشارة */
+      bringBack: function () { dragged = false; stopTravel(); position(prevX, prevY); },
       /* js/yaseen.js نفسه يبدّل إطارات الصور؛ هنا نكتفي بلمسة خفيفة للاحتفال */
       pose: function (name, ms) { if (name === 'celebrate' && mayMove() && allowed('jump')) runFx('m-hop', ms || 1900); },
       hold: function (value) { held = !!value; if (held) { stopTravel(); clearTimeout(actionTimer); } },
@@ -296,7 +394,9 @@
         cleanups.forEach(function (fn) { fn(); });
         launcher.remove(); panel.remove();
         clearFx();
-        mascot.style.translate = ''; mascot.classList.remove('is-at-right', 'is-flip', 'is-walking', 'is-running', 'm-drag');
+        mascot.style.translate = ''; mascot.style.transform = '';
+        clearTimeout(glideTimer); clearTimeout(roamTimer);
+        mascot.classList.remove('is-at-right', 'is-below', 'is-flip', 'is-walking', 'is-running', 'm-drag', 'is-dragging', 'is-gliding');
       }
     };
   }

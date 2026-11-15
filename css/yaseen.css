@@ -17,12 +17,17 @@
 .ysn{
   position:fixed;left:14px;bottom:14px;z-index:108;width:var(--ysn-w);
   transition:transform .6s cubic-bezier(.34,1.25,.5,1),opacity .3s;will-change:transform;
+  /* انيميشن الدخول يخصّ الشفافية فقط: خصائص translate/transform محفوظة لحركة
+     ولي الأمر ورحيق نفسها (سحب إلى أي مكان، مشي، قفز إلى مكان الخطأ) */
   animation:ysn-enter .7s cubic-bezier(.34,1.4,.5,1) both;
 }
 .ysn-char{
-  all:unset;display:block;position:relative;width:var(--ysn-w);aspect-ratio:274/360;cursor:pointer;
+  all:unset;display:block;position:relative;width:var(--ysn-w);aspect-ratio:274/360;cursor:grab;
   filter:drop-shadow(0 6px 9px rgba(94,12,36,.22));
+  /* سحب رحيق باللمس إلى أي مكان في الشاشة (لا يمرّر الصفحة أثناء السحب) */
+  touch-action:none;
 }
+.ysn.is-dragging .ysn-char,.ysn-char:active{cursor:grabbing}
 .ysn-char:focus-visible{outline:3px solid var(--ysn-gold);outline-offset:4px;border-radius:18px}
 .ysn-shadow{position:absolute;left:18%;right:18%;bottom:-3px;height:9px;border-radius:50%;background:rgba(94,12,36,.2);filter:blur(3px);z-index:0}
 .ysn-tilt,.ysn-body,.ysn-flip{position:absolute;inset:0;transform-origin:50% 100%}
@@ -38,7 +43,7 @@
 .ysn.is-jump .ysn-char{animation:ysn-jump .62s cubic-bezier(.3,.7,.4,1) 4}
 .ysn.is-nudge .ysn-char{animation:ysn-nudge .5s ease-in-out 2}
 
-@keyframes ysn-enter{from{opacity:0;translate:0 40px}to{opacity:1;translate:0 0}}
+@keyframes ysn-enter{from{opacity:0}to{opacity:1}}
 @keyframes ysn-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.012,1.028)}}
 @keyframes ysn-tilt{0%,100%{transform:rotate(0)}25%{transform:rotate(-2.2deg)}70%{transform:rotate(2deg)}}
 @keyframes ysn-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}

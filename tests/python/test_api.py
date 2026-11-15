@@ -121,6 +121,7 @@ class ValidationTests(unittest.TestCase):
         self.assertTrue(record["passwordHash"].startswith("pbkdf2_sha256$"))
         self.assertNotIn("password", record)
         self.assertEqual(set(record["docs"]), {"birthCert", "photo", "parentCard"})
+        self.assertEqual(set(raheeq_api.REQUIRED_DOCS), {"birthCert", "photo"})
         self.assertEqual(record["docs"]["photo"]["bytes"], PNG_1PX)
 
     def test_arabic_digits_are_normalized(self):
@@ -136,6 +137,15 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(ctx.exception.status, 400)
         self.assertIn("mobile", ctx.exception.fields)
         self.assertIn("email", ctx.exception.fields)
+
+    def test_payload_without_removed_fields_is_accepted(self):
+        """الرقم القومي وبطاقة ولي الأمر أُزيلا من الاستمارة: غيابهما لا يمنع الطلب."""
+        payload = good_payload()
+        del payload["nationalId"]
+        del payload["docs"]["parentCard"]
+        record = raheeq_api.validate_registration(payload)
+        self.assertEqual(record["nationalId"], "")
+        self.assertEqual(set(record["docs"]), {"birthCert", "photo"})
 
     def test_missing_required_document(self):
         payload = good_payload()

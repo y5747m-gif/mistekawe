@@ -537,7 +537,7 @@ body.modal-open{overflow:hidden}
 .field > label{font-family:var(--font-kufi);font-weight:600;font-size:calc(13px*var(--ui-scale,1))}
 
 /* --- الأرقام والمعرّفات: بلكس مونو --- */
-#nationalId,#mobile,#whatsapp,#loginMobile{font-family:var(--font-nums);font-weight:500;letter-spacing:.07em;font-variant-numeric:tabular-nums}
+#mobile,#whatsapp,#loginMobile{font-family:var(--font-nums);font-weight:500;letter-spacing:.07em;font-variant-numeric:tabular-nums}
 .order-badge{font-family:var(--font-mono);font-weight:600;font-size:calc(21px*var(--ui-scale,1));letter-spacing:.22em}
 
 @media (max-width:620px){
@@ -578,7 +578,7 @@ body,
 .success-note,
 .footer-values,
 .field > label,
-#nationalId,#mobile,#whatsapp,#loginMobile,
+#mobile,#whatsapp,#loginMobile,
 .order-badge,
 button,input,select,textarea{
   font-family:var(--font-ui);
@@ -596,7 +596,7 @@ body{font-weight:400}
 .subtitle,.hero-note,.card-head p,.login-lead,.login-foot,.success-sub,.success-foot,
 .feature-card p,.footer-line,.docs-hint,.hint,.up-sub,.section-sub,.modal-card ul,
 .doc-tile figcaption small,.sync-status small,.field input,.field select,.field textarea,
-#nationalId,#mobile,#whatsapp,#loginMobile,.header-nav a,.tab,.hbadge,.pstep,.eyebrow,
+#mobile,#whatsapp,#loginMobile,.header-nav a,.tab,.hbadge,.pstep,.eyebrow,
 .agree,.upload-status,.sync-hint,.sync-status,.form-alert,.doc-legacy{font-weight:400}
 .field > label,.step-head,.up-title,.logo-text strong,.footer-values{font-weight:600}
 .section-title,.card-head h2,.feature-card h3,.login-box h3,.welcome-box h3,.success-view h2,

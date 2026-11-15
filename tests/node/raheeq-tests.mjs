@@ -146,7 +146,8 @@ ok(html.includes('id="foundationLevel"'), 'قائمة مستوى التأسيس'
 ok(!/value="تأسيس للصغار"[\s\S]{0,400}<select id="grade"|id="grade"[\s\S]{0,600}value="تأسيس/.test(html), 'قائمة الصف الدراسي لم تعد مختلطة مع التأسيس');
 ok(html.includes('src="js/crypto.js"') && html.indexOf('src="js/crypto.js"') < html.indexOf('src="js/app.js"'), 'js/crypto.js محمّل قبل app.js لتشفير كلمة السر');
 ok(html.includes('id="agreeTerms"'), 'الموافقة على الشروط');
-ok(['birthCert', 'photo', 'parentCard', 'reportCard'].every(k => html.includes('data-file-input="' + k + '"')), 'مستندات الرفع الأربعة');
+ok(['birthCert', 'photo', 'reportCard'].every(k => html.includes('data-file-input="' + k + '"')), 'مستندات الرفع الثلاثة (بلا بطاقة ولي الأمر)');
+ok(!html.includes('data-file-input="parentCard"') && !html.includes('id="nationalId"'), 'خانتا الرقم القومي وبطاقة ولي الأمر أُزيلتا من الاستمارة');
 
 console.log('\n3) ملفات الأصوات الثمانية (MP3 حقيقية محمّلة مسبقًا)');
 const names = ['click', 'hover', 'typing', 'success', 'error', 'step', 'upload', 'toggle'];
@@ -224,7 +225,9 @@ ok(!!runValidation({ ...good1, ...good2, programType: 'تأسيس', __subjects: 
 ok(!!runValidation({ ...good1, ...good2, programType: 'منهج دراسي', grade: '' }, true, {}).step2().grade, 'منهج دراسي بدون سنة دراسية مرفوض');
 ok(!!runValidation({ ...good1, ...good2, programType: 'منهج دراسي', grade: 'KG9' }, true, {}).step2().grade, 'سنة دراسية خارج القائمة مرفوضة');
 ok(!!runValidation(good1, false, { birthCert: true, photo: true, parentCard: true }).step3().agree, 'عدم الموافقة على الشروط مرفوض');
-ok(!!runValidation(good1, true, { photo: true, parentCard: true }).step3().birthCert, 'شهادة الميلاد إلزامية');
+ok(!!runValidation(good1, true, { photo: true }).step3().birthCert, 'شهادة الميلاد إلزامية');
+ok(!runValidation(good1, true, { birthCert: true, photo: true }).step3().parentCard, 'بطاقة ولي الأمر لم تبقَ إلزامية بعد إزالة خانتها');
+ok(Object.keys(runValidation(good1, true, { birthCert: true, photo: true }).step3()).length === 0, 'شهادة الميلاد والصورة تكفيان لإتمام الطلب');
 ok(app.includes("localStorage.setItem(LS_USERS") && app.includes('makeOrderNumber'), 'الحفظ في LocalStorage ورقم الطلب RHQ');
 ok(app.includes('RHQ-') && app.includes('Math.random() * 9000'), 'توليد رقم طلب بصيغة RHQ-1234');
 
@@ -653,7 +656,7 @@ ok(/--brand-maroon:/.test(cssAll) && /--ui-scale/.test(cssAll), 'CSS مبني ع
 ok(!/rgba\(136,18,52,\.?\d*\)?\s*[,;}]/.test(cssAll.replace(/\/\*[^*]*\*\//g, '')),
   'لا توجد ألوان ماروني مثبتة في الشفافيات (كلها من متغيرات الثيم)');
 ok((cssAll.match(/var\(--ui-scale/g) || []).length > 60, 'كل مقاسات الخطوط تتغير مع منزلق الحجم');
-ok(/--font-ui:var\(--font-body\)/.test(cssAll) && /#nationalId,#mobile,#whatsapp,#loginMobile\{font-family:var\(--font-nums\)/.test(cssAll),
+ok(/--font-ui:var\(--font-body\)/.test(cssAll) && /#mobile,#whatsapp,#loginMobile\{font-family:var\(--font-nums\)/.test(cssAll),
   'خط Cairo موحّد لكل الواجهة (بدل 5 عائلات متفرقة)');
 ok(/body\{font-weight:400\}/.test(cssAll), 'وزن نص مريح للقراءة (400) بدل 700/900');
 

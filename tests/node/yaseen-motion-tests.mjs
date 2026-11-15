@@ -60,5 +60,37 @@ ok(validated.animations.walk === true && validated.animations.idle === true && v
 ok(!('threeD' in validated.animations), 'مفتاح ثلاثي الأبعاد سقط من مخطط التحقق');
 ok(read('sw.js').includes('v11-raheeq-sprite-motion') && !read('sw.js').includes('yaseen-3d'), 'نسخة الكاش محدثة وبلا ملفات المجسم');
 
+/* ---------- الاتصال والواتساب على اليمين ورحيق على الشمال ---------- */
+const bar = read('css/contact-bar.css');
+ok(/\.floating-contact-bar\s*\{[^}]*right:\s*24px/.test(bar) && !/\.floating-contact-bar\s*\{[^}]*left:\s*24px/.test(bar),
+  'شريط الاتصال والواتساب على يمين الشاشة');
+ok(/\.ysn\{[^}]*position:fixed;left:14px;bottom:14px/.test(read('css/yaseen.css').replace(/\n/g, '')),
+  'رحيق (البوت) في الجهة الشمال');
+for (const page of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
+  const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
+  if (src.indexOf('floating-contact-bar') < 0) continue;
+  ok(src.includes('cdns') === false && src.includes('floating-btn--wa') && src.includes('floating-btn--call'),
+    'زرّا الاتصال والواتساب موجودان في ' + page);
+  ok(!/id="nationalId"|data-file-input="parentCard"|الرقم القومي 14/.test(src),
+    'بلا خانة رقم قومي أو بطاقة ولي الأمر في ' + page);
+}
+
+/* ---------- حرية الحركة إلى أي مكان + تتبع الخطأ ---------- */
+ok(motion.includes('minX: 8 - left') && motion.includes('innerHeight - 4 - homeTop - h') && !motion.includes('minY: 8 - (innerHeight - bottom - h), maxY: 0'),
+  'حدود الحركة تخص الشاشة كلها لا صفًا سفليًا فقط');
+ok(motion.includes('moveTo: function') && motion.includes('follow: function') && motion.includes('bringBack: function'),
+  'واجهة التنقل الحر متاحة لطبقة البوت');
+ok(read('js/yaseen.js').includes('motion.follow(pointing.el)') && read('js/yaseen.js').includes('motion.bringBack'),
+  'رحيق تقفز إلى مكان الخطأ في أي موضع ثم تعود لمكانها');
+ok(motion.includes("pointerType === 'mouse'") && motion.includes('lostpointercapture'),
+  'سحب رحيق بالماوس واللمس يستمر خارج حدود الشخصية');
+ok(!motion.includes('innerWidth < 640) pool = pool.filter'), 'المشي والركض متاحان على الجوال أيضًا');
+ok(!/@keyframes ysn-enter\{[^}]*translate/.test(read('css/yaseen.css')) &&
+   !/@keyframes ysn-enter\{[^}]*transform/.test(read('css/yaseen.css')),
+  'انيميشن الدخول لا يلغي حركة رحيق الحرة (translate/transform)');
+ok(read('css/yaseen.css').includes('touch-action:none'), 'سحب رحيق يعمل باللمس على الجوال');
+ok(!motion.includes('&& !held && !reduced && !document.hidden') || motion.includes('function mayTravel()'),
+  'الانتقال إلى الخطأ لا يُوقفه قفل الإشارة');
+
 console.log('\nRaheeq channels + motion tests: ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

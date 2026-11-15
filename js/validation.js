@@ -88,11 +88,16 @@
   }
   document.addEventListener && document.addEventListener('DOMContentLoaded', refreshMessages);
 
-  /* الخطوة الأولى: ولي الأمر */
+  /* الخطوة الأولى: ولي الأمر
+     خانة «الرقم القومي» أُزيلت من كل الصفحات؛ يبقى التحقق منها فقط لو
+     وُجدت الخانة فعلًا في الصفحة (توافق مع صيغ قديمة/استمارات أخرى). */
+  function hasField(id) {
+    return !!(typeof document !== 'undefined' && document.getElementById && document.getElementById(id));
+  }
   function step1() {
     var errors = {};
     if (wordsCount(val('parentName')) < 4) errors.parentName = MSG.parentName;
-    if (!/^\d{14}$/.test(digitsOnly(val('nationalId')))) errors.nationalId = MSG.nationalId;
+    if (hasField('nationalId') && !/^\d{14}$/.test(digitsOnly(val('nationalId')))) errors.nationalId = MSG.nationalId;
     if (!/^\d{11}$/.test(digitsOnly(val('mobile')))) errors.mobile = MSG.mobile;
     var wa = digitsOnly(val('whatsapp'));
     if (wa && !/^\d{11}$/.test(wa)) errors.whatsapp = MSG.whatsapp;
@@ -135,10 +140,23 @@
     return errors;
   }
 
+  /* المستندات المطلوبة فعلًا في الصفحة الحالية.
+     «بطاقة ولي الأمر» أُزيلت من كل الصفحات؛ فلا تُطالَب إلا لو وُجد
+     مربع رفعها فعلًا (صفحة قديمة/جزء آخر من الموقع). */
+  function requiredDocs() {
+    var hasBox = function (k) {
+      try { return !!(document.querySelector && document.querySelector('[data-upload="' + k + '"]')); }
+      catch (e) { return false; }
+    };
+    if (!document.querySelector) return ['birthCert', 'photo'];       // بيئة بلا فحص DOM: الأساس الجديد
+    var found = ['birthCert', 'photo', 'parentCard'].filter(hasBox);
+    return found.length ? found : ['birthCert', 'photo'];
+  }
+
   /* الخطوة الثالثة: المستندات + الموافقة */
   function step3(uploadedFiles) {
     var errors = {};
-    ['birthCert', 'photo', 'parentCard'].forEach(function (k) {
+    requiredDocs().forEach(function (k) {
       if (!uploadedFiles || !uploadedFiles[k]) errors[k] = MSG[k];
     });
     var agree = document.getElementById('agreeTerms');
