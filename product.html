@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400..700&family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="description" content="تفاصيل المنتج من متجر ننجاوي — الوصف والسعر وطريقة الطلب والتوصيل.">
-<meta name="google-site-verification" content="googleb5d3f8a6b43bc225">
+<meta name="google-site-verification" content="b5d3f8a6b43bc225">
 <meta name="theme-color" content="#1c1712">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <!-- Social / Open Graph -->
@@ -118,8 +118,18 @@
   </div>
 </div>
 
+<section class="section pd-static-section" style="padding-top:26px;padding-bottom:0;">
+  <div class="container">
+    <!-- محتوى مبدئي ثابت (بدون JavaScript) — يستبدله السكربت تفاصيل المنتج المختار -->
+    <h1>منتجات متجر ننجاوي التراثية</h1>
+    <p class="pd-static-text">صفحة تفاصيل المنتج من متجر ننجاوي: عود كمبودي فاخر، دهن عود ملكي، بخور معمول يدوي، تمر سكري وعجوة المدينة، مسابح يسر، مباخر نحاسية وصناديق هدايا تراثية — مع الوصف والسعر وطريقة الطلب والتوصيل داخل مصر.</p>
+    <p class="pd-static-text"><a href="shop.html">تصفّح كل المنتجات في المتجر</a></p>
+  </div>
+</section>
+
 <section class="section" style="padding-top:20px;">
   <div class="container pd-grid" id="pd-container">
+
     <!-- تُملأ عبر JS -->
   </div>
 </section>
@@ -170,6 +180,9 @@
   let qty = 1;
 
   document.title = `${escHtml(product.name)} | ننجاوي`;
+  // إزالة العنوان الثابت حتى يبقى في الصفحة <h1> واحد فقط بعد الرسم
+  const staticHero = document.querySelector('.pd-static-section');
+  if (staticHero) staticHero.remove();
   document.getElementById('breadcrumb').innerHTML =
     `<a href="majlis.html">مجلس الصوت</a> / <a href="shop.html">المتجر</a> / ${escHtml(product.name)}`;
 

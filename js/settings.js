@@ -204,16 +204,48 @@
   }
 
   /* ---------- تطبيق الإعدادات على الصفحة ---------- */
+  /* الإعدادات الافتراضية مطبقة أصلًا في css/raheeq.css على :root، فلا داعي
+     لكتابة ألوانها كـ style="" داخل <html> (وإلا صار وسم html ملوّثًا بعشرات
+     الخصائص في مصدر الصفحة الذي يقرأه الزاحف/أدوات المشاركة).
+     نكتب المتغيّرات فقط عند وجود تخصيص فعلي من المستخدم، ونمسحها عند الرجوع
+     للافتراضي. */
+  function isDefault(s) {
+    return (!s.theme || s.theme === defaults.theme) &&
+      !s.custom &&
+      (s.scale == null || Math.abs(Number(s.scale) - defaults.scale) < 0.001);
+  }
+
+  function clearVars(root, names) {
+    if (!root.style) return;
+    if (!root.style.removeProperty) {
+      /* بيئة بلا removeProperty (نادرة): نمسح وسم style بالكامل —
+         لا نكتب عليه إلا متغيّرات الثيم التي نتحكم بها. */
+      try {
+        if (root.removeAttribute) root.removeAttribute('style');
+        else names.forEach(function (name) { root.style.setProperty(name, ''); });
+      } catch (e) { /* تجاهُل */ }
+      return;
+    }
+    names.forEach(function (name) {
+      try { root.style.removeProperty(name); } catch (e) { /* تجاهُل */ }
+    });
+  }
+
   function apply(settings) {
     var s = settings || read();
     var root = document.documentElement;
     var resolved = resolvePalette(s);
-    Object.keys(resolved.vars).forEach(function (name) {
-      root.style.setProperty(name, resolved.vars[name]);
-    });
-    root.style.setProperty('--ui-scale', String(s.scale || 1));
-    root.setAttribute('data-theme', s.theme);
-    root.setAttribute('data-scale', String(s.scale || 1));
+    var names = Object.keys(resolved.vars).concat(['--ui-scale']);
+    if (isDefault(s)) {
+      clearVars(root, names);
+    } else {
+      Object.keys(resolved.vars).forEach(function (name) {
+        root.style.setProperty(name, resolved.vars[name]);
+      });
+      root.style.setProperty('--ui-scale', String(s.scale || 1));
+    }
+    root.setAttribute('data-theme', s.theme || defaults.theme);
+    root.setAttribute('data-scale', String(s.scale || defaults.scale));
     if (document.body) document.body.classList.toggle('use-display', !!s.display);
     applyThemeColor(resolved.theme);
     return resolved;
