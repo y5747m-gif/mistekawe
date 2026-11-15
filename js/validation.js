@@ -28,6 +28,12 @@
     return I && I.t ? I.t(str) : str;
   }
 
+  /* ---------- أطوال الحقول الرقمية الثابتة ----------
+     مصدر واحد للحقيقة: يستخدمه التحقق هنا ومقيّد الإدخال في js/app.js،
+     حتى لا تختلف الأرقام فيتعذّر على المستخدم إكمال الحقل أبدًا. */
+  var NATIONAL_ID_LEN = 14;
+  var MOBILE_LEN = 11;
+
   /* ---------- قائمتان مختلفتان للبرنامج ----------
      «تأسيس»: قائمة المواد التي سيتأسس فيها الطالب.
      «منهج دراسي»: قائمة السنة الدراسية. */
@@ -56,14 +62,14 @@
   }
 
   var MSG_AR = {
-    parentName: 'الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل',
+    parentName: 'الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل (الاسم الأول، اسم الأب، اسم الجد، اسم العائلة) — افصل بينها بمسافات',
     nationalId: 'الرقم القومي يجب أن يكون 14 رقمًا بالضبط',
-    mobile: 'رقم الموبايل يجب أن يكون 11 رقمًا',
+    mobile: 'رقم الموبايل يجب أن يكون 11 رقمًا (يبدأ بـ 01)',
     whatsapp: 'رقم الواتساب يجب أن يكون 11 رقمًا',
     email: 'أدخل بريدًا إلكترونيًا صحيحًا يحتوي على @',
     password: 'كلمة السر يجب ألا تقل عن 6 أحرف',
     confirmPassword: 'كلمتا السر غير متطابقتين',
-    studentName: 'اسم الطالب يجب أن يتكون من 4 أجزاء على الأقل',
+    studentName: 'اسم الطالب يجب أن يتكون من 4 أجزاء على الأقل (الاسم الأول، اسم الأب، اسم الجد، اسم العائلة) — افصل بينها بمسافات',
     dob: 'اختر تاريخ ميلاد صحيحًا',
     programType: 'اختر نوع البرنامج: تأسيس أو منهج دراسي',
     foundationLevel: 'اختر مستوى التأسيس',
@@ -97,10 +103,10 @@
   function step1() {
     var errors = {};
     if (wordsCount(val('parentName')) < 4) errors.parentName = MSG.parentName;
-    if (hasField('nationalId') && !/^\d{14}$/.test(digitsOnly(val('nationalId')))) errors.nationalId = MSG.nationalId;
-    if (!/^\d{11}$/.test(digitsOnly(val('mobile')))) errors.mobile = MSG.mobile;
+    if (hasField('nationalId') && !new RegExp('^\\d{' + NATIONAL_ID_LEN + '}$').test(digitsOnly(val('nationalId')))) errors.nationalId = MSG.nationalId;
+    if (!new RegExp('^\\d{' + MOBILE_LEN + '}$').test(digitsOnly(val('mobile')))) errors.mobile = MSG.mobile;
     var wa = digitsOnly(val('whatsapp'));
-    if (wa && !/^\d{11}$/.test(wa)) errors.whatsapp = MSG.whatsapp;
+    if (wa && !new RegExp('^\\d{' + MOBILE_LEN + '}$').test(wa)) errors.whatsapp = MSG.whatsapp;
     var email = val('email');
     // شرط المنصة: الإيميل لازم يحتوي على @
     if (!email.includes('@') || /^\s|@\s/.test(email) || !/^[^@\s]+@[^@\s]+$/.test(email)) errors.email = MSG.email;
@@ -167,7 +173,7 @@
   /* تسجيل الدخول */
   function login() {
     var errors = {};
-    if (!/^\d{11}$/.test(digitsOnly(val('loginMobile')))) errors.loginMobile = MSG.loginMobile;
+    if (!new RegExp('^\\d{' + MOBILE_LEN + '}$').test(digitsOnly(val('loginMobile')))) errors.loginMobile = MSG.loginMobile;
     if (!val('loginPassword')) errors.loginPassword = MSG.loginPassword;
     return errors;
   }
@@ -178,6 +184,8 @@
     wordsCount: wordsCount,
     esc: esc,
     val: val,
+    NATIONAL_ID_LEN: NATIONAL_ID_LEN,
+    MOBILE_LEN: MOBILE_LEN,
     PROGRAM_TYPES: PROGRAM_TYPES,
     FOUNDATION_LEVELS: FOUNDATION_LEVELS,
     FOUNDATION_SUBJECTS: FOUNDATION_SUBJECTS,

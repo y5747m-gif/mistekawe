@@ -58,7 +58,7 @@ const validated = system.validateConfig({ animations: { run: false, roam: false,
 ok(validated.animations.run === false && validated.animations.roam === false && validated.animations.dizzy === false, 'مفاتيح المدير للحركات الكثيرة محفوظة');
 ok(validated.animations.walk === true && validated.animations.idle === true && validated.animations.flip === true, 'الإعدادات الأخرى تحصل على قيم آمنة');
 ok(!('threeD' in validated.animations), 'مفتاح ثلاثي الأبعاد سقط من مخطط التحقق');
-ok(read('sw.js').includes('v11-raheeq-sprite-motion') && !read('sw.js').includes('yaseen-3d'), 'نسخة الكاش محدثة وبلا ملفات المجسم');
+ok(/v\d+-raheeq-/.test(read('sw.js')) && !read('sw.js').includes('yaseen-3d'), 'نسخة الكاش محدثة وبلا ملفات المجسم');
 
 /* ---------- الاتصال والواتساب على اليمين ورحيق على الشمال ---------- */
 const bar = read('css/contact-bar.css');

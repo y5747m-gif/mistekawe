@@ -244,7 +244,14 @@
     if (!opts || opts.announce !== false) {
       var evt;
       try { evt = new global.CustomEvent('raheeq:langchange', { detail: { lang: lang } }); } catch (e) { evt = null; }
+      /* ننشر الحدث على window وعلى document معًا:
+         الحدث الذي يُرسل إلى window لا يصل المستمعين المسجّلين على document
+         والعكس — ولهذا كانت رسائل التحقق والعدادات لا تتحدث عند تغيير اللغة. */
       if (evt && global.dispatchEvent) global.dispatchEvent(evt);
+      if (evt && document.dispatchEvent) {
+        try { document.dispatchEvent(new global.CustomEvent('raheeq:langchange', { detail: { lang: lang } })); }
+        catch (e) { /* متصفح قديم: نتجاهل */ }
+      }
     }
   }
 

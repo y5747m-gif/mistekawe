@@ -12,7 +12,8 @@
     "test:yaseen": "node tests/node/yaseen-tests.mjs",
     "test:yaseen:widget": "node tests/node/yaseen-widget-tests.mjs",
     "test:yaseen:motion": "node tests/node/yaseen-motion-tests.mjs",
-    "test": "node tests/node/raheeq-tests.mjs && node tests/node/yaseen-tests.mjs && node tests/node/yaseen-widget-tests.mjs && node tests/node/yaseen-motion-tests.mjs && node tests/node/sound-tests.mjs && node tests/node/dom-smoke.mjs && python3 -m unittest discover -s tests/python"
+    "test:flow": "node tests/node/registration-flow.e2e.mjs",
+    "test": "node tests/node/raheeq-tests.mjs && node tests/node/yaseen-tests.mjs && node tests/node/yaseen-widget-tests.mjs && node tests/node/yaseen-motion-tests.mjs && node tests/node/sound-tests.mjs && node tests/node/dom-smoke.mjs && node tests/node/registration-flow.e2e.mjs && python3 -m unittest discover -s tests/python"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3"

@@ -25,7 +25,7 @@
 <meta name="twitter:image" content="https://mistekawe.vercel.app/assets/brand/raheeq-og.jpg">
 <meta name="twitter:image:alt" content="شعار رحيق RAHEEQ — أكاديمية رحيق">
 <!-- إعدادات المستخدم (الثيم/الخط/اللغة) — تُطبَّق قبل رسم الصفحة بلا وميض -->
-<script src="js/settings.js"></script>
+<script src="js/settings.js?v=v20261115-1"></script>
 <meta name="description" content="رحيق RAHEEQ — منصة تسجيل ولي الأمر. سجّل ابنك في ثلاث خطوات بسيطة وآمنة، وتابع طلبك بكل سهولة.">
 <meta name="google-site-verification" content="googleb5d3f8a6b43bc225">
 <!-- رقم واتساب أكاديمية رحيق الرسمي (يُقرأ من هذا الـ meta — ولا يمكن تغييره من localStorage لأي سبب) -->
@@ -40,11 +40,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- منظومة عائلات رحيق: أميري للعناوين · سينجيل للهوية اللاتينية · ريم كوفي للملصقات · آيبوم بلكس مونو للأرقام والرموز · كايرو للنصوص -->
 <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800;900&family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/raheeq.css">
-<link rel="stylesheet" href="css/intro.css">
-<link rel="stylesheet" href="css/yaseen.css">
-<link rel="stylesheet" href="css/yaseen-motion.css">
-<link rel="stylesheet" href="css/contact-bar.css">
+<link rel="stylesheet" href="css/raheeq.css?v=v20261115-1">
+<link rel="stylesheet" href="css/intro.css?v=v20261115-1">
+<link rel="stylesheet" href="css/yaseen.css?v=v20261115-1">
+<link rel="stylesheet" href="css/yaseen-motion.css?v=v20261115-1">
+<link rel="stylesheet" href="css/contact-bar.css?v=v20261115-1">
 <!-- Google tag (gtag.js) - Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-E25G7T2R1N"></script>
 <script>
@@ -333,8 +333,8 @@
               <div class="field full" data-field="parentName">
                 <label for="parentName">الاسم رباعي <span class="req">*</span></label>
                 <input type="text" id="parentName" placeholder="مثال: محمد أحمد علي حسن" autocomplete="name">
-                <span class="hint">اكتب الاسم من أربعة أجزاء</span>
-                <span class="err">⚠ الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل</span>
+                <span class="hint">اكتب الاسم من أربعة أجزاء <span class="counter" data-counter="parentName" data-max="4"></span></span>
+                <span class="err">⚠ الاسم الرباعي يجب أن يتكون من 4 أجزاء على الأقل (الاسم الأول، اسم الأب، اسم الجد، اسم العائلة) — افصل بينها بمسافات</span>
               </div>
               <div class="field" data-field="relation">
                 <label for="relation">صلة القرابة</label>
@@ -348,12 +348,13 @@
               <div class="field" data-field="mobile">
                 <label for="mobile">رقم الموبايل <span class="req">*</span></label>
                 <input type="tel" id="mobile" inputmode="numeric" maxlength="11" placeholder="01•••••••••" autocomplete="tel">
-                <span class="err">⚠ رقم الموبايل يجب أن يكون 11 رقمًا</span>
+                <span class="counter counter--digits" data-counter="mobile" data-max="11"></span>
+                <span class="err">⚠ رقم الموبايل يجب أن يكون 11 رقمًا (يبدأ بـ 01)</span>
               </div>
               <div class="field" data-field="whatsapp">
                 <label for="whatsapp">واتساب</label>
                 <input type="tel" id="whatsapp" inputmode="numeric" maxlength="11" placeholder="اتركه فارغًا لاستخدام الموبايل" autocomplete="off">
-                <span class="hint">اختياري</span>
+                <span class="hint">اختياري <span class="counter counter--digits" data-counter="whatsapp" data-max="11"></span></span>
                 <span class="err">⚠ رقم الواتساب يجب أن يكون 11 رقمًا</span>
               </div>
               <div class="field full" data-field="email">
@@ -381,7 +382,8 @@
               <div class="field full" data-field="studentName">
                 <label for="studentName">الاسم رباعي <span class="req">*</span></label>
                 <input type="text" id="studentName" placeholder="مثال: عمر محمد أحمد علي">
-                <span class="err">⚠ اسم الطالب يجب أن يتكون من 4 أجزاء على الأقل</span>
+                <span class="hint"><span class="counter" data-counter="studentName" data-max="4"></span></span>
+                <span class="err">⚠ اسم الطالب يجب أن يتكون من 4 أجزاء على الأقل (الاسم الأول، اسم الأب، اسم الجد، اسم العائلة) — افصل بينها بمسافات</span>
               </div>
               <div class="field" data-field="dob">
                 <label for="dob">تاريخ الميلاد <span class="req">*</span></label>
@@ -807,17 +809,17 @@
   </a>
 </div>
 
-<script src="js/intro.js" defer></script>
-<script src="js/sounds.js" defer></script>
-<script src="js/confetti.js" defer></script>
-<script src="js/i18n.js" defer></script>
-<script src="js/api.js" defer></script>
-<script src="js/crypto.js" defer></script>
-<script src="js/uploads.js" defer></script>
-<script src="js/validation.js" defer></script>
-<script src="js/whatsapp.js" defer></script>
-<script src="js/app.js" defer></script>
-<script src="js/yaseen-motion.js" defer></script>
-<script src="js/yaseen.js" defer></script>
+<script src="js/intro.js?v=v20261115-1" defer></script>
+<script src="js/sounds.js?v=v20261115-1" defer></script>
+<script src="js/confetti.js?v=v20261115-1" defer></script>
+<script src="js/i18n.js?v=v20261115-1" defer></script>
+<script src="js/api.js?v=v20261115-1" defer></script>
+<script src="js/crypto.js?v=v20261115-1" defer></script>
+<script src="js/uploads.js?v=v20261115-1" defer></script>
+<script src="js/validation.js?v=v20261115-1" defer></script>
+<script src="js/whatsapp.js?v=v20261115-1" defer></script>
+<script src="js/app.js?v=v20261115-1" defer></script>
+<script src="js/yaseen-motion.js?v=v20261115-1" defer></script>
+<script src="js/yaseen.js?v=v20261115-1" defer></script>
 </body>
 </html>

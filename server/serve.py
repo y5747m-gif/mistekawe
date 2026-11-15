@@ -325,12 +325,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         has_cc = any(isinstance(h, (bytes, bytearray)) and h.lower().startswith(b"cache-control:") for h in buf)
         if not has_cc:
             ext = os.path.splitext(self.path.split("?")[0])[1].lower()
-            if ext in (".js", ".mjs", ".css", ".webp", ".png", ".jpg", ".jpeg", ".svg", ".woff2", ".woff", ".mp3", ".wav"):
+            # js/css تتغيّر مع كل تحديث ⇒ لا تُخزَّن مدة سنة (immutable)،
+            # وإلا بقي المستخدم على نسخة قديمة لا تصله التحديثات.
+            # الصور والأصوات ثابتة ⇒ تخزين طويل آمن.
+            if ext in (".js", ".mjs", ".css"):
+                self.send_header("Cache-Control", "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800")
+            elif ext in (".webp", ".png", ".jpg", ".jpeg", ".svg", ".woff2", ".woff", ".mp3", ".wav"):
                 self.send_header("Cache-Control", "public, max-age=31536000, immutable")
             elif self.path.startswith(("/api/", "/admin-yaseen/")):
                 self.send_header("Cache-Control", "no-store")
             else:
-                self.send_header("Cache-Control", "public, max-age=3600, must-revalidate")
+                # صفحات HTML: تُعاد التحقق دائمًا حتى لا تُخدم استمارة قديمة
+                self.send_header("Cache-Control", "public, max-age=0, s-maxage=0, must-revalidate")
         self.send_header("X-Content-Type-Options", "nosniff")
         # المعاينة المحلية (--preview) فقط: لا نمنع التضمين داخل إطار المعاينة
         if not Handler.preview:
