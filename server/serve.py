@@ -173,7 +173,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         for name in ("Content-Type", "Authorization"):
             if self.headers.get(name):
                 headers[name] = self.headers.get(name)
-        conn = http.client.HTTPConnection("127.0.0.1", self.yaseen_port, timeout=10)
+        conn = http.client.HTTPConnection("127.0.0.1", self.yaseen_port, timeout=22)
         try:
             conn.request(self.command, self.path, body=body, headers=headers)
             resp = conn.getresponse()
@@ -360,6 +360,31 @@ class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 
 
+def _load_dotenv_into(env: dict):
+    """يحمّل متغيرات `.env` و `.env.local` (إن وجدت في جذر المشروع) دون الكتابة فوق البيئة الحالية."""
+    for fname in (".env.local", ".env"):
+        fpath = os.path.join(ROOT, fname)
+        if not os.path.isfile(fpath):
+            continue
+        try:
+            with open(fpath, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    s = line.strip()
+                    if not s or s.startswith("#") or "=" not in s:
+                        continue
+                    if s.startswith("export "):
+                        s = s[7:].strip()
+                    k, v = s.split("=", 1)
+                    k = k.strip()
+                    v = v.strip()
+                    if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                        v = v[1:-1]
+                    if k and k not in env:
+                        env[k] = v
+        except OSError:
+            pass
+
+
 def start_yaseen(data_dir):
     """يشغّل خادم رحيق (Node) على منفذ محلي حر ويعيد رقم المنفذ، أو None إن لم يتوفر Node."""
     node = shutil.which("node")
@@ -370,6 +395,7 @@ def start_yaseen(data_dir):
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
     env = dict(os.environ)
+    _load_dotenv_into(env)
     env.setdefault("YASEEN_DATA_DIR", os.path.join(data_dir, "yaseen"))
     try:
         proc = subprocess.Popen([node, script, "--port", str(port), "--host", "127.0.0.1"], env=env, cwd=ROOT)

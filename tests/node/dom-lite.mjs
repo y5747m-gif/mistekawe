@@ -205,9 +205,9 @@ export function loadWidget(opts = {}) {
       setItem(k, v) { this.store[k] = String(v); }
     },
     /* يحاكي استجابة fetch الحقيقية: status + json() */
-    fetch: url => {
+    fetch: (url, opts) => {
       calls.push(url);
-      return Promise.resolve(fetchImpl(url)).then(r => ({
+      return Promise.resolve(fetchImpl(url, opts)).then(r => ({
         status: r.status,
         ok: r.status >= 200 && r.status < 300,
         json: () => Promise.resolve(r.body)

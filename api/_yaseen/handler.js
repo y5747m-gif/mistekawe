@@ -80,7 +80,9 @@ function createHandler(options) {
   /* ---------------- عام: الإعدادات الظاهرة ---------------- */
   async function getPublicConfig() {
     const state = await store.getState();
-    return json(200, system.publicConfig(effectiveConfig(state), new Date(now())));
+    const pub = system.publicConfig(effectiveConfig(state), new Date(now()));
+    if (pub.enabled) pub.ai = ai.enabled(env);
+    return json(200, pub);
   }
 
   /* ---------------- عام: المحادثة ---------------- */
@@ -99,18 +101,31 @@ function createHandler(options) {
       return json(429, Object.assign(base, { reply: config.messages.spam, expression: 'worried', rateLimited: true }), { 'Retry-After': '600' });
     }
 
+    const ctxSignKey = ai.contextSigningKey(env, store.secretKey());
     let sid = typeof body.sid === 'string' && /^[a-f0-9]{32}$/.test(body.sid) ? body.sid : '';
     let session = sid ? await store.getSession(sid) : null;
     if (!session) {
       if (await store.hit('new:' + ip, 3600) > system.LIMITS.sessionsPerHour) {
         return json(429, Object.assign(base, { reply: config.messages.spam, expression: 'worried', rateLimited: true }), { 'Retry-After': '600' });
       }
-      sid = crypto.randomBytes(16).toString('hex');
+      sid = sid || crypto.randomBytes(16).toString('hex');
       session = { n: 0, times: [], captcha: null };
+    }
+    /* استرجاع ذاكرة وسجل المحادثة الموقّع (يحفظ الاستمرارية على Vercel Serverless بلا KV) */
+    if ((!session.history || !session.history.length) && typeof body.ctxToken === 'string') {
+      const unpacked = ai.unpackClientState(body.ctxToken, ctxSignKey);
+      if (unpacked) {
+        session.history = unpacked.history;
+        session.memory = unpacked.memory;
+      }
     }
     const save = () => store.setSession(sid, session, system.LIMITS.sessionTtlSec);
     const remaining = () => Math.max(0, system.LIMITS.maxMessages - session.n);
-    const send = (extra, status) => json(status || 200, Object.assign(base, { sid, remaining: remaining() }, extra));
+    const send = (extra, status) => json(status || 200, Object.assign(base, {
+      sid,
+      remaining: remaining(),
+      ctxToken: ai.packClientState(session, ctxSignKey)
+    }, extra));
 
     if (!system.isWithinHours(config, new Date(t))) {
       await save();
@@ -155,22 +170,64 @@ function createHandler(options) {
     if (body.file !== undefined || body.files !== undefined || body.attachment !== undefined || body.attachments !== undefined) {
       result = { reply: config.messages.noLinks, expression: 'worried', action: null, handoff: null };
     } else if (typeof body.quickReply === 'string') {
-      result = system.answerQuick(config, body.quickReply, body.context);
+      const QUICK_PROMPTS = {
+        problem: 'بص على الخانات في الخطوة اللي أنا واقف فيها دلوقتي وقولي فين المشكلة بالظبط وإزاي أحلها خطوة بخطوة',
+        upload: 'عايز أرفع المستندات المطلوبة، إيه الأوراق المطلوبة بالظبط وصيغها وحجمها وإزاي أرفعها؟',
+        password: 'نسيت كلمة السر بتاعتي ومش عارف أدخل، أعمل إيه؟',
+        human: 'عايز أتواصل مع موظف التسجيل في أكاديمية رحيق على واتساب'
+      };
+      const baseQuick = system.answerQuick(config, body.quickReply, body.context);
+      const qPrompt = QUICK_PROMPTS[body.quickReply];
+      if (qPrompt && ai.enabled(env)) {
+        try {
+          const out = await ai.askAI(env, {
+            question: qPrompt,
+            context: body.context,
+            config,
+            history: session.history,
+            memory: session.memory,
+            fetchImpl
+          });
+          result = {
+            reply: out.reply,
+            expression: out.expression,
+            action: (out.pointTo ? { type: 'point', field: out.pointTo, step: system.FIELDS[out.pointTo] } : null) || baseQuick.action,
+            handoff: (out.handoff || baseQuick.handoff) ? { whatsapp: config.handoff.whatsapp } : null,
+            followUps: out.followUps && out.followUps.length ? out.followUps : undefined,
+            kind: 'ai'
+          };
+          ai.pushHistory(session, qPrompt, result.reply, out.remember || null);
+        } catch (err) {
+          result = baseQuick;
+        }
+      } else {
+        result = baseQuick;
+      }
     } else if (typeof body.message === 'string') {
       const rawMessage = body.message.slice(0, 2000);
       const base = system.answerText(config, rawMessage, body.context);
-      /* أنواع تُحسم قطعيًا بلا نموذج: حظر الكلمات/روابط/طول/فراغ — وإلا Groq يجاوب على أي سؤال (من معرفة الموقع أو معرفته العامة) */
+      /* أنواع تُحسم قطعيًا بلا نموذج: حظر الكلمات/روابط/طول/فراغ — وإلا الذكاء الاصطناعي يجاوب على أي سؤال */
       const HARD_STOP = { blocked: 1, link: 1, toolong: 1, empty: 1 };
+      let remembered = null;
       if (HARD_STOP[base.kind] || !ai.enabled(env)) {
         result = base;
       } else {
         try {
-          const out = await ai.askAI(env, { question: rawMessage, context: body.context, config, history: session.history, fetchImpl });
+          const out = await ai.askAI(env, {
+            question: rawMessage,
+            context: body.context,
+            config,
+            history: session.history,
+            memory: session.memory,
+            fetchImpl
+          });
+          remembered = out.remember || null;
           result = {
             reply: out.reply,
             expression: out.expression,
             action: out.pointTo ? { type: 'point', field: out.pointTo, step: system.FIELDS[out.pointTo] } : null,
             handoff: out.handoff ? { whatsapp: config.handoff.whatsapp } : null,
+            followUps: out.followUps && out.followUps.length ? out.followUps : undefined,
             kind: 'ai'
           };
         } catch (err) {
@@ -181,12 +238,19 @@ function createHandler(options) {
             : base;
         }
       }
-      ai.pushHistory(session, rawMessage, result.reply);
+      ai.pushHistory(session, rawMessage, result.reply, remembered);
     } else {
       result = { reply: config.messages.empty, expression: 'thinking', action: null, handoff: null };
     }
     await save();
-    return send({ reply: result.reply, expression: result.expression, action: result.action, handoff: result.handoff, locked: remaining() === 0 });
+    return send({
+      reply: result.reply,
+      expression: result.expression,
+      action: result.action,
+      handoff: result.handoff,
+      followUps: result.followUps,
+      locked: remaining() === 0
+    });
   }
 
   /* ---------------- المدير ---------------- */
@@ -240,6 +304,7 @@ function createHandler(options) {
   }
 
   function adminView(state, admin) {
+    const pInfo = ai.providerInfo(env);
     return {
       ok: true,
       admin: { email: admin.email, name: admin.name },
@@ -248,7 +313,7 @@ function createHandler(options) {
       online: system.isWithinHours(state.config, new Date(now())),
       storage: { kind: store.kind, writable: store.writable },
       passwordHash: auth.hashKind(admin.passwordHash),
-      ai: { enabled: ai.enabled(env), model: ai.enabled(env) ? ai.modelName(env) : null },
+      ai: { enabled: pInfo.enabled, provider: pInfo.provider, model: pInfo.model, keyCount: pInfo.keyCount },
       locked: { limits: system.LIMITS, fixed: system.FIXED, fields: Object.keys(system.FIELDS), expressions: system.EXPRESSIONS }
     };
   }
@@ -274,9 +339,30 @@ function createHandler(options) {
       return json(200, { ok: true });
     }
     if (action === 'test') {
-      const result = typeof body.quickReply === 'string'
-        ? system.answerQuick(state.config, body.quickReply, body.context)
-        : system.answerText(state.config, String(body.message || '').slice(0, 2000));
+      let result;
+      if (typeof body.quickReply === 'string') {
+        result = system.answerQuick(state.config, body.quickReply, body.context);
+      } else {
+        const rawMsg = String(body.message || '').slice(0, 2000);
+        const base = system.answerText(state.config, rawMsg, body.context);
+        const HARD_STOP = { blocked: 1, link: 1, toolong: 1, empty: 1 };
+        if (body.useAI === true && !HARD_STOP[base.kind] && ai.enabled(env)) {
+          try {
+            const out = await ai.askAI(env, { question: rawMsg, context: body.context, config: state.config, fetchImpl });
+            result = {
+              reply: out.reply,
+              expression: out.expression,
+              action: out.pointTo ? { type: 'point', field: out.pointTo, step: system.FIELDS[out.pointTo] } : null,
+              handoff: out.handoff ? { whatsapp: state.config.handoff.whatsapp } : null,
+              kind: 'ai (' + (out.provider || 'groq') + ':' + (out.model || '') + ')'
+            };
+          } catch (err) {
+            result = Object.assign({}, base, { kind: 'ai-error: ' + ((err && err.message) || 'unknown') });
+          }
+        } else {
+          result = base;
+        }
+      }
       return json(200, { ok: true, result });
     }
     if (action === 'kill') {

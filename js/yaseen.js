@@ -61,6 +61,9 @@
       studentName: 'اكتب اسم الطالب رباعي: 4 أسماء على الأقل.',
       dob: 'اختار تاريخ ميلاد صحيح للطالب، بعد سنة 1900 وليس في المستقبل.',
       gender: 'اختار نوع الطالب.',
+      programType: 'اختار نوع البرنامج أولًا: تأسيس أو منهج دراسي.',
+      foundationLevel: 'اختار مستوى التأسيس: للصغار أو للكبار.',
+      foundationSubjects: 'علّم على مادة واحدة على الأقل من قائمة مواد التأسيس.',
       grade: 'اختار الصف الدراسي المطلوب.',
       prevSchool: 'اسم المدرسة السابقة اختياري.',
       address: 'اكتب عنوانًا من 5 أحرف على الأقل، مثل المحافظة والمدينة والشارع.',
@@ -78,7 +81,7 @@
     },
     animations: { idle: true, blink: true, blinkEverySec: 3, tilt: true, wave: true, point: true, expressions: true, talk: true, confetti: true, stuckAfterSec: 10, roam: true, walk: true, run: true, jump: true, dance: true, spin: true, stretch: true, float: true, nod: true, shake: true, swing: true, flip: true, bounce: true, dizzy: true },
     sounds: { enabled: true, volume: 0.4, speech: false },
-    limits: { maxMessages: 20, maxChars: 400 }
+    limits: { maxMessages: 40, maxChars: 800 }
   });
 
   var cfg = null;
@@ -94,11 +97,12 @@
   var lastActivity = Date.now(), interacted = false, stuckShown = false;
   var currentStepSeen = 0, celebrated = false;
   var chatOpen = false, chatGreeted = false, busy = false, locked = false, needCaptcha = false;
-  var sid = '', muted = false, audioCtx = null, offlineRetry = 0, offlineTries = 0, revealTimer = 0;
+  var sid = '', ctxToken = '', muted = false, audioCtx = null, offlineRetry = 0, offlineTries = 0, revealTimer = 0;
   var serverSeen = false;      // هل وصل إعداد الخادم مرة واحدة على الأقل؟
 
   try { muted = window.localStorage.getItem('yaseen_muted') === '1'; } catch (e) {}
   try { sid = window.sessionStorage.getItem('yaseen_sid') || ''; } catch (e) {}
+  try { ctxToken = window.sessionStorage.getItem('yaseen_ctx') || ''; } catch (e) {}
 
   /* ---------------- أدوات ---------------- */
   function el(tag, cls, text) {
@@ -129,7 +133,7 @@
     var ctrl = typeof window.AbortController === 'function' ? new window.AbortController() : null;
     var opts = Object.assign({ credentials: 'omit', cache: 'no-store' }, options || {});
     if (ctrl) opts.signal = ctrl.signal;
-    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 9000);
+    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
     return window.fetch(url, opts).then(function (res) {
       clearTimeout(t);
       return res.json().then(function (body) { return { status: res.status, body: body }; });
@@ -319,7 +323,7 @@
     chat.setAttribute('aria-label', 'محادثة ' + cfg.name);
     chat.querySelector('.ysn-name').textContent = cfg.name;
     dotEl.classList.toggle('is-off', !cfg.online);
-    statusEl.textContent = cfg.online ? 'متصل الآن · المساعد الذكي' : 'خارج مواعيد العمل';
+    statusEl.textContent = !cfg.online ? 'خارج مواعيد العمل' : (cfg.ai === true ? 'متصل الآن · ذكاء اصطناعي مفعّل ✨' : 'متصل الآن · المساعد الذكي');
     mascot.classList.toggle('a-idle', anim('idle'));
     mascot.classList.toggle('a-tilt', anim('tilt'));
     if (motion) motion.configure(cfg.animations);
@@ -734,13 +738,14 @@
     var typing = addTyping();
     setPose(anim('expressions') ? 'thinking' : 'idle');
     var body = { sid: sid, context: { step: currentStep(), invalid: stepErrors() } };
+    if (ctxToken) body.ctxToken = ctxToken;
     if (payload.quickReply) body.quickReply = payload.quickReply;
     if (payload.message) body.message = String(payload.message).slice(0, cfg.limits.maxChars);
     if (payload.captcha != null) body.captcha = String(payload.captcha).slice(0, 6);
     var started = Date.now();
 
     request(CHAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (res) {
-      return new Promise(function (resolve) { later(function () { resolve(res); }, Math.max(0, 550 - (Date.now() - started))); });
+      return new Promise(function (resolve) { later(function () { resolve(res); }, Math.max(0, 400 - (Date.now() - started))); });
     }).then(function (res) {
       if (!root) return;
       var data = res.body || {};
@@ -748,6 +753,7 @@
       busy = false;
       if (data.disabled) { destroy(); return; }             // المدير أوقف البوت
       if (typeof data.sid === 'string') { sid = data.sid; try { window.sessionStorage.setItem('yaseen_sid', sid); } catch (e) {} }
+      if (typeof data.ctxToken === 'string' && data.ctxToken) { ctxToken = data.ctxToken; try { window.sessionStorage.setItem('yaseen_ctx', ctxToken); } catch (e) {} }
       if (typeof data.reply !== 'string') { addMessage('الاتصال ضعيف دلوقتي، جرّب تاني بعد شوية.', 'bot'); setPose('idle'); renderLock(); return; }
 
       var msg = addMessage(data.reply, 'bot');
@@ -757,6 +763,23 @@
         a.target = '_blank'; a.rel = 'noopener noreferrer';
         msg.appendChild(document.createElement('br'));
         msg.appendChild(a);
+      }
+      if (Array.isArray(data.followUps) && data.followUps.length) {
+        var chips = el('div', 'ysn-followups');
+        data.followUps.slice(0, 3).forEach(function (qText) {
+          if (typeof qText !== 'string' || !qText.trim()) return;
+          var chip = el('button', 'ysn-chip', qText.trim());
+          chip.type = 'button';
+          chip.addEventListener('click', function () {
+            if (busy || locked) return;
+            sendMessage({ message: qText.trim() }, qText.trim());
+          });
+          chips.appendChild(chip);
+        });
+        if (chips.firstChild) {
+          logEl.appendChild(chips);
+          logEl.scrollTop = logEl.scrollHeight;
+        }
       }
       locked = !!data.locked;
       setCaptcha(data.captcha && typeof data.captcha.question === 'string' ? data.captcha.question : '');

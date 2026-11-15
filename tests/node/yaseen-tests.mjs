@@ -91,12 +91,12 @@ ok(/الرياضيات/.test(system.answerText(expanded, 'مواد التأسي�
 
 /* ---------- 4) الروابط والطول والتنظيف ---------- */
 ['شوف https://evil.example', 'www.site.com', 'ادخل bit.ly/x او example.com', '<a href=x>'].forEach(m => eq(kind(m), 'link', 'رابط مرفوض: ' + m));
-eq(kind('ا'.repeat(401)), 'toolong', 'أكثر من 400 حرف مرفوض');
+eq(kind('ا'.repeat(801)), 'toolong', 'أكثر من 800 حرف مرفوض');
 eq(kind('   '), 'empty', 'رسالة فارغة');
 eq(system.sanitize('a\u0000b\u202Ec'), 'a bc', 'إزالة محارف التحكم والاتجاه');
 eq(system.sanitize(12345), '', 'غير النص يُهمل');
-eq(system.LIMITS.maxMessages, 20, 'حد 20 رسالة');
-eq(system.LIMITS.maxChars, 400, 'حد 400 حرف');
+eq(system.LIMITS.maxMessages, 40, 'حد 40 رسالة');
+eq(system.LIMITS.maxChars, 800, 'حد 800 حرف');
 
 /* ---------- 5) الأزرار السريعة والسياق كبيانات ---------- */
 const q = system.answerQuick(cfg, 'problem', { step: 1, invalid: ['__proto__', 'evil', 'mobile', 'nationalId'] });
@@ -165,14 +165,14 @@ eq(res.body.reply, system.FIXED.manipulation, 'الخادم يرد بالثاب�
 ok(/^[a-f0-9]{32}$/.test(res.body.sid), 'الخادم ينشئ معرّف الجلسة');
 ok(!('kind' in res.body), 'تصنيف الرسالة لا يُرسل للمتصفح');
 let sid = res.body.sid;
-eq(res.body.remaining, 19, 'باقي 19');
+eq(res.body.remaining, 39, 'باقي 39');
 
-for (let i = 0; i < 19; i++) { clock += 5000; res = await post('/api/yaseen-chat', { sid, message: 'الرقم القومي' }); }
-eq(res.body.remaining, 0, 'بعد 20 رسالة الباقي صفر');
+for (let i = 0; i < 39; i++) { clock += 5000; res = await post('/api/yaseen-chat', { sid, message: 'الرقم القومي' }); }
+eq(res.body.remaining, 0, 'بعد 40 رسالة الباقي صفر');
 ok(res.body.locked, 'الجلسة تُقفل عند الحد');
 clock += 5000;
 res = await post('/api/yaseen-chat', { sid, message: 'الرقم القومي' });
-eq(res.body.reply, cfg.messages.limit, 'الرسالة 21 مرفوضة');
+eq(res.body.reply, cfg.messages.limit, 'الرسالة 41 مرفوضة');
 res = await post('/api/yaseen-chat', { sid, n: 0, remaining: 99, message: 'الصف' });
 eq(res.body.reply, cfg.messages.limit, 'العدّاد على الخادم فقط ولا يُزوَّر من المتصفح');
 
@@ -200,7 +200,7 @@ eq(res.body.reply, cfg.messages.spam, 'رسالتان متلاصقتان => تن
 clock += 60000;
 res = await post('/api/yaseen-chat', { message: 'x', file: 'data:...' }, { ip: '10.0.0.3' });
 eq(res.body.reply, cfg.messages.noLinks, 'محاولة إرفاق ملف مرفوضة');
-for (let i = 0; i < 12; i++) res = await post('/api/yaseen-chat', { message: 'الصف' }, { ip: '10.0.0.4' });
+for (let i = 0; i < 16; i++) res = await post('/api/yaseen-chat', { message: 'الصف' }, { ip: '10.0.0.4' });
 res = await post('/api/yaseen-chat', { message: 'الصف' }, { ip: '10.0.0.4' });
 eq(res.status, 429, 'جلسات جديدة كثيرة من نفس العنوان => 429');
 eq((await post('/api/yaseen-chat', 'نص')).status, 400, 'جسم غير JSON مرفوض');
