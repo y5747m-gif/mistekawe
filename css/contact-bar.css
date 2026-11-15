@@ -1,0 +1,53 @@
+/* شريط الاتصال السريع والواتساب — عائم ومتاح في جميع الصفحات ومطابق لمعايير الموبايل */
+.floating-contact-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.floating-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: #ffffff;
+}
+.floating-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.floating-btn:active {
+  transform: scale(0.95);
+}
+.floating-btn--wa {
+  background: #25D366;
+}
+.floating-btn--call {
+  background: #1976D2;
+}
+.floating-btn svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+@media (max-width: 600px) {
+  .floating-contact-bar {
+    bottom: 18px;
+    left: 18px;
+    gap: 10px;
+  }
+  .floating-btn {
+    width: 48px;
+    height: 48px;
+  }
+}

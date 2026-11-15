@@ -8,6 +8,7 @@
   },
   "scripts": {
     "yaseen:admin": "node server/yaseen-admin-setup.js",
+    "build:sitemap": "node scripts/generate-sitemap.mjs",
     "test:yaseen": "node tests/node/yaseen-tests.mjs",
     "test:yaseen:widget": "node tests/node/yaseen-widget-tests.mjs",
     "test:yaseen:motion": "node tests/node/yaseen-motion-tests.mjs",

@@ -75,12 +75,12 @@ EXTRA_TYPES = {
 # (السكربتات المضمّنة الحالية في صفحات المتجر تحتاج unsafe-inline مؤقتًا)
 CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; "
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com data:; "
-    "img-src 'self' data: blob:; "
+    "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com; "
     "media-src 'self' blob:; "
-    "connect-src 'self'; "
+    "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com; "
     "worker-src 'self' blob:; "
     "manifest-src 'self'; "
     "object-src 'none'; "
@@ -321,7 +321,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().guess_type(path)
 
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
+        buf = getattr(self, "_headers_buffer", [])
+        has_cc = any(isinstance(h, (bytes, bytearray)) and h.lower().startswith(b"cache-control:") for h in buf)
+        if not has_cc:
+            ext = os.path.splitext(self.path.split("?")[0])[1].lower()
+            if ext in (".js", ".mjs", ".css", ".webp", ".png", ".jpg", ".jpeg", ".svg", ".woff2", ".woff", ".mp3", ".wav"):
+                self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+            elif self.path.startswith(("/api/", "/admin-yaseen/")):
+                self.send_header("Cache-Control", "no-store")
+            else:
+                self.send_header("Cache-Control", "public, max-age=3600, must-revalidate")
         self.send_header("X-Content-Type-Options", "nosniff")
         # المعاينة المحلية (--preview) فقط: لا نمنع التضمين داخل إطار المعاينة
         if not Handler.preview:
