@@ -20,6 +20,11 @@ function ok(cond, msg) {
   else console.log('  ✓ ' + msg);
 }
 
+/* روابط الملفات قد تحمل بصمة إصدار (?v=...) لكسر الكاش — نقبل الصيغتين */
+const assetRef = (file) => new RegExp('(src|href)="' + file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\?[^"]*)?"');
+const hasAsset = (file, page) => assetRef(file).test(page || html);
+const assetIndex = (file, page) => (page || html).search(assetRef(file));
+
 const html = read('index.html');
 const css = read('css/raheeq.css');
 const sounds = read('js/sounds.js');
@@ -41,13 +46,13 @@ for (const f of ['index.html', 'css/raheeq.css', 'js/sounds.js', 'js/confetti.js
 ok(/<html[^>]*lang="ar"[^>]*dir="rtl"/.test(html), 'الصفحة الأساس عربية RTL');
 {
   // التنسيق في ملفات خارجية؛ مُسموح فقط كتلة <style> حرجة صغيرة لأنيميشن البداية
-  ok(html.includes('href="css/raheeq.css"'), 'التنسيق الأساسي في ملف خارجي css/raheeq.css');
+  ok(hasAsset('css/raheeq.css'), 'التنسيق الأساسي في ملف خارجي css/raheeq.css');
   const inlineStyles = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
   const inlineBytes = inlineStyles.reduce((n, cssBlock) => n + cssBlock.length, 0);
   ok(inlineBytes <= 700, 'لا توجد كتل CSS كبيرة مضمّنة (حجم المضمّن ' + inlineBytes + ' بايت)');
 }
 ['js/sounds.js', 'js/confetti.js', 'js/validation.js', 'js/uploads.js', 'js/api.js', 'js/settings.js', 'js/i18n.js', 'js/whatsapp.js', 'js/app.js'].forEach(f =>
-  ok(html.includes('src="' + f + '"'), 'السكربت خارجي: ' + f));
+  ok(hasAsset(f), 'السكربت خارجي: ' + f));
 ok(html.includes('family=Cairo') && css.includes("font-family:'Cairo Local'"), 'خط Cairo من Google Fonts مع نسخة محلية احتياطية');
 ok(read('raheeq.html').includes('location.replace'), 'الرابط القديم raheeq.html يحوّل إلى أساس الموقع');
 ok(exists('majlis.html') && read('majlis.html').includes('مجلس الصوت'), 'صفحة مجلس الصوت القديمة محفوظة');
@@ -96,8 +101,8 @@ if (exists(shareImagePath)) {
 console.log('\n1.1) انيميشن البداية (Intro) + منظومة الخطوط متعددة العائلات');
 for (const f of ['css/intro.css', 'js/intro.js'])
   ok(exists(f), 'ملف الانميشن موجود: ' + f);
-ok(html.includes('href="css/intro.css"'), 'intro.css محمّل في <head>');
-ok(html.includes('src="js/intro.js"'), 'js/intro.js محمّل');
+ok(hasAsset('css/intro.css'), 'intro.css محمّل في <head>');
+ok(hasAsset('js/intro.js'), 'js/intro.js محمّل');
 ok(html.includes('id="raheeqIntro"'), 'غطاء الانميشن موجود في الصفحة');
 ok(html.includes('intro-skip'), 'زر تخطي الانميشن موجود');
 for (const fam of ['Amiri', 'Cinzel', 'Reem+Kufi', 'IBM+Plex+Mono', 'Cairo'])
@@ -144,7 +149,7 @@ ok(html.includes('id="programType"') && html.includes('value="تأسيس"') && h
 ok(html.includes('id="curriculumBranch"') && html.includes('id="foundationBranch"'), 'فرعا القائمتين: منهج دراسي (السنة الدراسية) وتأسيس (المواد)');
 ok(html.includes('id="foundationLevel"'), 'قائمة مستوى التأسيس');
 ok(!/value="تأسيس للصغار"[\s\S]{0,400}<select id="grade"|id="grade"[\s\S]{0,600}value="تأسيس/.test(html), 'قائمة الصف الدراسي لم تعد مختلطة مع التأسيس');
-ok(html.includes('src="js/crypto.js"') && html.indexOf('src="js/crypto.js"') < html.indexOf('src="js/app.js"'), 'js/crypto.js محمّل قبل app.js لتشفير كلمة السر');
+ok(hasAsset('js/crypto.js') && assetIndex('js/crypto.js') < assetIndex('js/app.js'), 'js/crypto.js محمّل قبل app.js لتشفير كلمة السر');
 ok(html.includes('id="agreeTerms"'), 'الموافقة على الشروط');
 ok(['birthCert', 'photo', 'reportCard'].every(k => html.includes('data-file-input="' + k + '"')), 'مستندات الرفع الثلاثة (بلا بطاقة ولي الأمر)');
 ok(!html.includes('data-file-input="parentCard"') && !html.includes('id="nationalId"'), 'خانتا الرقم القومي وبطاقة ولي الأمر أُزيلتا من الاستمارة');
@@ -233,7 +238,7 @@ ok(app.includes('RHQ-') && app.includes('Math.random() * 9000'), 'توليد ر�
 
 console.log('\n6) رفع الصور الفعلية: قراءة المحتوى وحفظه وعرضه (وليس الاسم فقط)');
 ok(exists('js/uploads.js'), 'محرك المستندات js/uploads.js موجود');
-ok(html.indexOf('src="js/uploads.js"') > -1 && html.indexOf('src="js/uploads.js"') < html.indexOf('src="js/app.js"'),
+ok(assetIndex('js/uploads.js') > -1 && assetIndex('js/uploads.js') < assetIndex('js/app.js'),
   'uploads.js محمّل قبل app.js');
 ok(app.includes('var U = window.RaheeqUploads'), 'app.js يعتمد محرك المستندات');
 ok(app.includes('function readyFiles()') && /docs: readyFiles\(\)/.test(app), 'collectData يحفظ سجلات المستندات الفعلية');
@@ -555,7 +560,7 @@ ok(!dom.byId.get('welcomeBox').hidden, 'صندوق الترحيب يظهر بع�
 console.log('\n7.1) إرسال الطلب إلى واتساب أكاديمية رحيق (بدل خطأ 404)');
 const waSrc = read('js/whatsapp.js');
 ok(exists('js/whatsapp.js'), 'وحدة واتساب js/whatsapp.js موجودة');
-ok(html.includes('src="js/whatsapp.js"') && html.indexOf('src="js/whatsapp.js"') < html.indexOf('src="js/app.js"'),
+ok(hasAsset('js/whatsapp.js') && assetIndex('js/whatsapp.js') < assetIndex('js/app.js'),
   'whatsapp.js محمّل قبل app.js');
 {
   const waBox = { document: { querySelector: () => null, createElement: () => ({ style: {}, setAttribute() {}, select() {} }), body: { appendChild() {}, removeChild() {} } },
@@ -592,7 +597,7 @@ ok(html.includes('src="js/whatsapp.js"') && html.indexOf('src="js/whatsapp.js"')
 console.log('\n7.2) دعماللغتين: العربية والإنجليزية (i18n)');
 {
   ok(exists('js/i18n.js'), 'قاموس الترجمة js/i18n.js موجود');
-  ok(html.includes('src="js/i18n.js"') && html.indexOf('src="js/i18n.js"') < html.indexOf('src="js/app.js"'),
+  ok(hasAsset('js/i18n.js') && assetIndex('js/i18n.js') < assetIndex('js/app.js'),
     'i18n.js محمّل قبل app.js');
   ok(html.includes('id="langToggle"'), 'زر تبديل اللغة في الهيدر');
   const i18nSrc = read('js/i18n.js');
@@ -615,7 +620,7 @@ ok(/refreshMessages/.test(read('js/validation.js')), 'رسائل التحقق ت
 console.log('\n7.3) شخصنة الألوان والخط: ثيمات جاهزة + لون حر + حجم الخط');
 {
   ok(exists('js/settings.js'), 'وحدة الإعدادات js/settings.js موجودة');
-  ok(html.indexOf('src="js/settings.js"') < html.indexOf('src="js/app.js"'), 'settings.js محمّل قبل app.js (تطبيق الثيم مبكرًا)');
+  ok(assetIndex('js/settings.js') < assetIndex('js/app.js'), 'settings.js محمّل قبل app.js (تطبيق الثيم مبكرًا)');
   ok(html.includes('id="settingsPanel"') && html.includes('id="settingsBtn"'), 'لوحة الإعدادات وزرها موجودان');
   ok(html.includes('id="themeGrid"') && html.includes('id="customBrand"') && html.includes('id="customGold"') && html.includes('id="customCream"'),
     'الثيمات الجاهزة + ثلاثة منتقي ألوان حرّة');
@@ -721,7 +726,7 @@ ok(serverSrc.includes('"/api/health"') && apiSrcPy.includes('def health'), 'مس
 ok(serverSrc.includes('_admin_authorized') && serverSrc.includes('X-Admin-Token'), 'قراءة الطلبات محمية برمز إدارة');
 ok(serverSrc.includes('BLOCKED_PREFIXES') && serverSrc.includes('"/data/"'), 'ملفات المستندات المحفوظة غير مكشوفة كملفات ثابتة');
 ok(apiSrcPy.includes('def parse_data_url') && apiSrcPy.includes('def hash_password'), 'الخادم يتحقق من الصور ويشفّر كلمة السر');
-ok(html.includes('src="js/api.js"') && html.indexOf('src="js/api.js"') < html.indexOf('src="js/app.js"'),
+ok(hasAsset('js/api.js') && assetIndex('js/api.js') < assetIndex('js/app.js'),
   'js/api.js محمّل قبل app.js');
 ok(app.includes('window.RaheeqApi') && app.includes('API.submit(data)') && app.includes('function syncToServer'),
   'app.js يرفع الطلب فعليًا عبر الواجهة');
@@ -852,7 +857,12 @@ console.log('\n9) تدقيق أمني (Hacker pass): هروب HTML + رؤوس أ
   ok(!!globalHdr && globalHdr.headers.some(h => h.key === 'Content-Security-Policy') && globalHdr.headers.some(h => h.key === 'X-Frame-Options') && globalHdr.headers.some(h => h.key === 'X-Content-Type-Options'),
     'vercel.json يضيف CSP + X-Frame-Options + nosniff لكل المسارات');
   ok((vercel.redirects || []).some(r => r.source === '/.git/:path*'), 'vercel.json يعيد توجيه dotfiles إلى الجذر');
-  ok(read('sw.js').includes('v11'), 'sw.js: ترقية نسخة الكاش بعد التعديلات');
+  const swSrc = read('sw.js');
+  ok(swSrc.includes('v12'), 'sw.js: ترقية نسخة الكاش بعد التعديلات');
+  ok(!/['"]\.\/js\/app\.js['"]/.test(swSrc) && !/['"]\.\/index\.html['"]/.test(swSrc),
+    'sw.js: لا يخزّن استمارة/سكربتات النموذج مسبقًا (كان يسبّب نسخة قديمة)');
+  ok(/req\.mode === 'navigate'/.test(swSrc) && /cache: 'no-store'/.test(swSrc),
+    'sw.js: صفحات التنقّل تُجلب بلا كاش');
 }
 
 console.log('\n10) المؤثرات الصوتية لعرض البداية + القائمتان الجديدتان');
@@ -865,6 +875,49 @@ console.log('\n10) المؤثرات الصوتية لعرض البداية + ا�
   ok(validation.includes('PROGRAM_TYPES') && validation.includes('CURRICULUM_GRADES') && validation.includes('FOUNDATION_SUBJECTS') && validation.includes('checkedFoundationSubjects'), 'validation.js يعرّف القائمتين وقوائم مواد التأسيس والسنوات');
   ok(app.includes('syncProgramBranch') && app.includes('foundationBranch') && app.includes('curriculumBranch') && app.includes('programRows'), 'app.js يبدّل بين القائمتين ويعرض الصفوف الصحيحة');
   ok(read('js/whatsapp.js').includes('نوع البرنامج') && read('js/whatsapp.js').includes('السنة الدراسية'), 'رسالة واتساب تحمل نوع البرنامج والسنة/المواد');
+}
+
+console.log('\n11) انحدار: المستخدم لا يستطيع الانتقال للخطوة التالية (الخطأ الحقيقي مخفي)');
+{
+  /*سيناريو لوحة المستخدم: الاسم 4 أجزاء صحيح، لكن الرقم القومي 11 رقمًا فقط،
+     لأن مقيّد الإدخال كان يقطع عند 11 بينما التحقق يشترط 14 ← الحقل مستحيل.
+    +cached HTML قديم + JS جديد = عدم تطابق بين الصفحة والملف. */
+  ok(!/slice\(0,\s*11\)/.test(app), 'app.js لا يقطع كل الحقول الرقمية عند 11 رقمًا');
+  ok(/DIGIT_LIMITS/.test(app) && /nationalId:\s*NATIONAL_ID_LEN/.test(app), 'حدود الأرقام لكل حقل معرّفة في app.js');
+  ok(/nationalId:\s*NATIONAL_ID_LEN/.test(app) && /MOBILE_LEN\s*=\s*\(V\s*&&\s*V\.MOBILE_LEN\)/.test(app),
+    'حدود الأرقام مأخوذة من js/validation.js (مصدر واحد للحقيقة)');
+  ok(/NATIONAL_ID_LEN\s*=\s*14/.test(validation) && /MOBILE_LEN\s*=\s*11/.test(validation),
+    'validation.js يعلن طول الرقم القومي 14 والموبايل 11');
+  ok(!/\^\\d\{14\}\$/.test(validation) || /NATIONAL_ID_LEN/.test(validation),
+    'التحقق يستخدم الطول المعلن بدل رقم مكتوب يدويًا');
+
+  /* التحقق: رقم وطني 14 رقمًا يُقبل، وأقل منه يُرفض */
+  const nid14 = runValidation({ ...good1, nationalId: '29901011234567' }, true, {}).step1();
+  ok(!nid14.nationalId, 'الرقم القومي 14 رقمًا مقبول');
+  const nid11 = runValidation({ ...good1, nationalId: '01141362626' }, true, {}).step1();
+  ok(!!nid11.nationalId, 'الرقم القومي أقل من 14 رقمًا مرفوض');
+
+  /* رسالة الخطأ يجب أن تذكر كل الأخطاء لا أولها فقط (الخطأ الحقيقي كان مخفيًا) */
+  ok(/function buildErrorText\(/.test(app), 'app.js فيه دالة buildErrorText لعرض كل الأخطاء');
+  ok(/buildErrorText\(errors,\s*keys\)/.test(app), 'زر «التالي» يستخدم buildErrorText');
+  ok(!/fail\('راجع البيانات المطلوبة وأكمل الحقول المميزة بعلامة \* — ' \+ errors\[keys\[0\]\]/m.test(app),
+    'لم يعد يُعرض أول خطأ فقط (السبب الحقيقي كان مخفيًا)');
+
+  /* تنظيف خفيف: البصمة في روابط الملفات + سياسة كاش لا freezes الأكواد */
+  const vercel = read('vercel.json');
+  const jsCssRule = (vercel.match(/"source": "\/\(css\|js\)\/\(\.\*\)"[\s\S]{0,600}?\n    \}/) || [''])[0];
+  ok(!/immutable/.test(jsCssRule),
+    'vercel.json لا يخزّن js/css لمدة سنة مع immutable (كان يمنع وصول التحديثات)');
+  ok(/must-revalidate/.test(vercel), 'صفحات HTML لا تُقدَّم من كاش قديم');
+  ok(/src="js\/app\.js\?v=/.test(html) && /href="css\/raheeq\.css\?v=/.test(html),
+    'روابط js/css في index.html تحمل بصمة إصدار (?v=) لكسر الكاش');
+
+  /* العدّاد المباشر يوضّح المطلوب أثناء الكتابة */
+  ok(/data-counter="parentName"/.test(html) && /data-counter="studentName"/.test(html),
+    'عدّاد مباشر لعدد أجزاء الاسم');
+  ok(/data-counter="mobile"/.test(html), 'عدّاد مباشر لأرقام الموبايل');
+  ok(/\.counter/.test(css), 'تنسيق العدّاد المباشر');
+  ok(/function refreshCounter\(/.test(app), 'app.js يحدّث العدّاد أثناء الكتابة');
 }
 
 if (failed) {

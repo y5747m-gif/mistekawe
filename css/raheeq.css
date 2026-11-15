@@ -251,6 +251,10 @@ button{cursor:pointer}
 .field textarea{resize:vertical;min-height:64px}
 .hint{font-size:calc(11.5px*var(--ui-scale,1));color:var(--muted);font-weight:600;margin-top:4px}
 .err{display:none;font-size:calc(12px*var(--ui-scale,1));color:var(--error);font-weight:800;margin-top:4px}
+/* عدّاد مباشر: يوضّح كم جزءًا/رقمًا كُتب من المطلوب */
+.counter{display:inline-block;margin-inline-start:6px;font-size:calc(11px*var(--ui-scale,1));font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.counter--digits{display:block;margin-inline-start:0;margin-top:4px}
+.counter.is-ok{color:#1B7F4B}
 .field.has-error input,.field.has-error select,.field.has-error textarea,.field.has-error .upload-box{border-color:var(--error);background:#FFF6F5}
 .field.has-error .err{display:block}
 

@@ -126,3 +126,7 @@ await new Promise(r=>setTimeout(r,3000));
 console.log('downloads triggered:', downloads);
 console.log('info entries after tools:', w.document.querySelectorAll('#infoBox dt').length);
 console.log(errors.length ? '❌ أخطاء:\n'+errors.join('\n') : '✅ لا أخطاء — المسار الكامل + الأدوات + التصدير تعمل');
+
+/* إغلاق البيئة صراحةً: jsdom يُبقي المؤقتات حيّة فلا ينتهي الملف من تلقاءه */
+try { w.close(); } catch (e) { /* لا بأس */ }
+process.exit(errors.length ? 1 : 0);

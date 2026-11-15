@@ -1,7 +1,9 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v11-raheeq-sprite-motion';
+const CACHE = 'majlis-shell-v12-raheeq-form-fix';
+/* نُخزّن فقط ما لا يتغيّر بين الإصدارات (أصول ثابتة).
+   صفحات HTML وسكربتات/تنسيقات النموذج تتغيّر مع كل تحديث، وتخزينها مسبقًا
+   كان يسبّب نسخة قديمة من الاستمارة — لذلك لا تُحجز هنا إطلاقًا. */
 const SHELL = [
-  './',
   './majlis.html',
   './hall.html',
   './sound/css/hall.css',
@@ -11,18 +13,6 @@ const SHELL = [
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './css/intro.css',
-  './js/intro.js',
-  './css/raheeq.css',
-  './css/yaseen.css',
-  './css/yaseen-motion.css',
-  './js/yaseen.js',
-  './js/yaseen-motion.js',
-  './js/settings.js',
-  './js/i18n.js',
-  './js/whatsapp.js',
-  './js/app.js',
-  './index.html',
   './assets/brand/raheeq-mark-vector.svg',
   './assets/brand/raheeq-mark-white.png',
   './assets/brand/raheeq-icon-192.png'
@@ -47,6 +37,20 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   /* واجهات الخادم ولوحة مدير رحيق لا تُخزَّن أبدًا (مفتاح الإيقاف يجب أن يسري فورًا) */
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin-yaseen')) return;
+  /* صفحات التنقّل تُجلب من الشبكة دائمًا بلا كاش (نسخة الاستمارة يجب أن تكون حديثة) */
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(req, { cache: 'no-store' });
+        return fresh;
+      } catch {
+        const home = await caches.match('./majlis.html');
+        if (home) return home;
+        throw new Error('offline');
+      }
+    })());
+    return;
+  }
   event.respondWith((async () => {
     try {
       const fresh = await fetch(req);
@@ -58,10 +62,6 @@ self.addEventListener('fetch', (event) => {
     } catch {
       const cached = await caches.match(req);
       if (cached) return cached;
-      if (req.mode === 'navigate') {
-        const home = await caches.match('./majlis.html');
-        if (home) return home;
-      }
       throw new Error('offline');
     }
   })());

@@ -75,14 +75,34 @@
     el.classList.add('is-visible');
   }
 
+  /* نص الخطأ: يعرض كل الأخطاء الحالية لا أولها فقط.
+     سبب: عرض أول خطأ فقط كان يُخفي الخطأ الحقيقي (مثل الرقم القومي)
+     ويُظهر رسالة قديمة لا علاقة لها بما يُعيق المستخدم → الحارس يتعطّل. */
+  function buildErrorText(errors, keys) {
+    var list = (keys || Object.keys(errors || {})).map(function (k) { return errors[k]; });
+    var uniq = [];
+    list.forEach(function (m) { if (m && uniq.indexOf(m) < 0) uniq.push(m); });
+    var head = T('راجع البيانات المطلوبة وأكمل الحقول المميزة بعلامة * — ');
+    if (!uniq.length) return head;
+    /* كل رسالة تُترجم على حدة (النص المجمّع ليس مفتاحًا في القاموس) */
+    var translated = uniq.map(function (m) { return T(m); });
+    if (translated.length === 1) return head + translated[0];
+    return head + translated.join(' • ');
+  }
+
   function fail(msg, alertId) {
     play('error');
     vibrate([100, 50, 100]);   // اهتزاز الخطأ على الجوال
     shake();                    // اهتزاز خفيف للفورم
-    /* رسائل التحقق قد تكون عربية أو إنجليزية حسب الاختيار داخل validation.js */
+    /* رسائل التحقق قد تكون عربية أو إنجليزية حسب الاختيار داخل validation.js.
+       buildErrorText تُترجم كل رسالة على حدة، فنترك النص كما هو إذا كان مبدئيًا. */
     var text = T(msg);
     var prefix = T('راجع البيانات المطلوبة وأكمل الحقول المميزة بعلامة * — ');
-    if (text.indexOf(prefix) === 0) text = prefix + T(text.slice(prefix.length));
+    if (text.indexOf(prefix) === 0) {
+      var rest = text.slice(prefix.length);
+      /* ترجمة الذيل فقط إن كان مبدئيًا (بادئة واحدة) — لا نطبّع النص الإنجليزي مرتين */
+      text = prefix + (T(rest) === rest ? rest : T(rest));
+    }
     showAlert(alertId || 'formAlert', text);
     var first = document.querySelector('.form-step.is-current .field.has-error input, .form-step.is-current .field.has-error select, .form-step.is-current .field.has-error textarea');
     if (first) { try { first.focus({ preventScroll: false }); } catch (e) { first.focus(); } }
@@ -192,7 +212,7 @@
     setFieldErrors(errors);
     var keys = Object.keys(errors);
     if (keys.length) {
-      fail('راجع البيانات المطلوبة وأكمل الحقول المميزة بعلامة * — ' + errors[keys[0]], 'formAlert');
+      fail(buildErrorText(errors, keys), 'formAlert');
       return;
     }
     goStep(currentStep + 1, false);
@@ -209,16 +229,63 @@
       });
     });
   });
-  ['nationalId', 'mobile', 'whatsapp', 'loginMobile'].forEach(function (id) {
+  /* الحد الأقصى لعدد الأرقام لكل حقل — مصدر واحد للحقيقة مع js/validation.js،
+     وإلا صار الحقل غير قابل للتعبئة أبدًا (الرقم القومي 14 مقابل 11). */
+  var NATIONAL_ID_LEN = (V && V.NATIONAL_ID_LEN) || 14;
+  var MOBILE_LEN = (V && V.MOBILE_LEN) || 11;
+  var DIGIT_LIMITS = { nationalId: NATIONAL_ID_LEN, mobile: MOBILE_LEN, whatsapp: MOBILE_LEN, loginMobile: MOBILE_LEN };
+  Object.keys(DIGIT_LIMITS).forEach(function (id) {
     var el = $(id);
     if (!el) return;
+    var max = DIGIT_LIMITS[id];
+    el.setAttribute('maxlength', String(max));   /* يطابق maxlength في HTML */
     el.addEventListener('input', function () {
-      var clean = V.digitsOnly(el.value).slice(0, 11);
+      var clean = V.digitsOnly(el.value).slice(0, max);
       if (clean !== el.value) el.value = clean;
     });
   });
   var dobEl = $('dob');
   if (dobEl) dobEl.max = new Date().toISOString().slice(0, 10);
+
+  /* ---------------- عدّاد مباشر داخل الحقل ----------------
+     يوضّح للمستخدم أثناء الكتابة كم جزءًا/رقمًا كتب من المطلوب،
+     حتى لا يتعطّل عند «التالي» بسبب شرط غير واضح. */
+  function counterValue(id, max) {
+    var el = $(id);
+    if (!el) return 0;
+    var raw = String(el.value || '');
+    if (el.classList.contains('counter--digits') || max === 11 || max === 14) {
+      return V.digitsOnly(raw).length;
+    }
+    return raw.trim() ? V.wordsCount(raw) : 0;
+  }
+  function refreshCounter(box) {
+    if (!box) return;
+    var id = box.getAttribute('data-counter');
+    var max = parseInt(box.getAttribute('data-max'), 10) || 0;
+    var n = counterValue(id, max);
+    var isDigits = box.classList.contains('counter--digits');
+    var ok = max > 0 && n >= max;
+    /* النصوص مفاتيح في js/i18n.js حتى تُترجم مع بقية الواجهة */
+    var mark = ok ? '✓ ' : '';
+    box.textContent = isDigits
+      ? mark + n + '/' + max
+      : mark + n + ' ' + T('من') + ' ' + max + ' ' + T('أجزاء');
+    box.classList.toggle('is-ok', !!ok);
+  }
+  document.querySelectorAll('[data-counter]').forEach(function (box) {
+    var id = box.getAttribute('data-counter');
+    var el = $(id);
+    if (!el) return;
+    ['input', 'change', 'blur'].forEach(function (ev) {
+      el.addEventListener(ev, function () { refreshCounter(box); });
+    });
+    refreshCounter(box);
+  });
+  /* تحديث العدّادات عند تغيير لغة الواجهة */
+  document.addEventListener('raheeq:langchange', function () {
+    document.querySelectorAll('[data-counter]').forEach(refreshCounter);
+  });
 
   /* ---------------- قائمتان مختلفتان: تأسيس / منهج دراسي ---------------- */
   var programTypeEl = $('programType');
@@ -763,7 +830,7 @@
     setFieldErrors(errors);
     var keys = Object.keys(errors);
     if (keys.length) {
-      fail('راجع البيانات المطلوبة وأكمل الحقول المميزة بعلامة * — ' + errors[keys[0]], 'formAlert');
+      fail(buildErrorText(errors, keys), 'formAlert');
       return;
     }
 
@@ -772,7 +839,12 @@
     [V.step1(), V.step2()].forEach(function (obj) { Object.keys(obj).forEach(function (k) { all[k] = obj[k]; }); });
     if (Object.keys(all).length) {
       setFieldErrors(all);
-      fail('يوجد خطأ في بيانات الخطوات السابقة، راجعها قبل الإرسال', 'formAlert');
+      /* نرجع المستخدم إلى الخطوة التي فيها الخطأ بدل رسالة عامة محيّرة */
+      var step1Keys = Object.keys(V.step1());
+      var badStep = step1Keys.length ? 1 : 2;
+      goStep(badStep, true);
+      var badKeys = Object.keys(all);
+      fail('يوجد خطأ في بيانات الخطوات السابقة، راجعها قبل الإرسال — ' + all[badKeys[0]], 'formAlert');
       return;
     }
 
@@ -858,7 +930,7 @@
     setFieldErrors(errors);
     var keys = Object.keys(errors);
     if (keys.length) {
-      fail(errors[keys[0]], 'loginAlert');
+      fail(buildErrorText(errors, keys), 'loginAlert');
       return;
     }
     var mobile = V.digitsOnly(V.val('loginMobile'));

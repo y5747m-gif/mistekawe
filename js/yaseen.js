@@ -594,7 +594,7 @@
       }, true);
     });
 
-    /* خطأ في خانة بعد مغادرتها: مثلًا الرقم القومي أقل من 14 رقم */
+    /* خطأ في خانة بعد مغادرتها: مثلًا الاسم ناقص أجزاء أو الموبايل غير مكتمل */
     on(form, 'focusout', function (e) {
       var name = fieldNameOf(e.target);
       if (!name || !cfg || chatOpen) return;
