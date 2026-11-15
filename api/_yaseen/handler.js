@@ -159,8 +159,8 @@ function createHandler(options) {
     } else if (typeof body.message === 'string') {
       const rawMessage = body.message.slice(0, 2000);
       const base = system.answerText(config, rawMessage, body.context);
-      /* أنواع تُحسم قطعيًا بلا نموذج: تلاعب/حظر/روابط/طول/فراغ — وإلا Groq يجاوب من معرفة الموقع */
-      const HARD_STOP = { manipulation: 1, blocked: 1, link: 1, toolong: 1, empty: 1 };
+      /* أنواع تُحسم قطعيًا بلا نموذج: حظر الكلمات/روابط/طول/فراغ — وإلا Groq يجاوب على أي سؤال (من معرفة الموقع أو معرفته العامة) */
+      const HARD_STOP = { blocked: 1, link: 1, toolong: 1, empty: 1 };
       if (HARD_STOP[base.kind] || !ai.enabled(env)) {
         result = base;
       } else {
@@ -175,9 +175,9 @@ function createHandler(options) {
           };
         } catch (err) {
           console.warn('[yaseen] AI failed, falling back to rules:', err && err.message);
-          /* لو المحرك القاعدي كان هيرفض خارج الموضوع، نقدّم اعتذارًا واضحًا مع تحويل للواتساب */
+          /* المحرك القاعدي لا يعرف غير التسجيل — لو كان هيرفض بره التسجيل نقدّم اعتذارًا واضحًا مع تحويل للواتساب */
           result = base.kind === 'offtopic'
-            ? { reply: 'حصلت مشكلة في الاتصال بمساعد رحيق الذكي دلوقتي 🙏 لو سؤالك عن التسجيل أعد كتابته، ولو محتاج متابعة كلّم موظف التسجيل على واتساب الأكاديمية من الزر ده.', expression: 'worried', action: null, handoff: { whatsapp: config.handoff.whatsapp }, kind: 'ai-down' }
+            ? { reply: 'حصلت مشكلة في الاتصال بالمساعد الذكي دلوقتي 🙏 حاول تاني كمان شوية. ولو محتاج متابعة خاصة بالتسجيل أو بطلبك كلّم موظف التسجيل على واتساب الأكاديمية من الزر ده.', expression: 'worried', action: null, handoff: { whatsapp: config.handoff.whatsapp }, kind: 'ai-down' }
             : base;
         }
       }

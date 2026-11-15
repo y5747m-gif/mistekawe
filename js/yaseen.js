@@ -1,5 +1,5 @@
 /* ============================================================
-   رحيق — مساعدة التسجيل في أكاديمية رحيق (واجهة العرض فقط)
+   رحيق — المساعد الذكي لأكاديمية رحيق (واجهة العرض فقط)
    ------------------------------------------------------------
    هذا الملف «دمية عرض»: حركات + نافذة محادثة. لا يحتوي أي قواعد
    أو إجابات أو إعدادات للبوت. كل شيء يأتي من الخادم:
@@ -37,8 +37,8 @@
   var BASE = freeze({
     ok: true, enabled: true, online: true,
     name: 'رحيق',
-    greeting: 'أهلًا بيك في أكاديمية رحيق 👋 أنا رحيق، هساعدك تسجّل ابنك خطوة بخطوة.',
-    chatIntro: 'اسألني عن أي حاجة في التسجيل، أو اختار من الأزرار 👇',
+    greeting: 'أهلًا بيك في أكاديمية رحيق 👋 أنا رحيق، مساعدك الذكي — اسألني أي سؤال.',
+    chatIntro: 'اسألني أي سؤال — عن التسجيل أو أي حاجة تانية، وأنا معاك 👇',
     quickReplies: [
       { id: 'problem', label: 'فين المشكلة؟' },
       { id: 'upload', label: 'عايز أرفع مستند' },
@@ -274,8 +274,8 @@
     inputEl = el('input');
     inputEl.type = 'text';
     inputEl.autocomplete = 'off';
-    inputEl.placeholder = 'اكتب سؤالك عن التسجيل…';
-    inputEl.setAttribute('aria-label', 'سؤالك عن التسجيل');
+    inputEl.placeholder = 'اكتب أي سؤال…';
+    inputEl.setAttribute('aria-label', 'اكتب أي سؤال');
     var sendBtn = el('button', null, 'إرسال'); sendBtn.type = 'submit';
     form.appendChild(inputEl); form.appendChild(sendBtn);
 
@@ -314,12 +314,12 @@
     if (!root || !cfg) return;
     var max = cfg.limits.maxChars;
     inputEl.maxLength = max;
-    charBtn.setAttribute('aria-label', 'افتح محادثة ' + cfg.name + ' — مساعد التسجيل. اسحبني لأي مكان في الشاشة، أو حرّكني بالأسهم');
+    charBtn.setAttribute('aria-label', 'افتح محادثة ' + cfg.name + ' — المساعد الذكي. اسحبني لأي مكان في الشاشة، أو حرّكني بالأسهم');
     charBtn.setAttribute('title', 'اسحبني لأي مكان في الشاشة · نقرة قصيرة تفتح المحادثة');
     chat.setAttribute('aria-label', 'محادثة ' + cfg.name);
     chat.querySelector('.ysn-name').textContent = cfg.name;
     dotEl.classList.toggle('is-off', !cfg.online);
-    statusEl.textContent = cfg.online ? 'متصل الآن · مساعد التسجيل' : 'خارج مواعيد العمل';
+    statusEl.textContent = cfg.online ? 'متصل الآن · المساعد الذكي' : 'خارج مواعيد العمل';
     mascot.classList.toggle('a-idle', anim('idle'));
     mascot.classList.toggle('a-tilt', anim('tilt'));
     if (motion) motion.configure(cfg.animations);
@@ -782,7 +782,7 @@
       if (serverSeen) {
         addMessage('الاتصال ضعيف دلوقتي، جرّب تاني بعد شوية.', 'bot');
       } else {
-        var msg = addMessage('مش قادر أوصل بمساعد التسجيل دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
+        var msg = addMessage('مش قادر أوصل بمساعد رحيق الذكي دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
         var wa = whatsappHref();
         if (wa) {
           var link = el('a', 'ysn-wa', 'افتح واتساب الأكاديمية');

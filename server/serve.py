@@ -5,7 +5,7 @@
     GET  /                          موقع رحيق (index.html)
     GET  /api/health                حالة الواجهة وقدراتها
     POST /api/registrations         رفع طلب تسجيل مع صور المستندات (JSON + base64)
-    GET  /api/yaseen-config         مساعد التسجيل رحيق (يُمرَّر إلى server/yaseen-server.js)
+    GET  /api/yaseen-config         المساعد الذكي رحيق (يُمرَّر إلى server/yaseen-server.js)
     POST /api/yaseen-chat           محادثة رحيق (منطق البوت على الخادم فقط)
     GET  /api/registrations         قائمة الطلبات        (يتطلب X-Admin-Token)
     GET  /api/registrations/<order> تفاصيل طلب           (يتطلب X-Admin-Token)
@@ -391,7 +391,7 @@ def main() -> int:
                     help="مجلد حفظ الطلبات والمستندات (افتراضي: data/)")
     ap.add_argument("--admin-token", default=os.environ.get("RAHEEQ_ADMIN_TOKEN"),
                     help="رمز قراءة الطلبات (أو متغيّر RAHEEQ_ADMIN_TOKEN)")
-    ap.add_argument("--no-yaseen", action="store_true", help="لا تشغّل مساعد التسجيل رحيق")
+    ap.add_argument("--no-yaseen", action="store_true", help="لا تشغّل المساعد الذكي رحيق")
     ap.add_argument("--preview", action="store_true",
                     help="معاينة محلية داخل إطار: يسمح بالتضمين من نطاق المعاينة فقط (لا تستخدمه للنشر)")
     ap.add_argument("--trust-proxy", action="store_true",

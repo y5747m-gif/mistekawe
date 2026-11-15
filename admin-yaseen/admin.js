@@ -166,7 +166,7 @@
     }],
     ['answers', 'الإجابات', function (box) {
       box.appendChild(el('h2', {}, 'إجابات البوت'));
-      box.appendChild(el('p', { class: 'muted' }, 'رحيق يرد فقط بهذه الإجابات. أي سؤال لا يطابق كلمات مفتاحية هنا يأخذ رد «خارج التسجيل» الثابت.'));
+      box.appendChild(el('p', { class: 'muted' }, 'رحيق الذكي بيرد على أي سؤال — التسجيل وأي موضوع تاني. هذه الإجابات احتياطية: بتتظهر لو GROQ_API_KEY مش مضبوط أو فشل الاتصال بالذكاء الاصطناعي، وبتنفع كأجوبة سريعة للأسئلة الشائعة.'));
       box.appendChild(el('h3', {}, 'الأزرار السريعة الأربعة'));
       draft.quickReplies.forEach(function (q) {
         var item = el('div', { class: 'item' });
@@ -268,7 +268,7 @@
     }],
     ['blocked', 'الكلمات المحظورة', function (box) {
       box.appendChild(el('h2', {}, 'قائمة الكلمات المحظورة'));
-      box.appendChild(el('p', { class: 'muted' }, 'أي رسالة تحتوي إحدى هذه الكلمات تأخذ رد «خارج التسجيل». افصل بفاصلة أو سطر جديد.'));
+      box.appendChild(el('p', { class: 'muted' }, 'أي رسالة تحتوي إحدى هذه الكلمات تأخذ ردًا ثابتًا برفض مهذب — ولا يُستدعى الذكاء الاصطناعي لها. افصل بفاصلة أو سطر جديد.'));
       box.appendChild(field('الكلمات', draft, 'blockedWords', { type: 'textarea', rows: 5, join: '، ' }));
       box.appendChild(el('h3', {}, 'قواعد مقفولة في كود الخادم (للعرض فقط)'));
       var g = grid(), L = view.locked;
@@ -277,7 +277,7 @@
         var w = el('label', {}, p[0]); w.appendChild(el('input', { type: 'text', readOnly: true, value: String(p[1]) })); g.appendChild(w);
       });
       box.appendChild(g);
-      [['الرد الثابت على محاولات التلاعب', L.fixed.manipulation], ['الرد الثابت خارج موضوع التسجيل', L.fixed.offTopic]].forEach(function (p) {
+      [['الرد الاحتياطي على محاولات التلاعب', L.fixed.manipulation], ['الرد الاحتياطي عند غياب الذكاء الاصطناعي', L.fixed.offTopic]].forEach(function (p) {
         var w = el('label', {}, p[0]); w.appendChild(el('textarea', { readOnly: true, rows: 2, value: p[1] })); box.appendChild(w);
       });
     }],

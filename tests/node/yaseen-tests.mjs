@@ -1,5 +1,5 @@
 /* ============================================================
- * اختبارات رحيق — مساعد التسجيل المقفول
+ * اختبارات رحيق — الحدود والمحرك القاعدي (الاحتياطي)
  *   node tests/node/yaseen-tests.mjs
  * تغطي: كشف التلاعب، الحظر خارج الموضوع، الحدود، CAPTCHA،
  *        دخول المدير (كلمة سر + OTP)، السجل، مفتاح الإيقاف،
@@ -37,7 +37,7 @@ const kind = m => system.answerText(cfg, m).kind;
   ok(r.action === null && r.handoff === null, 'تلاعب بلا إجراء: ' + m);
 });
 eq(system.FIXED.manipulation, 'أنا هنا عشان أساعدك في التسجيل في رحيق بس، تحب أكمل معاك في استمارة ابنك؟', 'نص رد التلاعب مطابق للمطلوب');
-eq(system.FIXED.offTopic, 'أنا متخصص في التسجيل بس، لو عندك سؤال عن المدرسة أنا معاك', 'نص رد خارج الموضوع مطابق للمطلوب');
+eq(system.FIXED.offTopic, 'المساعد الذكي مش متاح دلوقتي 🙏 بس بقدر أساعدك في التسجيل — اسألني عن أي خطوة أو خطأ في الاستمارة، وجرّب أي سؤال تاني كمان شوية', 'نص الرد الاحتياطي مطابق للمطلوب');
 
 /* ---------- 2) خارج التسجيل ---------- */
 ['ايه رأيك في الانتخابات', 'مين الرئيس', 'الحاجة دي حلال ولا حرام', 'احكيلي نكتة', 'اكتبلي كود بايثون', 'عمرك كام', 'بتحبيني؟',
@@ -184,7 +184,9 @@ sid = res.body.sid;
 for (let i = 0; i < 4; i++) { clock += 1000; res = await post('/api/yaseen-chat', { sid, message: 'الصف' }, ip2); }
 ok(res.body.captcha && /\d+ \+ \d+/.test(res.body.captcha.question), 'رسائل سريعة => CAPTCHA');
 clock += 1000;
-res = await post('/api/yaseen-chat', { sid, message: 'الصف', captcha: '999' }, ip2);
+const sum = res.body.captcha.question.match(/\d+/g).map(Number).reduce((a, b) => a + b, 0);
+const wrongGuess = String(sum === 5 ? 6 : 5);
+res = await post('/api/yaseen-chat', { sid, message: 'الصف', captcha: wrongGuess }, ip2);
 ok(res.body.captcha && res.body.reply === cfg.messages.captchaWrong, 'إجابة خاطئة => سؤال جديد');
 const [a, b] = res.body.captcha.question.match(/\d+/g).map(Number);
 res = await post('/api/yaseen-chat', { sid, captcha: String(a + b) }, ip2);
