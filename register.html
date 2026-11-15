@@ -10,6 +10,11 @@
 <link rel="apple-touch-icon" href="assets/brand/raheeq-apple-touch.png">
 <meta name="theme-color" content="#881234">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/contact-bar.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400..700&family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="google-site-verification" content="googleb5d3f8a6b43bc225">
 <!-- Social / Open Graph -->
 <link rel="canonical" href="https://mistekawe.vercel.app/register.html">
 <meta property="og:type" content="website">
@@ -29,12 +34,57 @@
 <meta name="twitter:description" content="إنشاء حساب جديد في منصة أكاديمية رحيق — ابدأ رحلتك التعليمية.">
 <meta name="twitter:image" content="https://mistekawe.vercel.app/assets/brand/raheeq-og.jpg">
 <meta name="twitter:image:alt" content="شعار رحيق RAHEEQ — أكاديمية رحيق">
+<!-- Google tag (gtag.js) - Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-E25G7T2R1N"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-E25G7T2R1N');
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://mistekawe.vercel.app/register.html",
+      "name": "إنشاء حساب | أكاديمية رحيق",
+      "description": "إنشاء حساب جديد في منصة أكاديمية رحيق — ابدأ رحلتك التعليمية.",
+      "url": "https://mistekawe.vercel.app/register.html"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "الرئيسية",
+          "item": "https://mistekawe.vercel.app/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "إنشاء حساب",
+          "item": "https://mistekawe.vercel.app/register.html"
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
 <div class="auth-wrap">
   <div class="auth-panel">
-    <a href="index.html" class="brand"><img class="raheeq-brand-mark" src="assets/brand/raheeq-mark-white.png" alt="شعار رحيق" width="42" height="50"><span class="kufi">أكاديمية رحيق</span></a>
+    <a href="index.html" class="brand">
+      <picture>
+        <source srcset="assets/brand/raheeq-mark-white.webp" type="image/webp">
+        <img class="raheeq-brand-mark" src="assets/brand/raheeq-mark-white.png" alt="شعار رحيق" width="42" height="50" loading="lazy" decoding="async">
+      </picture>
+      <span class="kufi">أكاديمية رحيق</span>
+    </a>
     <div class="auth-quote">
       <p class="big">"انضم إلى مجتمع المتعلمين في أكاديمية رحيق، وابدأ رحلتك التعليمية اليوم."</p>
       <p class="by">— فريق أكاديمية رحيق</p>
@@ -103,6 +153,16 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- شريط الاتصال السريع والواتساب العائم -->
+<div class="floating-contact-bar" aria-label="أدوات التواصل السريع">
+  <a href="https://wa.me/201151947735" class="floating-btn floating-btn--wa" target="_blank" rel="noopener noreferrer" aria-label="تواصل معنا عبر واتساب" title="واتساب">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.62c-.19-.09-1.12-.55-1.3-.61-.17-.06-.3-.09-.43.09-.12.19-.49.61-.6.74-.11.12-.23.14-.42.05-.19-.09-.81-.3-1.54-.95-.57-.51-.95-1.14-1.06-1.33-.11-.19-.01-.29.08-.38.08-.08.19-.23.28-.34.1-.12.13-.19.19-.32.06-.13.03-.24-.02-.34-.04-.09-.43-1.03-.59-1.42-.15-.37-.3-.32-.42-.33h-.36c-.12 0-.32.05-.49.23-.17.19-.65.64-.65 1.56 0 .92.67 1.81.76 1.94.1.12 1.32 2.01 3.2 2.82.45.19.8.31 1.07.4.45.14.86.12 1.18.07.36-.05 1.12-.46 1.28-.9.16-.45.16-.83.11-.91-.04-.08-.17-.13-.36-.22z"/></svg>
+  </a>
+  <a href="tel:+201151947735" class="floating-btn floating-btn--call" aria-label="اتصال هاتفي مباشر" title="اتصل بنا">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.053 15.053 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.57 3.9c0-.55-.45-1-1-1H4.02c-.55 0-1 .45-1 1C3.02 13.28 10.73 21 20.01 21c.55 0 1-.45 1-1v-3.62c0-.55-.45-1-1-1z"/></svg>
+  </a>
 </div>
 
 <script src="script.js"></script>

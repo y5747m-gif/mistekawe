@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin-yaseen/
+Disallow: /admin-yaseen
+Disallow: /api/
+Disallow: /data/
+Disallow: /server/
+Disallow: /tests/
+
+Sitemap: https://mistekawe.vercel.app/sitemap.xml
