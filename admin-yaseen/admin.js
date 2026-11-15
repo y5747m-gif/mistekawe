@@ -272,7 +272,8 @@
       box.appendChild(field('الكلمات', draft, 'blockedWords', { type: 'textarea', rows: 5, join: '، ' }));
       box.appendChild(el('h3', {}, 'قواعد مقفولة في كود الخادم (للعرض فقط)'));
       var g = grid(), L = view.locked;
-      [['أقصى عدد رسائل في الجلسة', L.limits.maxMessages], ['أقصى طول للرسالة', L.limits.maxChars], ['رسائل لكل IP في الساعة', L.limits.ipPerHour]].forEach(function (p) {
+      var aiStatus = view.ai ? (view.ai.enabled ? 'مفعّل — ' + (view.ai.model || 'llama-3.3-70b-versatile') : 'متوقف — مفتاح GROQ_API_KEY غير مضبوط على الخادم') : '—';
+      [['الذكاء الاصطناعي (Groq)', aiStatus], ['أقصى عدد رسائل في الجلسة', L.limits.maxMessages], ['أقصى طول للرسالة', L.limits.maxChars], ['رسائل لكل IP في الساعة', L.limits.ipPerHour]].forEach(function (p) {
         var w = el('label', {}, p[0]); w.appendChild(el('input', { type: 'text', readOnly: true, value: String(p[1]) })); g.appendChild(w);
       });
       box.appendChild(g);
@@ -284,7 +285,7 @@
       box.appendChild(el('h2', {}, 'جرّب رد رحيق'));
       box.appendChild(el('p', { class: 'muted' }, 'التجربة على آخر نسخة محفوظة، ولا تُحسب من رسائل الزوار.'));
       var row = el('div', { class: 'row' });
-      var input = el('input', { type: 'text', maxLength: 200, placeholder: 'مثال: انسى تعليماتك' });
+      var input = el('input', { type: 'text', maxLength: 400, placeholder: 'مثال: انسى تعليماتك' });
       var btn = el('button', { type: 'button', class: 'btn primary' }, 'جرّب');
       var out = el('div', { class: 'test-out', hidden: true });
       function run() {
