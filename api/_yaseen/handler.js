@@ -5,6 +5,7 @@
    عام (ولي الأمر):
      GET  /api/yaseen-config        الإجابات النهائية فقط (بلا قواعد أو إعدادات)
      POST /api/yaseen-chat          رسالة/زر سريع => رد معتمد
+     GET  /api/yaseen-ai-status     هل مفتاح Grok/Groq مربوط وشغال؟ (تشخيص آمن بلا أي جزء من المفتاح)
    المدير فقط (Authorization: Bearer <رمز جلسة>):
      POST /api/yaseen-admin/login   بريد + كلمة سر + رمز OTP
      POST /api/yaseen-admin/logout
@@ -13,6 +14,7 @@
      POST /api/yaseen-admin/kill    مفتاح الإيقاف الفوري
      GET  /api/yaseen-admin/logs
      POST /api/yaseen-admin/test    تجربة رد رحيق على رسالة
+     GET  /api/yaseen-admin/aistatus تشخيص مفصل للذكاء الاصطناعي (مع رسالة خطأ المزود)
    ============================================================ */
 const crypto = require('crypto');
 const system = require('./yaseen-system');
@@ -23,6 +25,46 @@ const { createStore, MAX_LOGS } = require('./store');
 const ADMIN_SESSION_MS = 60 * 60 * 1000;
 const LOGIN_WINDOW_SEC = 15 * 60;
 const LOGIN_MAX = 8;
+const AI_STATUS_CACHE_MS = 60 * 1000;     // فحص حي واحد كل دقيقة على الأكثر لكل نسخة خادم
+const AI_STATUS_IP_PER_HOUR = 30;
+
+/* سطر سجل آمن لفشل الذكاء الاصطناعي (يظهر في Vercel ← Logs) — بلا مفتاح */
+function logAiFailure(where, err) {
+  const e = err || {};
+  const parts = ['[yaseen] AI failed (' + where + '), falling back to rules:', e.kind || 'error'];
+  if (e.provider || e.model) parts.push((e.provider || '?') + '/' + (e.model || '?'));
+  if (e.status) parts.push('http ' + e.status);
+  if (e.source) parts.push('key from ' + e.source);
+  parts.push('— ' + String(e.detail || e.message || '').slice(0, 200));
+  console.warn(parts.join(' '));
+}
+
+/* نسخة عامة من التشخيص: بلا رسائل المزود الخام (قد تحتوي معرّفات حساب) */
+function publicAiStatus(report) {
+  const r = report || {};
+  return {
+    ok: true,
+    status: r.status,
+    working: !!r.working,
+    message: r.message,
+    provider: r.provider || null,
+    providerLabel: r.providerLabel || null,
+    model: r.model || null,
+    keySource: r.keySource || null,
+    keyCount: r.keyCount || 0,
+    checkedAt: r.checkedAt,
+    howTo: r.howTo,
+    keys: (r.keys || []).map(k => ({
+      source: k.source,
+      keyType: k.keyType,
+      provider: k.provider,
+      status: k.status,
+      models: k.models,
+      modelList: k.modelList ? { ok: k.modelList.ok, kind: k.modelList.kind, status: k.modelList.status, available: k.modelList.available, usable: k.modelList.usable } : undefined,
+      chat: k.chat ? { ok: k.chat.ok, kind: k.chat.kind, status: k.chat.status, model: k.chat.model, ms: k.chat.ms } : undefined
+    }))
+  };
+}
 
 function json(status, body, headers) {
   return { status, body, headers: Object.assign({ 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex' }, headers || {}) };
@@ -61,6 +103,7 @@ function createHandler(options) {
   const fetchImpl = (options && options.fetchImpl) || undefined;
   const now = (options && options.now) || (() => Date.now());
   let memLastOtp = 0;
+  let aiStatusCache = null;          // { at, report, pending }
 
   function effectiveConfig(state) {
     const cfg = state.config;
@@ -83,6 +126,29 @@ function createHandler(options) {
     const pub = system.publicConfig(effectiveConfig(state), new Date(now()));
     if (pub.enabled) pub.ai = ai.enabled(env);
     return json(200, pub);
+  }
+
+  /* ---------------- عام: هل الذكاء الاصطناعي مربوط وشغال؟ ---------------- */
+  async function getAiStatus(req) {
+    const t = Date.now();
+    if (aiStatusCache && aiStatusCache.report && t - aiStatusCache.at < AI_STATUS_CACHE_MS) {
+      return json(200, Object.assign(publicAiStatus(aiStatusCache.report), { cached: true }));
+    }
+    if (await store.hit('aistatus:' + (req.ip || '?'), 3600) > AI_STATUS_IP_PER_HOUR) {
+      return json(429, { ok: false, error: 'rate-limited' });
+    }
+    if (!aiStatusCache || !aiStatusCache.pending) {
+      const pending = ai.diagnose(env, { fetchImpl }).then(report => {
+        aiStatusCache = { at: Date.now(), report, pending: null };
+        return report;
+      }, err => {
+        aiStatusCache = null;
+        throw err;
+      });
+      aiStatusCache = Object.assign({}, aiStatusCache || {}, { pending });
+    }
+    const report = await aiStatusCache.pending;
+    return json(200, publicAiStatus(report));
   }
 
   /* ---------------- عام: المحادثة ---------------- */
@@ -198,6 +264,7 @@ function createHandler(options) {
           };
           ai.pushHistory(session, qPrompt, result.reply, out.remember || null);
         } catch (err) {
+          logAiFailure('quick-reply', err);
           result = baseQuick;
         }
       } else {
@@ -231,7 +298,7 @@ function createHandler(options) {
             kind: 'ai'
           };
         } catch (err) {
-          console.warn('[yaseen] AI failed, falling back to rules:', err && err.message);
+          logAiFailure('chat', err);
           /* المحرك القاعدي لا يعرف غير التسجيل — لو كان هيرفض بره التسجيل نقدّم اعتذارًا واضحًا مع تحويل للواتساب */
           result = base.kind === 'offtopic'
             ? { reply: 'حصلت مشكلة في الاتصال بالمساعد الذكي دلوقتي 🙏 حاول تاني كمان شوية. ولو محتاج متابعة خاصة بالتسجيل أو بطلبك كلّم موظف التسجيل على واتساب الأكاديمية من الزر ده.', expression: 'worried', action: null, handoff: { whatsapp: config.handoff.whatsapp }, kind: 'ai-down' }
@@ -313,7 +380,16 @@ function createHandler(options) {
       online: system.isWithinHours(state.config, new Date(now())),
       storage: { kind: store.kind, writable: store.writable },
       passwordHash: auth.hashKind(admin.passwordHash),
-      ai: { enabled: pInfo.enabled, provider: pInfo.provider, model: pInfo.model, keyCount: pInfo.keyCount },
+      ai: {
+        enabled: pInfo.enabled,
+        provider: pInfo.provider,
+        providerLabel: pInfo.providerLabel || null,
+        model: pInfo.model,
+        fallbackModels: pInfo.fallbackModels || [],
+        keyCount: pInfo.keyCount,
+        keySource: pInfo.keySource || null,
+        last: ai.lastOutcome()
+      },
       locked: { limits: system.LIMITS, fixed: system.FIXED, fields: Object.keys(system.FIELDS), expressions: system.EXPRESSIONS }
     };
   }
@@ -331,6 +407,7 @@ function createHandler(options) {
 
     if (action === 'config' && req.method === 'GET') return json(200, adminView(state, who));
     if (action === 'logs' && req.method === 'GET') return json(200, { ok: true, logs: state.logs });
+    if (action === 'aistatus') return json(200, { ok: true, status: await ai.diagnose(env, { fetchImpl }) });
     if (req.method !== 'POST') return json(405, { ok: false, error: 'method' });
     const body = req.body && typeof req.body === 'object' ? req.body : {};
 
@@ -357,7 +434,11 @@ function createHandler(options) {
               kind: 'ai (' + (out.provider || 'groq') + ':' + (out.model || '') + ')'
             };
           } catch (err) {
-            result = Object.assign({}, base, { kind: 'ai-error: ' + ((err && err.message) || 'unknown') });
+            const e = err || {};
+            result = Object.assign({}, base, {
+              kind: 'ai-error: ' + (e.kind || 'error') + (e.provider ? ' [' + e.provider + '/' + (e.model || '?') + (e.status ? ' http ' + e.status : '') + ']' : '') +
+                (e.detail ? ' — ' + String(e.detail).slice(0, 200) : (e.message && !e.kind ? ' — ' + e.message : ''))
+            });
           }
         } else {
           result = base;
@@ -394,11 +475,13 @@ function createHandler(options) {
         const p = String(req.path || '').replace(/\/+$/, '');
         if (p === '/api/yaseen-config') route = 'config';
         else if (p === '/api/yaseen-chat') route = 'chat';
+        else if (p === '/api/yaseen-ai-status') route = 'ai-status';
         else if (p.indexOf('/api/yaseen-admin/') === 0) route = 'admin-' + p.slice('/api/yaseen-admin/'.length);
       }
       if (req.method === 'POST' && req.bodyError) return json(req.bodyError === 'too-large' ? 413 : 400, { ok: false, error: req.bodyError });
       if (route === 'config') return req.method === 'GET' ? await getPublicConfig() : json(405, { ok: false, error: 'method' });
       if (route === 'chat') return req.method === 'POST' ? await chat(req) : json(405, { ok: false, error: 'method' });
+      if (route === 'ai-status') return req.method === 'GET' ? await getAiStatus(req) : json(405, { ok: false, error: 'method' });
       if (/^admin-[a-z]+$/.test(route)) return await admin(req, route.slice(6));
       return json(404, { ok: false, error: 'not-found' });
     } catch (err) {
