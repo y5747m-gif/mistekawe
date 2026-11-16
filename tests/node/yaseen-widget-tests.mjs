@@ -181,5 +181,52 @@ async function settle(env) {
   eq(sentPayloads[1].ctxToken, 'tok.sig', 'الواجهة تعيد إرسال ctxToken لحفظ ذاكرة المحادثة');
 }
 
+/* ---------- 8) التعافي التلقائي في المتصفح إذا رُفض ctxToken بـ 413 ---------- */
+{
+  const server = Object.assign({}, system.publicConfig(system.defaultConfig(), new Date()), { ai: true });
+  const chatBodies = [];
+  const env = loadWidget({
+    fetch: (url, opts) => {
+      if (String(url).indexOf('yaseen-config') >= 0) return Promise.resolve({ status: 200, body: server });
+      const b = opts && opts.body ? JSON.parse(opts.body) : {};
+      chatBodies.push(b);
+      if (b.ctxToken === 'stale.ctx') {
+        return Promise.resolve({ status: 413, body: { ok: false, error: 'too-large' } });
+      }
+      return Promise.resolve({
+        status: 200,
+        body: {
+          ok: true,
+          sid: 'fedcba9876543210fedcba9876543210',
+          ctxToken: chatBodies.length === 1 ? 'stale.ctx' : 'fresh.ctx',
+          remaining: 38,
+          reply: chatBodies.length === 1 ? 'رد الجولة الأولى' : 'تمت إعادة المحاولة تلقائيًا بلا ctxToken التالف!',
+          expression: 'happy'
+        }
+      });
+    },
+    meta: META
+  });
+  await settle(env);
+  const root = widget(env);
+  root.querySelector('.ysn-char').dispatch('click');
+  await settle(env);
+
+  const input = root.querySelector('.ysn-form input');
+  input.value = 'أول رسالة';
+  root.querySelector('.ysn-form').dispatch('submit');
+  await settle(env);
+
+  input.value = 'تاني رسالة بعد امتلاء الرمز';
+  root.querySelector('.ysn-form').dispatch('submit');
+  await settle(env);
+
+  eq(chatBodies.length, 3, 'الواجهة أعادت إرسال الطلب تلقائيًا فور تلقي 413');
+  eq(chatBodies[1].ctxToken, 'stale.ctx', 'المحاولة المرفوضة كانت تحمل الرمز القديم');
+  eq(chatBodies[2].ctxToken, undefined, 'إعادة المحاولة حذفت ctxToken التالف ووصلت للرد السليم');
+  const botMsgs = root.querySelectorAll('.ysn-msg.is-bot').map(m => m.textContent);
+  ok(botMsgs.some(t => /تمت إعادة المحاولة تلقائيًا/.test(t)), 'المستخدم يرى الرد الذكي الفعلي بدل رسالة ضعف الاتصال');
+}
+
 console.log('\nYaseen widget tests: ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

@@ -341,6 +341,101 @@ ok(!/^\s*GRO[QK]_MODEL\s*=\s*\S/m.test(envExample), '.env.example لا يفرض 
 ok(fs.readFileSync(path.join(ROOT, 'admin-yaseen/admin.js'), 'utf8').indexOf("'llama-3.3-70b-versatile'") < 0, 'لوحة المدير لا تعرض موديلًا متقاعدًا كافتراضي');
 ok(fs.readFileSync(path.join(ROOT, 'server/serve.py'), 'utf8').indexOf('/api/yaseen-ai-status') >= 0, 'الخادم المحلي يمرّر مسار الحالة');
 
+/* ---------- 15) التوليد المقيّد بالمخطط (json_schema strict)، وتقليص 413 للجولة الأولى، والتعافي من 429 العابر ---------- */
+{
+  providers._resetForTests();
+  const P = providers.PROVIDERS;
+  const sampleMsgs = [{ role: 'system', content: 'sys' }, { role: 'user', content: 'أهلًا' }];
+
+  const strictOss = providers.buildPayload(P.groq, 'openai/gpt-oss-120b', sampleMsgs, { json: true, schema: ai.REPLY_SCHEMA });
+  ok(
+    strictOss.response_format &&
+    strictOss.response_format.type === 'json_schema' &&
+    strictOss.response_format.json_schema &&
+    strictOss.response_format.json_schema.strict === true &&
+    strictOss.max_completion_tokens === 1500,
+    'Groq gpt-oss-120b يستخدم json_schema الصارم (strict: true) لمنع json_validate_failed وبحجز 1500 رمز'
+  );
+  const strictQwen = providers.buildPayload(P.groq, 'qwen/qwen3.8-27b', sampleMsgs, { json: true, schema: ai.REPLY_SCHEMA });
+  eq(strictQwen.response_format && strictQwen.response_format.type, 'json_schema', 'Groq qwen3.8-27b يستخدم json_schema الصارم');
+  const fallbackAllam = providers.buildPayload(P.groq, 'allam-2-7b', sampleMsgs, { json: true, schema: ai.REPLY_SCHEMA });
+  eq(fallbackAllam.response_format && fallbackAllam.response_format.type, 'json_object', 'الموديلات غير الداعمة لـ strict تبقى على json_object تلقائيًا');
+
+  /* تقليص 413 حتى في أول رسالة بدون سجل سابق (msgs.length === 2) عبر خفض حجز الرموز إلى 650 */
+  providers._resetForTests();
+  const shrink2Calls = [];
+  const shrink2Fetch = async (url, init) => {
+    const b = JSON.parse(init.body);
+    shrink2Calls.push(b);
+    if (b.max_completion_tokens > 700) {
+      return { ok: false, status: 413, text: async () => JSON.stringify({ error: { message: 'Request too large for model on tokens per minute (TPM): Limit 8000, Requested 8350' } }) };
+    }
+    return {
+      ok: true, status: 200,
+      text: async () => JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+        reply: 'تم الرد بعد تقليص حجز الرموز بنجاح!',
+        expression: 'happy', pointTo: null, handoff: false, remember: null, followUps: []
+      }) } }] })
+    };
+  };
+  const outShrink2 = await ai.askAI({ GROQ_API_KEY: GSK_KEY }, { question: 'سؤال أول في الجلسة', fetchImpl: shrink2Fetch });
+  ok(/تقليص حجز الرموز/.test(outShrink2.reply) && shrink2Calls.length === 2 && shrink2Calls[1].max_completion_tokens === 650, '413 في الرسالة الأولى يعيد المحاولة بحجز 650 رمزًا وينجح');
+
+  /* التعافي من ذروة 429 قصيرة (try again in 0.4s) دون إسقاط المحادثة */
+  providers._resetForTests();
+  let rateCount = 0;
+  const burstFetch = async () => {
+    rateCount += 1;
+    if (rateCount <= P.groq.defaults.length) {
+      return { ok: false, status: 429, text: async () => JSON.stringify({ error: { message: 'Rate limit reached for TPM. Please try again in 0.35s.' } }) };
+    }
+    return {
+      ok: true, status: 200,
+      text: async () => JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+        reply: 'نجحت إعادة المحاولة السريعة بعد هدوء الذروة!',
+        expression: 'happy', pointTo: null, handoff: false, remember: null, followUps: []
+      }) } }] })
+    };
+  };
+  const outBurst = await ai.askAI({ GROQ_API_KEY: GSK_KEY }, { question: 'اشرحلي الفاعل', fetchImpl: burstFetch, budgetMs: 12000 });
+  ok(/نجحت إعادة المحاولة/.test(outBurst.reply), 'التعافي التلقائي من 429 القصير عبر انتظار لحظي ومحاولة خفيفة');
+
+  /* استبعاد الموديلات ذات نافذة سياق صغيرة (<4096 مثل 512) عند الاكتشاف */
+  providers._resetForTests();
+  const discTiny = await providers.discoverModels(
+    providers.resolveProvider(GSK_KEY, { GROQ_API_KEY: GSK_KEY }, 'GROQ_API_KEY'),
+    GSK_KEY,
+    async () => ({
+      ok: true, status: 200,
+      text: async () => JSON.stringify({ data: [
+        { id: 'tiny-chat-512', active: true, context_window: 512 },
+        { id: 'openai/gpt-oss-120b', active: true, context_window: 131072 }
+      ] })
+    }),
+    4000,
+    true
+  );
+  ok(discTiny.ok && discTiny.models.length === 1 && discTiny.models[0].id === 'openai/gpt-oss-120b', 'discoverModels يستبعد الموديلات ذات context_window أقل من 4096');
+
+  /* مسار الحالة العام يعرض lastChat دون أي تسريب لـ detail */
+  const dirStatus = fs.mkdtempSync(path.join(os.tmpdir(), 'yaseen-prov4-'));
+  const appStatus = createHandler({
+    dir: dirStatus,
+    env: { GROQ_API_KEY: GSK_KEY },
+    fetchImpl: async (url) => {
+      if (/\/models$/i.test(url)) return { ok: true, status: 200, text: async () => JSON.stringify({ data: [{ id: 'openai/gpt-oss-120b', active: true, context_window: 131072 }] }) };
+      return { ok: true, status: 200, text: async () => JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+        reply: 'أهلًا، أنا رحيق مساعدك الذكي!',
+        expression: 'happy', pointTo: null, handoff: false, remember: null, followUps: ['التسجيل', 'المذاكرة']
+      }) } }] }) };
+    }
+  });
+  const stRes = await appStatus.handle({ method: 'GET', path: '/api/yaseen-ai-status', headers: {}, ip: '10.9.0.1' });
+  fs.rmSync(dirStatus, { recursive: true, force: true });
+  ok(stRes.status === 200 && stRes.body.working === true && stRes.body.lastChat && stRes.body.lastChat.ok === true, 'فحص الحالة يختبر مسار المحادثة الحقيقي ويعرض lastChat');
+  ok(!/detail/.test(JSON.stringify(stRes.body)), 'lastChat في مسار الحالة العام خالٍ من detail');
+}
+
 [dir, dir3].forEach(p => fs.rmSync(p, { recursive: true, force: true }));
 console.log('\n  مزودو الذكاء الاصطناعي: ' + passed + ' ناجح، ' + failed + ' فاشل');
 process.exit(failed ? 1 : 0);

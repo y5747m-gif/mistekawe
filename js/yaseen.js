@@ -102,7 +102,13 @@
 
   try { muted = window.localStorage.getItem('yaseen_muted') === '1'; } catch (e) {}
   try { sid = window.sessionStorage.getItem('yaseen_sid') || ''; } catch (e) {}
-  try { ctxToken = window.sessionStorage.getItem('yaseen_ctx') || ''; } catch (e) {}
+  try {
+    ctxToken = window.sessionStorage.getItem('yaseen_ctx') || '';
+    if (ctxToken.length > 6000) {
+      ctxToken = '';
+      window.sessionStorage.removeItem('yaseen_ctx');
+    }
+  } catch (e) {}
 
   /* ---------------- أدوات ---------------- */
   function el(tag, cls, text) {
@@ -133,10 +139,13 @@
     var ctrl = typeof window.AbortController === 'function' ? new window.AbortController() : null;
     var opts = Object.assign({ credentials: 'omit', cache: 'no-store' }, options || {});
     if (ctrl) opts.signal = ctrl.signal;
-    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
+    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 25000);
     return window.fetch(url, opts).then(function (res) {
       clearTimeout(t);
-      return res.json().then(function (body) { return { status: res.status, body: body }; });
+      return res.json().then(
+        function (body) { return { status: res.status, body: body }; },
+        function () { return { status: res.status, body: {} }; }
+      );
     }, function (err) { clearTimeout(t); throw err; });
   }
 
@@ -738,13 +747,30 @@
     var typing = addTyping();
     setPose(anim('expressions') ? 'thinking' : 'idle');
     var body = { sid: sid, context: { step: currentStep(), invalid: stepErrors() } };
-    if (ctxToken) body.ctxToken = ctxToken;
+    if (ctxToken && ctxToken.length <= 6000) {
+      body.ctxToken = ctxToken;
+    } else if (ctxToken) {
+      ctxToken = '';
+      try { window.sessionStorage.removeItem('yaseen_ctx'); } catch (e) {}
+    }
     if (payload.quickReply) body.quickReply = payload.quickReply;
     if (payload.message) body.message = String(payload.message).slice(0, cfg.limits.maxChars);
     if (payload.captcha != null) body.captcha = String(payload.captcha).slice(0, 6);
     var started = Date.now();
 
-    request(CHAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (res) {
+    function postChat(reqBody) {
+      return request(CHAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody) });
+    }
+
+    postChat(body).then(function (res) {
+      if ((res.status === 413 || res.status === 400) && body.ctxToken) {
+        ctxToken = '';
+        try { window.sessionStorage.removeItem('yaseen_ctx'); } catch (e) {}
+        delete body.ctxToken;
+        return postChat(body);
+      }
+      return res;
+    }).then(function (res) {
       return new Promise(function (resolve) { later(function () { resolve(res); }, Math.max(0, 400 - (Date.now() - started))); });
     }).then(function (res) {
       if (!root) return;

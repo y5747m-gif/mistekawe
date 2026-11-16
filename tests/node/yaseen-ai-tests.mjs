@@ -242,6 +242,132 @@ const appRules = createHandler({ dir: dir3, env: {}, now: () => clock });
 res = await appRules.handle({ method: 'POST', path: '/api/yaseen-chat', headers: {}, ip: '10.0.0.10', body: { message: 'مين رئيس الوزراء؟' } });
 eq(res.body.reply, system.FIXED.offTopic, 'بلا مفتاح => الرد القاعدي الاحتياطي');
 
+/* ---------- 7) انحدارات الإنتاج: ctxToken المضغوط، عدم تسميم السجل، كاش البادئة، وتنسيق Harmony ---------- */
+{
+  const cryptoMod = await import('crypto');
+  const httpMod = await import('http');
+  const signKey = ai.contextSigningKey(mkEnv());
+
+  /* أ) 12 جولة عربية طويلة + 8 حقائق ذاكرة لا تتجاوز 4000 حرف ولا تكسر حد maxBodyBytes (كان 15,339 حرفًا => 413) */
+  const heavySession = { history: [], memory: [] };
+  for (let i = 1; i <= 12; i++) {
+    ai.pushHistory(
+      heavySession,
+      'سؤال الطالب رقم ' + i + ': اشرحلي بالتفصيل درس القصور الذاتي وقوانين نيوتن للحركة مع أمثلة من الحياة اليومية ومسألة محلولة.',
+      'شرح وافٍ للدرس رقم ' + i + ': القصور الذاتي هو ميل الجسم للحفاظ على حالته الحركية، وقانون نيوتن الثاني ينص على أن القوة تساوي الكتلة مضروبة في العجلة مع خطوات الحل الكاملة.',
+      'حقيقة محفوظة رقم ' + i + ' عن الطالب وصفه الدراسي ومواده المفضلة'
+    );
+  }
+  const packedHeavy = ai.packClientState(heavySession, signKey);
+  ok(packedHeavy.startsWith('z1_'), 'رمز السياق الموقّع مضغوط بصيغة z1_');
+  ok(packedHeavy.length <= 4000, 'حجم ctxToken بعد محادثة عربية طويلة يبقى <= 4000 حرف (' + packedHeavy.length + ')');
+  const fullBodyBytes = Buffer.byteLength(JSON.stringify({
+    sid: '0123456789abcdef0123456789abcdef',
+    ctxToken: packedHeavy,
+    context: { step: 2, invalid: ['programType', 'studentName'] },
+    message: 'كمّل شرح المثال التاني لو سمحت'
+  }), 'utf8');
+  ok(fullBodyBytes < system.LIMITS.maxBodyBytes, 'جسم طلب المحادثة الكامل أصغر بكثير من حد 12KB (' + fullBodyBytes + ' بايت)');
+  const unpackedHeavy = ai.unpackClientState(packedHeavy, signKey);
+  ok(unpackedHeavy && unpackedHeavy.history.length >= 4 && unpackedHeavy.memory.length === 8, 'فك ضغط ctxToken يستعيد السجل والذاكرة بسلام');
+
+  /* ب) التوافق الرجعي مع الرمز القديم غير المضغوط (<json>.<sig>) */
+  const legacyBody = Buffer.from(JSON.stringify({
+    v: 1,
+    exp: Date.now() + 60000,
+    h: [{ u: 'سؤال قديم', b: 'رد قديم سليم' }],
+    m: ['طالب في الصف السادس']
+  }), 'utf8').toString('base64url');
+  const legacySig = cryptoMod.createHmac('sha256', signKey).update(legacyBody).digest('base64url');
+  const unpackedLegacy = ai.unpackClientState(legacyBody + '.' + legacySig, signKey);
+  ok(unpackedLegacy && unpackedLegacy.history.length === 1 && unpackedLegacy.memory[0] === 'طالب في الصف السادس', 'التوافق مع ctxToken القديم غير المضغوط');
+
+  /* ج) رسائل الاعتذار الاحتياطية عند تعطل الشبكة لا تُخزّن في السجل (منع تسميم المحادثة التالية) */
+  let failFirst = true;
+  const flakyFetch = async () => {
+    if (failFirst) throw new Error('temporary outage');
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({
+          reply: 'أهلًا بيك! الجاذبية اكتشفها إسحاق نيوتن.',
+          expression: 'happy', pointTo: null, handoff: false, remember: null, followUps: ['قوانين نيوتن', 'أمثلة']
+        }) } }]
+      })
+    };
+  };
+  const dirFlaky = fs.mkdtempSync(path.join(os.tmpdir(), 'yaseen-flaky-'));
+  let flakyClock = Date.parse('2026-11-16T11:00:00Z');
+  let capturedSecondMsgs = null;
+  const spyFlakyFetch = async (url, init) => {
+    if (!failFirst) capturedSecondMsgs = JSON.parse(init.body).messages;
+    return flakyFetch(url, init);
+  };
+  const appFlaky = createHandler({ dir: dirFlaky, env: mkEnv(), now: () => flakyClock, fetchImpl: spyFlakyFetch });
+  const rFail = await appFlaky.handle({ method: 'POST', path: '/api/yaseen-chat', headers: {}, ip: '10.0.0.21', body: { message: 'مين اكتشف الجاذبية؟' } });
+  ok(/حصلت مشكلة في الاتصال بالمساعد الذكي/.test(rFail.body.reply), 'الجولة الفاشلة تُرجع رسالة الاعتذار المتوقعة');
+  failFirst = false;
+  flakyClock += 5000;
+  const rRecovered = await appFlaky.handle({
+    method: 'POST', path: '/api/yaseen-chat', headers: {}, ip: '10.0.0.21',
+    body: { sid: rFail.body.sid, ctxToken: rFail.body.ctxToken, message: 'مين اكتشف الجاذبية؟' }
+  });
+  ok(/نيوتن/.test(rRecovered.body.reply), 'الجولة التالية تنجح فور عودة الشبكة');
+  ok(Array.isArray(capturedSecondMsgs) && capturedSecondMsgs.every(m => !/حصلت مشكلة في الاتصال/.test(m.content)), 'رسالة الفشل السابقة لم تتسرب إلى سجل النموذج');
+
+  /* د) nodeHandler يتعافى تلقائيًا إذا أرسل متصفح قديم ctxToken متضخمًا (>12KB) بدل إرجاع 413 */
+  const srv = httpMod.createServer((req, sres) => appFlaky.nodeHandler(req, sres));
+  await new Promise(resolve => srv.listen(0, '127.0.0.1', resolve));
+  const port = srv.address().port;
+  flakyClock += 5000;
+  const bloatedPayload = JSON.stringify({
+    sid: rRecovered.body.sid,
+    ctxToken: 'x'.repeat(15000),
+    context: { step: 1, invalid: [] },
+    message: 'سؤال جديد بعد رمز قديم كبير'
+  });
+  const httpRes = await new Promise((resolve, reject) => {
+    const req = httpMod.request({
+      hostname: '127.0.0.1', port, path: '/api/yaseen?__r=chat', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bloatedPayload) }
+    }, sres => {
+      let data = '';
+      sres.on('data', c => { data += c; });
+      sres.on('end', () => resolve({ status: sres.statusCode, body: JSON.parse(data) }));
+    });
+    req.on('error', reject);
+    req.end(bloatedPayload);
+  });
+  srv.close();
+  fs.rmSync(dirFlaky, { recursive: true, force: true });
+  eq(httpRes.status, 200, 'nodeHandler يتجاهل ctxToken القديم المتضخم ويعالج الرسالة (200 بدل 413)');
+  ok(/نيوتن/.test(httpRes.body.reply), 'الرد الفعلي يصل للمستخدم رغم ctxToken القديم المتضخم');
+
+  /* هـ) بادئة النظام ثابتة 100% لتفعيل كاش البرومبت وحجمها متوافق مع حد 8K TPM */
+  const sysA = ai.buildMessages({
+    question: 'ما هي عاصمة مصر؟',
+    context: { step: 1, invalid: [] },
+    config: system.defaultConfig(),
+    history: [],
+    memory: []
+  })[0].content;
+  const sysB = ai.buildMessages({
+    question: 'اشرحلي الكسور العشرية',
+    context: { step: 3, invalid: ['birthCert', 'photo'] },
+    config: system.defaultConfig(),
+    history: [{ u: 'أهلًا', b: 'أهلًا بيك!' }],
+    memory: ['طالب في الصف الخامس']
+  })[0].content;
+  ok(sysA.slice(0, 4800) === sysB.slice(0, 4800), 'أول 4800+ حرف (99% من رسالة النظام) ثابتة تمامًا بين الطلبات لتفعيل Prompt Caching');
+  ok(sysA.length < 5500, 'رسالة النظام رشيقة (<5500 حرف بدل 10,160) لتناسب حد 8,000 TPM في Groq');
+
+  /* و) تنظيف فواصل Harmony في موديلات gpt-oss عند السقوط للوضع النصي */
+  const harmonyRaw = '<|channel|>analysis<|message|>Let us think step by step.<|end|><|start|>assistant<|channel|>final<|message|>{"reply":"أهلًا يا بطل!","expression":"happy","pointTo":null,"handoff":false,"remember":null,"followUps":["سؤال ١"]}';
+  const harmonyParsed = ai.parseModelOutput(harmonyRaw);
+  eq(harmonyParsed.reply, 'أهلًا يا بطل!', 'parseModelOutput يستخلص الرد النهائي من صيغة Harmony في gpt-oss');
+}
+
 fs.rmSync(dir, { recursive: true, force: true });
 fs.rmSync(dir2, { recursive: true, force: true });
 fs.rmSync(dir3, { recursive: true, force: true });
