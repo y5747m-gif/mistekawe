@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/yaseen.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
       "source": "/api/yaseen-config",
@@ -7,6 +12,10 @@
     {
       "source": "/api/yaseen-chat",
       "destination": "/api/yaseen?__r=chat"
+    },
+    {
+      "source": "/api/yaseen-ai-status",
+      "destination": "/api/yaseen?__r=ai-status"
     },
     {
       "source": "/api/yaseen-admin/:action",

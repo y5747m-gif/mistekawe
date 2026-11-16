@@ -15,34 +15,27 @@
        تشخيصي لخانات الاستمارة، دليل البرامج والمواد، التاريخ والتوقيت)
        ويستطيع استدعاءها أو الاعتماد على نتائجها لتقديم إجابات دقيقة.
 
-   دعم تلقائي لمفاتيح ومزودي الذكاء الاصطناعي (Groq أولًا + بدائل متعددة):
-     - يقرأ المفتاح تلقائيًا من أي اسم شائع في البيئة (لتفادي أخطاء التسمية
-       في Vercel مثل GROQ_API_KEY أو GROK_API_KEY أو API_KEY أو AI_API_KEY
-       أو XAI_API_KEY أو OPENROUTER_API_KEY أو OPENAI_API_KEY أو GEMINI_API_KEY)
-       كما يدعم وضع عدة مفاتيح مفصولة بفاصلة للتبديل التلقائي عند الضغط.
-     - يكتشف نوع المزود من بادئة المفتاح تلقائيًا:
-         gsk_...     => Groq  (https://api.groq.com/openai/v1/chat/completions)
-         xai-...     => xAI Grok (https://api.x.ai/v1/chat/completions)
-         sk-or-...   => OpenRouter (https://openrouter.ai/api/v1/chat/completions)
-         AIza...     => Google Gemini OpenAI-compatible endpoint
-         sk-...      => OpenAI (أو GROQ_BASE_URL / AI_BASE_URL المخصص)
-     - يجرّب سلسلة موديلات احتياطية تلقائيًا لو الموديل الأساسي مضغوط (429/503)
-       أو غير متاح، ولو رفض موديل صيغة json_object يعيد المحاولة بدونها
-       ويستخرج الرد بذكاء حتى لو رد النموذج بنص عادي بدل JSON!
-     - يدعم ذاكرة محادثة ممتدة (محفوظة على الخادم وفي جلسة المتصفح الموقّعة
-       بـ HMAC حتى لا تضيع الذاكرة بين استدعاءات Vercel Serverless).
+   الاتصال بالمزود (المفتاح، الموديلات، إعادة المحاولة، الاكتشاف التلقائي
+   للموديلات المتاحة، تصنيف الأخطاء، التشخيص) في ./providers.js:
+     - xAI Grok (مفتاح xai-...)  => grok-4.3 ثم grok-4.20-0309-non-reasoning ثم grok-4.7
+     - Groq     (مفتاح gsk_...)  => openai/gpt-oss-120b ثم openai/gpt-oss-20b ثم qwen/qwen3.8-27b
+     - OpenRouter (sk-or-) / Gemini (AIza) / OpenAI (OPENAI_API_KEY) / AI_BASE_URL مخصص
+   الموديلات القديمة (grok-2 / grok-beta / llama-3.3-70b-versatile ...) تقاعدت
+   وكانت سبب توقف الذكاء الاصطناعي؛ لو تقاعد موديل مستقبلًا يُكتشف البديل
+   المتاح للمفتاح تلقائيًا من GET /models دون تعديل الكود.
+
+   ذاكرة محادثة ممتدة (محفوظة على الخادم وفي جلسة المتصفح الموقّعة
+   بـ HMAC حتى لا تضيع الذاكرة بين استدعاءات Vercel Serverless).
    ============================================================ */
 const crypto = require('crypto');
 const system = require('./yaseen-system');
+const providers = require('./providers');
 const { BRIEF, FIELD_DETAILS } = require('./site-knowledge');
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_FALLBACK_MODELS = [
-  'llama-3.3-70b-versatile',
-  'meta-llama/llama-4-scout-17b-16e-instruct',
-  'llama-3.1-8b-instant'
-];
+const GROQ_URL = providers.PROVIDERS.groq.url;
+const DEFAULT_MODEL = providers.PROVIDERS.groq.defaults[0];
+const GROQ_FALLBACK_MODELS = providers.PROVIDERS.groq.defaults.slice();
+const XAI_MODELS = providers.PROVIDERS['xai-grok'].defaults.slice();
 
 const MAX_REPLY_CHARS = 1800;
 const HISTORY_TURNS = 12;
@@ -51,26 +44,8 @@ const HISTORY_BOT_CHARS = 900;
 const MAX_MEMORY_FACTS = 8;
 const MAX_FACT_CHARS = 120;
 
-/* أسماء متغيرات البيئة المدعومة (بالترتيب) لتفادي أي اختلاف تسمية في Vercel */
-const KEY_ENV_NAMES = [
-  'GROQ_API_KEY',
-  'GROQ_API_KEYS',
-  'GROQ_KEY',
-  'GROK_API_KEY',
-  'GROK_KEY',
-  'XAI_API_KEY',
-  'AI_API_KEY',
-  'AI_KEY',
-  'OPENROUTER_API_KEY',
-  'OPENAI_API_KEY',
-  'GEMINI_API_KEY',
-  'NEXT_PUBLIC_GROQ_API_KEY',
-  'VITE_GROQ_API_KEY',
-  'API_KEY'
-];
-
-const MODEL_ENV_NAMES = ['GROQ_MODEL', 'GROK_MODEL', 'AI_MODEL', 'OPENAI_MODEL'];
-const URL_ENV_NAMES = ['GROQ_BASE_URL', 'AI_BASE_URL', 'OPENAI_BASE_URL'];
+/* أسماء متغيرات البيئة المدعومة لتفادي أي اختلاف تسمية في Vercel (التفاصيل في providers.js) */
+const KEY_ENV_NAMES = providers.KEY_ENV_NAMES;
 
 /* إخفاء البيانات الشخصية الحساسة (الإيميلات وأرقام الموبايل/الهوية الطويلة 9+ أرقام)
    مع ترك الأرقام الدراسية والسنين والمسائل الحسابية القصيرة كما هي للطلاب! */
@@ -89,108 +64,15 @@ function redactPersonal(text) {
 
 function cleanEnv(env) { return env || {}; }
 
-function stripQuotes(val) {
-  let s = String(val == null ? '' : val).trim();
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    s = s.slice(1, -1).trim();
-  }
-  if (/^bearer\s+/i.test(s)) s = s.replace(/^bearer\s+/i, '').trim();
-  return s;
-}
-
-/* استخراج كل المفاتيح الصالحة من البيئة (يدعم تعدد المفاتيح بفاصلة أو سطر جديد) */
-function resolveKeys(env) {
-  const e = cleanEnv(env);
-  const out = [];
-  for (let i = 0; i < KEY_ENV_NAMES.length; i++) {
-    const raw = e[KEY_ENV_NAMES[i]];
-    if (!raw) continue;
-    String(raw).split(/[,;\n\r]+/).forEach(part => {
-      const k = stripQuotes(part);
-      if (k.length >= 20 && out.indexOf(k) < 0) out.push(k);
-    });
-  }
-  return out;
-}
-
-/* تحديد المزود ونقطة النهاية والموديلات المناسبة تلقائيًا حسب المفتاح والبيئة */
-function resolveProvider(key, env) {
-  const e = cleanEnv(env);
-  let customUrl = '';
-  for (let i = 0; i < URL_ENV_NAMES.length; i++) {
-    if (e[URL_ENV_NAMES[i]]) { customUrl = stripQuotes(e[URL_ENV_NAMES[i]]); break; }
-  }
-  let explicitModel = '';
-  for (let i = 0; i < MODEL_ENV_NAMES.length; i++) {
-    if (e[MODEL_ENV_NAMES[i]]) { explicitModel = stripQuotes(e[MODEL_ENV_NAMES[i]]).slice(0, 80); break; }
-  }
-
-  function normalizeEndpoint(u) {
-    if (!u) return '';
-    const trimmed = u.replace(/\/+$/, '');
-    return /\/chat\/completions$/i.test(trimmed) ? trimmed : trimmed + '/chat/completions';
-  }
-
-  const k = String(key || '');
-  if (customUrl) {
-    const m = explicitModel || DEFAULT_MODEL;
-    return { name: 'custom', url: normalizeEndpoint(customUrl), models: [m] };
-  }
-  if (k.indexOf('xai-') === 0) {
-    const m = explicitModel || 'grok-2-latest';
-    return { name: 'xai-grok', url: 'https://api.x.ai/v1/chat/completions', models: uniqueList([m, 'grok-2-latest', 'grok-beta']) };
-  }
-  if (k.indexOf('sk-or-') === 0) {
-    const m = explicitModel || 'meta-llama/llama-3.3-70b-instruct';
-    return { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', models: uniqueList([m, 'openai/gpt-4o-mini']) };
-  }
-  if (k.indexOf('AIza') === 0) {
-    const m = explicitModel || 'gemini-2.0-flash';
-    return { name: 'gemini', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', models: uniqueList([m, 'gemini-1.5-flash']) };
-  }
-  if (k.indexOf('sk-') === 0 && k.indexOf('gsk_') !== 0 && e.OPENAI_API_KEY && stripQuotes(e.OPENAI_API_KEY) === k) {
-    const m = explicitModel || 'gpt-4o-mini';
-    return { name: 'openai', url: 'https://api.openai.com/v1/chat/completions', models: uniqueList([m, 'gpt-4o-mini']) };
-  }
-  // الافتراضي الأساسي: Groq
-  const primary = explicitModel || DEFAULT_MODEL;
-  return {
-    name: 'groq',
-    url: GROQ_URL,
-    models: uniqueList([primary].concat(GROQ_FALLBACK_MODELS))
-  };
-}
-
-function uniqueList(arr) {
-  const out = [];
-  arr.forEach(x => { if (x && out.indexOf(x) < 0) out.push(x); });
-  return out;
-}
-
-/* هل الذكاء الاصطناعي مفعّل؟ يتطلب مفتاح صالح الطول ومسموح صراحةً */
-function enabled(env) {
-  const e = cleanEnv(env);
-  if (/^(0|false|off)$/i.test(stripQuotes(e.GROQ_AI || e.AI_ENABLED || ''))) return false;
-  return resolveKeys(e).length > 0;
-}
+/* المفاتيح والمزود وحالة التفعيل — من providers.js (مصدر واحد للحقيقة) */
+const resolveKeys = providers.resolveKeys;
+const resolveProvider = providers.resolveProvider;
+const enabled = providers.enabled;
+const providerInfo = providers.providerInfo;
 
 function modelName(env) {
-  const keys = resolveKeys(env);
-  if (!keys.length) {
-    const e = cleanEnv(env);
-    for (let i = 0; i < MODEL_ENV_NAMES.length; i++) {
-      if (e[MODEL_ENV_NAMES[i]]) return stripQuotes(e[MODEL_ENV_NAMES[i]]).slice(0, 80);
-    }
-    return DEFAULT_MODEL;
-  }
-  return resolveProvider(keys[0], env).models[0] || DEFAULT_MODEL;
-}
-
-function providerInfo(env) {
-  const keys = resolveKeys(env);
-  if (!enabled(env) || !keys.length) return { enabled: false, provider: null, model: null, keyCount: 0 };
-  const p = resolveProvider(keys[0], env);
-  return { enabled: true, provider: p.name, model: p.models[0], fallbackModels: p.models.slice(1), keyCount: keys.length };
+  const info = providerInfo(env);
+  return (info && info.model) || DEFAULT_MODEL;
 }
 
 /* ---------------- الأدوات الذكية المدمجة على الخادم ---------------- */
@@ -424,8 +306,16 @@ function buildMessages({ question, context, config, history, memory }) {
 
 /* محلّل ذكي ومرن لمخرجات النموذج: يستخرج JSON حتى لو كان محاطًا بنص أو markdown،
    ولو رد النموذج بنص صريح غير مهيكل يحوّله إلى رد صالح بدل إسقاط الذكاء الاصطناعي! */
+function stripReasoning(text) {
+  return String(text || '')
+    .replace(/<(think|thinking|reasoning)>[\s\S]*?<\/\1>/gi, '')
+    .replace(/^\s*<(think|thinking|reasoning)>[\s\S]*$/i, '')     // تفكير مقطوع بلا إغلاق => لا رد
+    .replace(/^[\s\S]*?<\/(think|thinking|reasoning)>/i, '')       // إغلاق بلا فتح (الفتح ضاع في البداية)
+    .trim();
+}
+
 function parseModelOutput(rawContent) {
-  const trimmed = String(rawContent || '').trim();
+  const trimmed = stripReasoning(rawContent);
   if (!trimmed) throw new Error('groq-empty');
 
   const stripped = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -487,97 +377,41 @@ function parseModelOutput(rawContent) {
   };
 }
 
-/* نداء واحد لنقطة نهاية متوافقة مع OpenAI Chat Completions (Groq / Grok / OpenRouter / إلخ) */
-async function callCompletion({ fetchImpl, url, key, model, messages, timeoutMs, useJsonFormat }) {
-  const payload = {
-    model,
-    messages,
-    temperature: 0.7,
-    top_p: 0.92,
-    max_tokens: 1100
-  };
-  if (useJsonFormat) payload.response_format = { type: 'json_object' };
-
-  const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
-  const timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, timeoutMs);
-  let res;
-  try {
-    res = await fetchImpl(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key
-      },
-      body: JSON.stringify(payload),
-      signal: ctrl ? ctrl.signal : undefined
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-  return res;
-}
-
-/* استدعاء الذكاء الاصطناعي مع دعم تعدد المفاتيح والموديلات الاحتياطية التلقائية */
+/* استدعاء الذكاء الاصطناعي: providers.complete يجرّب المفاتيح × الموديلات الحالية،
+   ويعيد المحاولة بمعاملات أبسط عند الرفض، ويتخطى الموديلات المتقاعدة ويكتشف
+   المتاح للمفتاح تلقائيًا، ضمن ميزانية زمنية أقل من مهلة المتصفح (20 ث).
+   parseModelOutput يُستخدم كمدقق: لو رد موديل غير مفهوم يُجرَّب التالي. */
 async function askAI(env, opts) {
   const e = cleanEnv(env);
-  const fetchImpl = (opts && opts.fetchImpl) || fetch;
-  const question = redactPersonal(system.sanitize(String((opts && opts.question) || ''))).slice(0, system.LIMITS.maxChars);
+  const o = opts || {};
+  const question = redactPersonal(system.sanitize(String(o.question || ''))).slice(0, system.LIMITS.maxChars);
   if (!question) throw new Error('empty-question');
+  if (!resolveKeys(e).length) throw Object.assign(new Error('missing-api-key'), { kind: 'no-key' });
 
-  const keys = resolveKeys(e);
-  if (!keys.length) throw new Error('missing-api-key');
-
-  const timeoutMs = Math.min(20000, Math.max(2500, parseInt(e.GROQ_TIMEOUT_MS || e.AI_TIMEOUT_MS, 10) || 11000));
   const messages = buildMessages({
     question,
-    context: opts && opts.context,
-    config: opts && opts.config,
-    history: opts && opts.history,
-    memory: opts && opts.memory
+    context: o.context,
+    config: o.config,
+    history: o.history,
+    memory: o.memory
   });
 
-  let lastErr = null;
-  for (let ki = 0; ki < keys.length; ki++) {
-    const key = keys[ki];
-    const provider = resolveProvider(key, e);
-    const models = provider.models;
-
-    for (let mi = 0; mi < models.length; mi++) {
-      const model = models[mi];
-      try {
-        let res = await callCompletion({
-          fetchImpl, url: provider.url, key, model, messages, timeoutMs, useJsonFormat: true
-        });
-
-        // بعض الموديلات ترفض response_format أو يفشل توليد JSON معها (400 json_validate_failed) => إعادة فورية بدون json_object
-        if (res && res.status === 400) {
-          res = await callCompletion({
-            fetchImpl, url: provider.url, key, model, messages, timeoutMs, useJsonFormat: false
-          });
-        }
-
-        if (!res || !res.ok) {
-          const status = res && res.status;
-          lastErr = new Error('groq-http-' + status);
-          // لو المفتاح غير صالح (401/403) نجرب المفتاح التالي مباشرة؛ لو ضغط/موديل (404/429/5xx) نجرب الموديل الاحتياطي
-          if (status === 401 || status === 403) break;
-          continue;
-        }
-
-        const data = await res.json();
-        const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        const out = parseModelOutput(content);
-        out.provider = provider.name;
-        out.model = model;
-        return out;
-      } catch (err) {
-        lastErr = err;
-        // في حالة خطأ تحليل JSON أو مهلة، نجرّب الموديل الاحتياطي إن وجد
-      }
-    }
-  }
-  throw lastErr || new Error('ai-unavailable');
+  const res = await providers.complete(e, {
+    fetchImpl: o.fetchImpl,
+    messages,
+    json: true,
+    validate: parseModelOutput,
+    budgetMs: o.budgetMs
+  });
+  const out = res.parsed;
+  out.provider = res.provider;
+  out.model = res.model;
+  return out;
 }
+
+/* تشخيص آمن لحالة المفتاح والاتصال (لا يكشف المفتاح) — /api/yaseen-ai-status ولوحة المدير */
+function diagnose(env, opts) { return providers.diagnose(cleanEnv(env), opts); }
+function lastOutcome() { return providers.lastOutcome(); }
 
 /* تحديث سجل المحادثة والذاكرة الذكية للجلسة */
 function pushHistory(session, userText, botReply, rememberedFact) {
@@ -663,9 +497,16 @@ module.exports = {
   safeCalc,
   detectMathTool,
   parseModelOutput,
+  stripReasoning,
+  diagnose,
+  lastOutcome,
   contextSigningKey,
   packClientState,
   unpackClientState,
   DEFAULT_MODEL,
+  GROQ_URL,
+  GROQ_FALLBACK_MODELS,
+  XAI_MODELS,
+  KEY_ENV_NAMES,
   MAX_REPLY_CHARS
 };

@@ -7,6 +7,7 @@
     POST /api/registrations         رفع طلب تسجيل مع صور المستندات (JSON + base64)
     GET  /api/yaseen-config         المساعد الذكي رحيق (يُمرَّر إلى server/yaseen-server.js)
     POST /api/yaseen-chat           محادثة رحيق (منطق البوت على الخادم فقط)
+    GET  /api/yaseen-ai-status      هل مفتاح الذكاء الاصطناعي (Grok/Groq) مربوط وشغال؟
     GET  /api/registrations         قائمة الطلبات        (يتطلب X-Admin-Token)
     GET  /api/registrations/<order> تفاصيل طلب           (يتطلب X-Admin-Token)
     GET  /api/registrations/<order>/<docKey>  ملف المستند (يتطلب X-Admin-Token)
@@ -152,7 +153,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     # ------------------------------------------------------------ رحيق
     @staticmethod
     def _is_yaseen_path(path):
-        return path in ("/api/yaseen-config", "/api/yaseen-chat") or path.startswith("/api/yaseen-admin/")
+        return path in ("/api/yaseen-config", "/api/yaseen-chat", "/api/yaseen-ai-status") or path.startswith("/api/yaseen-admin/")
 
     def _proxy_yaseen(self):
         """تمرير طلبات رحيق إلى خادمه المحلي؛ منطق البوت وإعداداته لا تُخدَّم كملفات أبدًا."""

@@ -166,7 +166,7 @@
     }],
     ['answers', 'الإجابات', function (box) {
       box.appendChild(el('h2', {}, 'إجابات البوت'));
-      box.appendChild(el('p', { class: 'muted' }, 'رحيق الذكي بيرد على أي سؤال — التسجيل وأي موضوع تاني. هذه الإجابات احتياطية: بتتظهر لو GROQ_API_KEY مش مضبوط أو فشل الاتصال بالذكاء الاصطناعي، وبتنفع كأجوبة سريعة للأسئلة الشائعة.'));
+      box.appendChild(el('p', { class: 'muted' }, 'رحيق الذكي بيرد على أي سؤال — التسجيل وأي موضوع تاني. هذه الإجابات احتياطية: بتظهر لو مفتاح الذكاء الاصطناعي (XAI_API_KEY أو GROQ_API_KEY) مش مضبوط أو فشل الاتصال، وبتنفع كأجوبة سريعة للأسئلة الشائعة.'));
       box.appendChild(el('h3', {}, 'الأزرار السريعة الأربعة'));
       draft.quickReplies.forEach(function (q) {
         var item = el('div', { class: 'item' });
@@ -272,7 +272,12 @@
       box.appendChild(field('الكلمات', draft, 'blockedWords', { type: 'textarea', rows: 5, join: '، ' }));
       box.appendChild(el('h3', {}, 'قواعد مقفولة في كود الخادم (للعرض فقط)'));
       var g = grid(), L = view.locked;
-      var aiStatus = view.ai ? (view.ai.enabled ? 'مفعّل (' + (view.ai.provider || 'groq') + ') — ' + (view.ai.model || 'llama-3.3-70b-versatile') : 'متوقف — أضف GROQ_API_KEY في متغيرات البيئة ثم أعد النشر (Redeploy)') : '—';
+      var aiLast = view.ai && view.ai.last;
+      var aiStatus = view.ai ? (view.ai.enabled
+        ? 'مفعّل (' + (view.ai.providerLabel || view.ai.provider || '—') + ') — ' + (view.ai.model || 'تلقائي') +
+          (view.ai.keySource ? ' · المفتاح من ' + view.ai.keySource : '') +
+          (aiLast ? (aiLast.ok ? ' · آخر رد ناجح: ' + aiLast.model : ' · آخر محاولة فشلت: ' + (aiLast.kind || '') + (aiLast.status ? ' (HTTP ' + aiLast.status + ')' : '')) : '')
+        : 'متوقف — أضف XAI_API_KEY (مفتاح Grok) أو GROQ_API_KEY في متغيرات البيئة ثم أعد النشر (Redeploy)') : '—';
       [['الذكاء الاصطناعي', aiStatus], ['أقصى عدد رسائل في الجلسة', L.limits.maxMessages], ['أقصى طول للرسالة', L.limits.maxChars], ['رسائل لكل IP في الساعة', L.limits.ipPerHour]].forEach(function (p) {
         var w = el('label', {}, p[0]); w.appendChild(el('input', { type: 'text', readOnly: true, value: String(p[1]) })); g.appendChild(w);
       });
