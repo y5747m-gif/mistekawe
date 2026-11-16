@@ -40,8 +40,9 @@ const KEY_ENV_NAMES = [
 const URL_ENV_NAMES = ['GROQ_BASE_URL', 'AI_BASE_URL', 'OPENAI_BASE_URL', 'XAI_BASE_URL', 'GROK_BASE_URL'];
 const GENERIC_MODEL_ENV = ['AI_MODEL', 'GROQ_MODEL', 'GROK_MODEL', 'XAI_MODEL', 'OPENAI_MODEL', 'OPENROUTER_MODEL', 'GEMINI_MODEL'];
 
-const DEFAULT_BUDGET_MS = 16000;   // إجمالي وقت المحاولات (المتصفح يقطع عند 20 ث)
-const DEFAULT_TRY_MS = 12000;      // أقصى وقت لمحاولة واحدة
+const DEFAULT_BUDGET_MS = 15000;   // إجمالي وقت المحاولات (المتصفح يقطع عند 20 ث)
+const DEFAULT_TRY_MS = 9000;       // أقصى وقت لمحاولة واحدة (موديل متعطل يسقط فورًا للتالي)
+const FAST_TRY_MS = 6500;          // Groq سريع: لا ننتظر موديلًا متعطلًا أكثر من ذلك
 const MIN_TRY_MS = 1500;           // لا نبدأ محاولة جديدة لو الباقي أقل من كده
 const DEAD_MODEL_MS = 30 * 60 * 1000;
 const DEAD_KEY_MS = 5 * 60 * 1000;
@@ -68,7 +69,7 @@ const PROVIDERS = {
     url: 'https://api.groq.com/openai/v1/chat/completions',
     modelEnv: ['GROQ_MODEL'],
     /* Llama 3.x أُوقفت لحسابات Free/Developer في أغسطس 2026 — البديل الرسمي GPT-OSS */
-    defaults: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
+    defaults: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'allam-2-7b'],
     tokenParam: 'max_completion_tokens',
     fits: m => !/^(grok|gemini|claude|gpt-|o\d|chatgpt|models\/)/i.test(m),
     chat: m => !/whisper|tts|orpheus|guard|safeguard|playai|compound|embed|distil/i.test(m),
@@ -148,6 +149,7 @@ const RETIRED = new Set([
 const state = {
   deadModels: new Map(),   // provider|model => until
   deadKeys: new Map(),     // بصمة المفتاح => until
+  rateSkips: new Map(),    // provider|model => until (هدوء ضغط 429 على موديل بعينه)
   discovered: new Map(),   // بصمة المزود+المفتاح => { at, result }
   last: null               // آخر نتيجة اتصال (للوحة المدير والتشخيص)
 };
@@ -235,6 +237,25 @@ function isKeyDead(key) {
   return !!until && until > Date.now();
 }
 function markKeyDead(key) { state.deadKeys.set(fingerprint(key), Date.now() + DEAD_KEY_MS); }
+/* هدوء ضغط 429: الموديل يُتخطّى فورًا في الطلبات التالية بدل إحراق ثانية كاملة عليه */
+const RATE_SKIP_MS = 45 * 1000;
+function isModelRateLimited(provider, model) {
+  const key = provider + '|' + String(model).toLowerCase();
+  const until = state.rateSkips.get(key);
+  if (!until) return false;
+  if (until <= Date.now()) { state.rateSkips.delete(key); return false; }
+  return true;
+}
+function markModelRateLimited(provider, model, detail) {
+  const hint = parseRetryDelayMs(detail);
+  const wait = Math.min(RATE_SKIP_MS, Math.max(8000, hint + 500));
+  state.rateSkips.set(provider + '|' + String(model).toLowerCase(), Date.now() + wait);
+}
+function rateSkipFor(provider, model) {
+  const until = state.rateSkips.get(provider + '|' + String(model).toLowerCase());
+  if (!until) return 0;
+  return until > Date.now() ? until - Date.now() : 0;
+}
 function isModelDead(provider, model) {
   const until = state.deadModels.get(provider + '|' + String(model).toLowerCase());
   return !!until && until > Date.now();
@@ -360,7 +381,11 @@ function modelExtras(def, model, meta) {
     if (effort) out.reasoning_effort = effort;
   } else if (def.name === 'groq') {
     if (/gpt-oss/.test(id)) out.reasoning_effort = 'low';
-    else if (/qwen3/.test(id)) out.reasoning_effort = 'none';
+    else if (/qwen3/.test(id)) {
+      /* qwen3 على Groq: نُطفئ التفكير ونخفيه حتى لا يصل الرد بصيغة  thinking بدل JSON */
+      out.reasoning_effort = 'none';
+      out.reasoning_format = 'hidden';
+    }
   } else if (def.name === 'openai') {
     if (/^(gpt-5|o\d)/.test(id)) out.reasoning_effort = 'low';
   }
@@ -585,11 +610,25 @@ function fitMessagesBudget(messages, maxChars) {
 
 function parseRetryDelayMs(detail) {
   const s = String(detail || '');
-  const m = s.match(/try again in\s+([0-9]+(?:\.[0-9]+)?)\s*(ms|s)\b/i);
-  if (!m) return 900;
-  const n = Number(m[1]);
-  if (!Number.isFinite(n) || n < 0) return 900;
-  return m[2].toLowerCase() === 'ms' ? Math.ceil(n) : Math.ceil(n * 1000);
+  /* Groq يكتب الصيغ المختلفة: «in 0.35s» و«in 800ms» و«in 2m59.56s» و«in 1m» */
+  const tail = s.match(/(?:try again in|retry after)\s+([0-9][0-9ms.\s]*)/i);
+  if (tail) {
+    const part = tail[1].trim();
+    const minMatch = part.match(/^([0-9]+(?:\.[0-9]+)?)m/);
+    const msMatch = part.match(/([0-9]+(?:\.[0-9]+)?)\s*ms\b/i);
+    const secMatch = part.match(/(?:^|m)\s*([0-9]+(?:\.[0-9]+)?)\s*s\b/i);
+    if (msMatch) return Math.max(1, Math.ceil(Number(msMatch[1])));
+    const mins = minMatch ? Number(minMatch[1]) : 0;
+    const secs = secMatch ? Number(secMatch[1]) : (minMatch ? 0 : Number(part.match(/^([0-9.]+)/)[1] || 0));
+    const ms = (mins * 60 + secs) * 1000;
+    if (Number.isFinite(ms) && ms >= 0) return Math.ceil(ms);
+  }
+  const bare = s.match(/retry-after[:\s]+([0-9]+(?:\.[0-9]+)?)\b/i);
+  if (bare) {
+    const n = Number(bare[1]);
+    if (Number.isFinite(n) && n >= 0) return Math.ceil(n * 1000);
+  }
+  return 900;
 }
 
 function sleepMs(ms) {
@@ -612,11 +651,12 @@ async function tryModel(ctx, p, key, model, meta) {
     }
     let r;
     try {
+      const tryCap = p.name === 'groq' ? Math.min(ctx.fastTry || ctx.perTry, ctx.perTry) : ctx.perTry;
       r = await httpCall(ctx.fetchImpl, p.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
         body: JSON.stringify(buildPayload(p.def, model, msgs, opts, meta))
-      }, Math.min(ctx.perTry, left - 250));
+      }, Math.min(tryCap, left - 250));
     } catch (err) {
       return { ok: false, kind: err.kind || 'network', status: null, detail: err.message, model, ms: Date.now() - t0 };
     }
@@ -683,7 +723,8 @@ async function complete(env, opts) {
     lowTokens: !!o.lowTokens,
     validate: o.validate,
     deadline: started + (o.budgetMs || clampInt(e.AI_BUDGET_MS, DEFAULT_BUDGET_MS, 4000, 25000)),
-    perTry: clampInt(e.GROQ_TIMEOUT_MS || e.AI_TIMEOUT_MS, DEFAULT_TRY_MS, 2500, 20000)
+    perTry: clampInt(e.GROQ_TIMEOUT_MS || e.AI_TIMEOUT_MS, DEFAULT_TRY_MS, 2500, 20000),
+    fastTry: clampInt(e.GROQ_TIMEOUT_MS || e.AI_TIMEOUT_MS, FAST_TRY_MS, 2500, 20000)
   };
   const attempts = [];
   let lastFail = null;
@@ -704,6 +745,7 @@ async function complete(env, opts) {
       if (r.ok) return r;
       lastFail = Object.assign({ provider: p.name, source: entry.source }, r);
       if (r.kind === 'model') { markModelDead(p.name, model); sawGone = true; }
+      if (r.kind === 'rate') markModelRateLimited(p.name, model, r.detail);
       if (r.kind === 'auth' || r.kind === 'credits') keyFail = r;
       return null;
     };
@@ -714,8 +756,12 @@ async function complete(env, opts) {
     };
 
     const live = p.models.filter(m => o.ignoreMemo || !isModelDead(p.name, m));
-    const candidates = live.length ? live : p.models;              // الذاكرة لا تمنع المحاولة نهائيًا
+    const base = live.length ? live : p.models;                    // الذاكرة لا تمنع المحاولة نهائيًا
     if (live.length < p.models.length) sawGone = true;
+    /* موديلات ضغط 429 مؤخرًا تُتخطّى تمامًا حتى ينتهي هدوؤها: لا نحرق ثانية كاملة على موديل مشبع،
+       وموديل احتياطي آخر يرد فورًا. لو الكل في هدوء، نجرّب القائمة كاملة بدل الفشل الفوري. */
+    const cooled = base.filter(m => !isModelRateLimited(p.name, m));
+    const candidates = cooled.length ? cooled : base;
     for (const m of candidates) {
       if (keyFail || ctx.deadline - Date.now() < MIN_TRY_MS) break;
       const r = await attempt(m, null);
@@ -901,6 +947,7 @@ async function diagnose(env, opts) {
 function _resetForTests() {
   state.deadModels.clear();
   state.deadKeys.clear();
+  state.rateSkips.clear();
   state.discovered.clear();
   state.last = null;
 }
@@ -923,6 +970,8 @@ module.exports = {
   relaxPayload,
   classify,
   sanitizeDetail,
+  parseRetryDelayMs,
+  isModelRateLimited,
   discoverModels,
   complete,
   diagnose,

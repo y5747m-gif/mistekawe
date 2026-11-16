@@ -3,11 +3,15 @@
 .floating-contact-bar {
   position: fixed;
   bottom: 24px;
-  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: 24px;   /* القاعدة كما هي (وضع RTL): يمين الشاشة — تُحسَّن بعدها بمناطق الأمان */
+  right: calc(24px + env(safe-area-inset-right, 0px));
   z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* يختفي بنعومة عند فتح المحادثة/القائمة بدل الاختفاء المفاجئ */
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
 }
 /* البوت على الشمال وأزرار الاتصال على اليمين: لا تتقاطع حركة رحيق معها */
 .floating-btn {
@@ -44,8 +48,8 @@
 }
 @media (max-width: 600px) {
   .floating-contact-bar {
-    bottom: 18px;
-    right: 14px;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
     gap: 10px;
   }
   .floating-btn {
@@ -53,8 +57,38 @@
     height: 48px;
   }
 }
-/* التخطيط من اليسار لليمين لا يقلب مواضع الأزرار: الشمال للبوت واليمين للاتصال */
+/* التخطيط من اليسار لليمين لا يقلب مواضع الأزرار: الشمال للبوت واليمين للاتصال.
+   القيم تُبقى محدّثة بنفس هوامش الجوال (14px) حتى لا يزحف الشريط فوق المحادثة. */
 html[dir="ltr"] .floating-contact-bar {
-  right: 24px;
+  right: calc(24px + env(safe-area-inset-right, 0px));
   left: auto;
+}
+@media (max-width: 600px) {
+  html[dir="ltr"] .floating-contact-bar {
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    left: auto;
+  }
+}
+
+/* ============================================================
+   لا يظهر شريط الاتصال فوق المحادثة أو القائمة أو النوافذ:
+   كان يغطي زر الإرسال وحقل الكتابة في محادثة رحيق على الجوال.
+   ============================================================ */
+body.ysn-chat-open .floating-contact-bar,
+body.menu-open .floating-contact-bar,
+body.modal-open .floating-contact-bar,
+body.nav-open .floating-contact-bar,
+body:has(.ysn-root.is-chat-open) .floating-contact-bar,
+.ysn-root.is-chat-open ~ .floating-contact-bar {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+/* أثناء المحادثة على الجوال نترك مساحة أسفل النافذة بدل تغطية الأزرار */
+@media (max-width: 600px) {
+  body.ysn-chat-open .ysn-chat {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
 }

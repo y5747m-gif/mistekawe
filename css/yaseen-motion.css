@@ -64,11 +64,11 @@
 @keyframes ysn-m-shiver{0%,100%{transform:rotate(0)}50%{transform:rotate(-1.8deg)}}
 
 /* ---------------- زر اللوحة واللوحة ---------------- */
-.ysn-motion-launch{position:fixed;left:18px;bottom:calc(var(--ysn-w) * 1.32 + 24px);z-index:108;border:1px solid var(--ysn-gold);border-radius:999px;background:#fffdf8;color:var(--ysn-maroon-dark);padding:6px 12px;font:700 12px/1.5 var(--font-body,'Cairo','Cairo Local',Tahoma,sans-serif);box-shadow:0 4px 16px rgba(94,12,36,.12);cursor:pointer;transition:background .2s,box-shadow .2s;display:inline-flex;align-items:center;gap:6px}
+.ysn-motion-launch{position:fixed;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(var(--ysn-w) * 1.32 + 24px + env(safe-area-inset-bottom,0px));z-index:108;border:1px solid var(--ysn-gold);border-radius:999px;background:#fffdf8;color:var(--ysn-maroon-dark);padding:6px 12px;font:700 12px/1.5 var(--font-body,'Cairo','Cairo Local',Tahoma,sans-serif);box-shadow:0 4px 16px rgba(94,12,36,.12);cursor:pointer;transition:background .2s,box-shadow .2s;display:inline-flex;align-items:center;gap:6px}
 .ysn-motion-launch:hover,.ysn-motion-launch[aria-expanded=true]{background:var(--ysn-cream);box-shadow:0 5px 20px rgba(94,12,36,.2)}
 .ysn-motion-launch:focus-visible,.ysn-motion-panel button:focus-visible{outline:3px solid var(--ysn-gold);outline-offset:3px}
 .ysn-motion-launch svg{width:16px;height:16px}
-.ysn-motion-panel{position:fixed;left:14px;bottom:calc(var(--ysn-w) * 1.32 + 66px);z-index:110;width:min(310px,calc(100vw - 28px));padding:16px;background:#fffdf8;border:1px solid var(--ysn-gold);border-radius:18px;box-shadow:0 18px 55px rgba(94,12,36,.23);font-family:var(--font-body,'Cairo','Cairo Local',Tahoma,sans-serif);color:var(--ysn-maroon-dark);animation:ysn-pop .2s ease-out;max-height:calc(100dvh - 210px);overflow:auto}
+.ysn-motion-panel{position:fixed;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(var(--ysn-w) * 1.32 + 66px + env(safe-area-inset-bottom,0px));z-index:110;width:min(310px,calc(100dvw - 28px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));padding:16px;background:#fffdf8;border:1px solid var(--ysn-gold);border-radius:18px;box-shadow:0 18px 55px rgba(94,12,36,.23);font-family:var(--font-body,'Cairo','Cairo Local',Tahoma,sans-serif);color:var(--ysn-maroon-dark);animation:ysn-pop .2s ease-out;max-height:calc(100dvh - 210px);overflow:auto}
 .ysn-motion-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px}
 .ysn-motion-close{border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer;width:32px;height:32px;border-radius:8px}
 .ysn-motion-close:hover{background:var(--ysn-cream)}
@@ -93,13 +93,15 @@
 .ysn.is-at-right .ysn-bubble{left:auto;right:0}
 .ysn.is-at-right .ysn-bubble::after{left:auto;right:22px}
 
-/* إخفاء الأدوات أثناء المحادثة أو قبل تأكيد الخادم */
+/* إخفاء الأدوات أثناء المحادثة أو قبل تأكيد الخادم أو أثناء أي نافذة مفتوحة */
 .ysn-root.is-chat-open .ysn-motion-launch,.ysn-root.is-chat-open .ysn-motion-panel,
-.ysn-root.is-pending .ysn-motion-launch,.ysn-root.is-pending .ysn-motion-panel{display:none}
+.ysn-root.is-pending .ysn-motion-launch,.ysn-root.is-pending .ysn-motion-panel,
+body.menu-open .ysn-motion-launch,body.menu-open .ysn-motion-panel,
+body.modal-open .ysn-motion-launch,body.modal-open .ysn-motion-panel{display:none}
 
 @media(max-width:600px){
-  .ysn-motion-launch{left:8px;bottom:calc(var(--ysn-w) * 1.32 + 12px);font-size:11px;padding:5px 10px}
-  .ysn-motion-panel{left:8px;bottom:calc(var(--ysn-w) * 1.32 + 52px);max-height:calc(100dvh - 185px)}
+  .ysn-motion-launch{left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(var(--ysn-w) * 1.32 + 12px + env(safe-area-inset-bottom,0px));font-size:11px;padding:5px 10px}
+  .ysn-motion-panel{left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));width:auto;bottom:calc(var(--ysn-w) * 1.32 + 52px + env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 185px)}
 }
 @media(prefers-reduced-motion:reduce){
   .ysn,.ysn-char,.ysn-tilt,.ysn-body,.ysn-flip,.ysn-shadow{animation:none !important;transition:none !important}
