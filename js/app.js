@@ -36,6 +36,9 @@
   var waSent = false;          /* هل فتح ولي الأمر واتساب من هذه الشاشة */
   var toastTimer;
 
+  /* علامة أن الجافاسكربت يعمل — تُستخدم لعرض بطاقات الاختيار بدل القائمة المنسدلة */
+  try { document.documentElement.classList.add('has-js'); } catch (e) {}
+
   /* ---------------- أدوات واجهة ---------------- */
   function showToast(msg, isError) {
     var t = $('toast');
@@ -289,6 +292,28 @@
 
   /* ---------------- قائمتان مختلفتان: تأسيس / منهج دراسي ---------------- */
   var programTypeEl = $('programType');
+  /* بطاقات اختيار نوع البرنامج (مرئية) تظل متزامنة مع القائمة المنسدلة */
+  function syncProgramCards() {
+    var t = programTypeEl ? programTypeEl.value : '';
+    document.querySelectorAll('#programTypeCards .ptype-card').forEach(function (card) {
+      var on = card.getAttribute('data-program') === t;
+      card.classList.toggle('is-active', on);
+      card.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-program-card]').forEach(function (card) {
+      card.classList.toggle('is-active', card.getAttribute('data-program-card') === t);
+    });
+  }
+  function setProgramType(value, opts) {
+    if (!programTypeEl) return;
+    if ((V.PROGRAM_TYPES || []).indexOf(value) < 0) return;
+    programTypeEl.value = value;
+    fireChange(programTypeEl);
+    if (opts && opts.scroll) {
+      var card = $('registerCard');
+      if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
   function syncProgramBranch() {
     var t = programTypeEl ? programTypeEl.value : '';
     var isFound = t === 'تأسيس';
@@ -299,6 +324,8 @@
     if (cb) cb.hidden = !isCurr;
     if (!isFound) { clearFieldError('foundationSubjects'); clearFieldError('foundationLevel'); }
     if (!isCurr) clearFieldError('grade');
+    syncProgramCards();
+    refreshOrderPreview();
   }
   if (programTypeEl) {
     programTypeEl.addEventListener('change', function () {
@@ -307,6 +334,62 @@
     });
   }
   syncProgramBranch();
+
+  /* بطاقات المسار داخل الاستمارة وخارجها تختار نوع البرنامج مع تمرير سلس للاستمارة */
+  document.querySelectorAll('#programTypeCards .ptype-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      setProgramType(card.getAttribute('data-program'));
+    });
+  });
+  document.querySelectorAll('.program-pick').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setProgramType(btn.getAttribute('data-program'), { scroll: true });
+    });
+  });
+  document.querySelectorAll('.stage-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      var grade = chip.getAttribute('data-grade');
+      setProgramType('منهج دراسي');
+      if (grade) {
+        var g = $('grade');
+        if (g) { g.value = grade; fireChange(g); }
+      }
+      var card = $('registerCard');
+      if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  /* مواد التأسيس: شرائح واضحة + زر «تحديد كل المواد» */
+  var foundationAllBtn = $('foundationSelectAll');
+  function allFoundationChecked() {
+    var boxes = document.querySelectorAll('input[name="foundationSubjects"]');
+    if (!boxes.length) return false;
+    var all = true;
+    for (var i = 0; i < boxes.length; i++) if (!boxes[i].checked) all = false;
+    return all;
+  }
+  function refreshFoundationBtn() {
+    if (!foundationAllBtn) return;
+    var all = allFoundationChecked();
+    foundationAllBtn.classList.toggle('is-all', all);
+    foundationAllBtn.textContent = all ? T('إلغاء تحديد الكل') : T('تحديد كل المواد');
+  }
+  if (foundationAllBtn) {
+    foundationAllBtn.addEventListener('click', function () {
+      var next = !allFoundationChecked();
+      document.querySelectorAll('input[name="foundationSubjects"]').forEach(function (box) {
+        box.checked = next;
+        fireChange(box);
+      });
+      play('toggle');
+      refreshFoundationBtn();
+      refreshOrderPreview();
+    });
+  }
+  document.querySelectorAll('input[name="foundationSubjects"]').forEach(function (box) {
+    box.addEventListener('change', function () { refreshFoundationBtn(); });
+  });
+  refreshFoundationBtn();
 
   /* زر الإدخال ينتقل للخطوة التالية بدل إرسال النموذج مبكرًا */
   $('regForm').addEventListener('keydown', function (e) {
@@ -334,8 +417,22 @@
     var btn = $('submitBtn');
     if (!btn) return;
     btn.disabled = busy || saving;
-    btn.textContent = saving ? T('⏳ جارٍ حفظ الطلب والصور…') :
-                      busy ? T('⏳ جارٍ قراءة الصور…') : T('إرسال طلب التسجيل ✓');
+    /* نحدّث النص فقط داخل عناصره (لا نمسح الأيقونة والسطر التوضيحي) */
+    var label = btn.querySelector('.submit-label');
+    var sub = btn.querySelector('.submit-sub');
+    var state = saving ? 'saving' : (busy ? 'busy' : 'idle');
+    if (label) {
+      label.textContent = state === 'saving' ? T('⏳ جارٍ حفظ الطلب والصور…')
+                        : state === 'busy' ? T('⏳ جارٍ قراءة الصور…')
+                        : T('إرسال الطلب على واتساب');
+    } else {
+      btn.textContent = state === 'saving' ? T('⏳ جارٍ حفظ الطلب والصور…')
+                      : state === 'busy' ? T('⏳ جارٍ قراءة الصور…')
+                      : T('إرسال الطلب على واتساب');
+    }
+    if (sub) {
+      sub.hidden = state !== 'idle';
+    }
   }
   /* التحقق لا يقبل إلا سجلًا يحوي بيانات فعلية (ليس اسمًا فقط) */
   function readyFiles() {
@@ -595,6 +692,120 @@
     };
   }
 
+  /* إرسال حدث change بأمان حتى في البيئات التي لا تعرّف Event */
+  function fireChange(el) {
+    if (!el) return;
+    var ev = null;
+    try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = null; }
+    if (ev && el.dispatchEvent) { try { el.dispatchEvent(ev); } catch (e) {} }
+  }
+
+  /* ---------------- تنسيق تلقائي للحقول النصية عند الخروج منها ----------------
+     مسافات زائدة/مكرّرة تُقلَّص، الأرقام العربية تُحوَّل لاتينية،
+     والبريد يُنظَّف، وأرقام الموبايل تُنزع منها بادئات +20 / 0020 / 20. */
+  function autoFormat(el) {
+    if (!el || !el.id) return;
+    var id = el.id;
+    var raw = String(el.value || '');
+    if (!raw) return;
+    var next = raw;
+    if (id === 'mobile' || id === 'whatsapp' || id === 'loginMobile') {
+      next = V.cleanMobile ? V.cleanMobile(raw) : V.digitsOnly(raw);
+    } else if (id === 'email') {
+      next = V.cleanEmail ? V.cleanEmail(raw) : raw.trim().toLowerCase();
+    } else if (id === 'healthNotes' || id === 'address') {
+      next = raw.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[ \t]+/g, ' ').replace(/^[ \t]+|[ \t]+$/g, '');
+    } else {
+      next = raw.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[ \t]+/g, ' ').replace(/^[ \t]+|[ \t]+$/g, '');
+    }
+    if (next !== raw) {
+      el.value = next;
+      if (el.classList) el.classList.add('just-formatted');
+      setTimeout(function () { if (el.classList) el.classList.remove('just-formatted'); }, 900);
+    }
+  }
+  ['parentName', 'studentName', 'prevSchool', 'address', 'healthNotes', 'email', 'mobile', 'whatsapp', 'loginMobile'].forEach(function (id) {
+    var el = $(id);
+    if (!el) return;
+    el.addEventListener('blur', function () {
+      autoFormat(el);
+      saveDraft();
+    });
+  });
+
+  /* ---------------- حفظ مسودة غير حساسة تلقائيًا (بلا كلمات سر) ----------------
+     عند تحديث الصفحة أو الرجوع لا يفقد ولي الأمر ما كتبه. */
+  var DRAFT_KEY = 'raheeq_draft';
+  var DRAFT_FIELDS = ['parentName', 'relation', 'mobile', 'whatsapp', 'email', 'studentName',
+    'dob', 'gender', 'programType', 'foundationLevel', 'grade', 'prevSchool', 'address', 'healthNotes'];
+  function draftStore() {
+    try { return (typeof sessionStorage !== 'undefined' && sessionStorage) || null; } catch (e) { return null; }
+  }
+  function saveDraft() {
+    var store = draftStore();
+    if (!store) return;
+    try {
+      var draft = {};
+      DRAFT_FIELDS.forEach(function (id) {
+        var el = $(id);
+        if (el && el.value) draft[id] = el.value;
+      });
+      var subjects = V.checkedFoundationSubjects ? V.checkedFoundationSubjects() : [];
+      if (subjects.length) draft.foundationSubjects = subjects;
+      if (!Object.keys(draft).length) { store.removeItem(DRAFT_KEY); return; }
+      draft._step = currentStep;
+      store.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) { /* التخزين المؤقت مساعدة فقط — فشله لا يعطّل شيئًا */ }
+  }
+  function clearDraft() {
+    var store = draftStore();
+    if (!store) return;
+    try { store.removeItem(DRAFT_KEY); } catch (e) {}
+  }
+  function restoreDraft() {
+    var store = draftStore();
+    if (!store) return;
+    var raw = null;
+    try { raw = store.getItem(DRAFT_KEY); } catch (e) { raw = null; }
+    if (!raw) return;
+    var draft = null;
+    try { draft = JSON.parse(raw); } catch (e) { draft = null; }
+    if (!draft) return;
+    var restored = 0;
+    DRAFT_FIELDS.forEach(function (id) {
+      var el = $(id);
+      if (!el || el.value || !draft[id]) return;
+      /* خانة الرقم القومي لا تُستعاد أبدًا حتى لو وجدت في مسودة قديمة */
+      if (id === 'nationalId') return;
+      try { el.value = draft[id]; restored++; } catch (e) {}
+    });
+    if (draft.foundationSubjects && draft.foundationSubjects.length) {
+      document.querySelectorAll('input[name="foundationSubjects"]').forEach(function (box) {
+        if (draft.foundationSubjects.indexOf(box.value) >= 0) box.checked = true;
+      });
+    }
+    if (restored) {
+      syncProgramBranch();
+      document.querySelectorAll('[data-counter]').forEach(refreshCounter);
+      if (foundationAllBtn) refreshFoundationBtn();
+      refreshOrderPreview();
+      var msg = $('draftRestored');
+      if (msg) msg.hidden = false;
+    }
+  }
+  /* حفظ المسودة مع كل تغيير (بلا تكرار ثقيل) */
+  var draftTimer = null;
+  ['regForm'].forEach(function (id) {
+    var form = $(id);
+    if (!form) return;
+    form.addEventListener('input', function (e) {
+      var t = e && e.target;
+      if (t && t.type === 'password') return;         /* كلمات السر لا تُحفظ أبدًا */
+      if (draftTimer) clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraft, 700);
+    });
+  });
+
   function row(label, value) {
     return '<div class="row"><span>' + esc(T(label)) + '</span><span>' + esc(value || '—') + '</span></div>';
   }
@@ -615,6 +826,58 @@
       out += row('الصف', gradeText(d.grade));
     }
     return out;
+  }
+
+  /* ---------------- معاينة حيّة لملخّص الطلب (الخطوة 3) ----------------
+     تعرض نفس البيانات التي ستُرسَل إلى واتساب، مُنسّقة وواضحة قبل الإرسال. */
+  function previewRows() {
+    var d = collectData();
+    var out = [];
+    function add(label, value) {
+      if (value == null || value === '' || (Array.isArray(value) && !value.length)) return;
+      out.push(row(label, Array.isArray(value) ? value.join('، ') : value));
+    }
+    add('اسم ولي الأمر', d.parentName);
+    add('رقم الموبايل', d.mobile);
+    add('البريد الإلكتروني', d.email);
+    add('اسم الطالب', d.studentName);
+    if (d.dob) {
+      var age = WA && WA.buildMessage ? (function () {
+        try {
+          var m = WA.buildMessage({ parentName: 'x', studentName: 'y', dob: d.dob }).match(/\(([^()]*)\)/);
+          return m ? m[1] : '';
+        } catch (e) { return ''; }
+      })() : '';
+      add('تاريخ الميلاد', d.dob + (age ? ' (' + age + ')' : ''));
+    }
+    if (d.programType) add('نوع البرنامج', T(d.programType));
+    if (d.programType === 'تأسيس') {
+      add('مستوى التأسيس', d.foundationLevel ? T(d.foundationLevel) : '');
+      add('مواد التأسيس', (d.foundationSubjects || []).map(function (x) { return T(x); }));
+    } else if (d.programType === 'منهج دراسي') {
+      add('السنة الدراسية', d.grade ? T(d.grade) : '');
+    }
+    add('العنوان', d.address);
+    add('ملاحظات صحية', d.healthNotes);
+    return out;
+  }
+  function refreshOrderPreview() {
+    var box = $('orderPreviewBody');
+    if (!box) return;
+    var rows = previewRows();
+    var ready = savedDocsCount(readyFiles ? readyFiles() : {}) >= 2;
+    box.innerHTML = rows.length
+      ? rows.join('')
+      : '<p class="op-empty">' + esc(T('ستظهر هنا بيانات طلبك كاملة بعد إكمال الخطوات — بنفس شكل الرسالة التي ستُرسَل إلى واتساب.')) + '</p>';
+    var count = $('orderPreviewCount');
+    if (count) {
+      var n = rows.length;
+      /* الشارة تعرض الحالة النهائية بدل صياغة عددية غير سليمة لغويًا */
+      count.textContent = n ? T('جاهز للإرسال') : T('بانتظار البيانات');
+      count.classList.toggle('is-empty', !n);
+    }
+    var preview = $('orderPreview');
+    if (preview) preview.classList.toggle('is-ready', ready);
   }
 
   /* ---------------- مزامنة الرفع مع الخادم ---------------- */
@@ -856,6 +1119,21 @@
     data.orderNumber = previous && previous.orderNumber ? previous.orderNumber : makeOrderNumber(users);
     data.createdAt = previous && previous.createdAt ? previous.createdAt : new Date().toISOString();
 
+    /* ---- التحويل المباشر إلى واتساب فور إنهاء الاستمارة ----
+       الفتح يحدث synchronously داخل ضغطة المستخدم (قبل أي عملية غير متزامنة)
+       حتى لا يحجب المتصفح النافذة، ولضمان وصول الرسالة كاملة ومنسّقة فورًا. */
+    var directLink = WA && WA.buildLink ? WA.buildLink(data) : '';
+    var openedDirect = false;
+    if (directLink) {
+      try {
+        var how = WA.openLink(directLink, { deferSameTab: true });
+        openedDirect = how === 'new-tab' || how === 'same-tab' || how === 'test-recorded';
+        /* لو حُجبت النافذة المنبثقة: سنحوّل في نفس التبويب بعد حفظ الطلب */
+        if (how === 'deferred') data.__waSameTab = directLink;
+        if (openedDirect) waSent = true;
+      } catch (e) { openedDirect = false; }
+    }
+
     /* كلمة السر لا تُحفظ نصًا: hash فقط (salt + SHA-256) */
     var pw = V.val('password');
     /* إن تعذّر تحميل js/crypto.js نرفض الإرسال — لا نخزن كلمة السر نصًا أبدًا */
@@ -878,9 +1156,18 @@
         return;
       }
       try { localStorage.setItem(LS_SESSION, data.mobile); } catch (err) {}
+      clearDraft();
       lastSubmission = data;
       showSuccess(data);
       syncToServer(data);            // رفع فعلي إلى /api/registrations
+      /* لو حجب المتصفح نافذة واتساب: نحوّل مباشرة في نفس التبويب بعد حفظ الطلب */
+      if (data.__waSameTab && WA && WA.redirectSameTab) {
+        var sameTab = data.__waSameTab;
+        delete data.__waSameTab;
+        setTimeout(function () { WA.redirectSameTab(sameTab); }, 420);
+      } else if (openedDirect) {
+        showToast(T('📲 فتحنا واتساب أكاديمية رحيق برسالة طلبك الكاملة — أرسلها الآن'));
+      }
     }).catch(function (err) {
       saving = false;
       refreshSubmit();
@@ -895,6 +1182,7 @@
   /* تسجيل طالب آخر */
   $('newRegBtn').addEventListener('click', function () {
     $('regForm').reset();
+    clearDraft();
     if (programTypeEl) programTypeEl.value = '';
     syncProgramBranch();
     ['birthCert', 'photo', 'reportCard'].forEach(clearUpload);
@@ -904,6 +1192,9 @@
     renderStep(true, false);
     pendingSync = null;
     syncStatusUI(null);
+    refreshOrderPreview();
+    if (foundationAllBtn) refreshFoundationBtn();
+    syncProgramCards();
     switchMode('register', { scroll: true });
   });
 
@@ -992,6 +1283,90 @@
     setFieldErrors({});
     showAlert('loginAlert', '');
   });
+
+  /* ---------------- قائمة التنقّل للجوال/التابلت ---------------- */
+  var menuToggle = $('menuToggle');
+  var mobileMenu = $('mobileMenu');
+  function openMenu() {
+    if (!mobileMenu) return;
+    mobileMenu.hidden = false;
+    document.body.classList.add('menu-open');
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+    var first = mobileMenu.querySelector('.mobile-menu-link');
+    if (first && first.focus) { try { first.focus(); } catch (e) {} }
+  }
+  function closeMenu() {
+    if (!mobileMenu || mobileMenu.hidden) return;
+    mobileMenu.hidden = true;
+    document.body.classList.remove('menu-open');
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMenu() {
+    if (!mobileMenu) return;
+    if (mobileMenu.hidden) { play('click'); openMenu(); } else closeMenu();
+  }
+  if (menuToggle) menuToggle.addEventListener('click', toggleMenu);
+  document.querySelectorAll('[data-close-menu]').forEach(function (el) {
+    el.addEventListener('click', closeMenu);
+  });
+  document.querySelectorAll('.mobile-menu-link').forEach(function (link) {
+    link.addEventListener('click', function () {
+      document.querySelectorAll('.mobile-menu-link').forEach(function (a) { a.classList.remove('is-active'); });
+      link.classList.add('is-active');
+      closeMenu();
+    });
+  });
+  on('menuReplayIntro', 'click', function () {
+    closeMenu();
+    if (window.RaheeqIntro && window.RaheeqIntro.replay) window.RaheeqIntro.replay();
+  });
+  on('menuWhatsappBtn', 'click', function () {
+    closeMenu();
+    if (!WA) return;
+    var url = WA.buildQuickLink({
+      details: 'أرغب في الاستفسار عن التسجيل في أكاديمية رحيق'
+    });
+    play('click');
+    WA.openLink(url);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  /* تحديد رابط القائمة النشط حسب القسم الظاهر */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.mobile-menu-link'));
+  if (navLinks.length && 'IntersectionObserver' in window) {
+    var sections = ['programs', 'features', 'registerCard', 'raheeqChannels', 'footer']
+      .map(function (id) { return $(id); }).filter(Boolean);
+    var navObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var id = entry.target.id;
+        navLinks.forEach(function (a) {
+          a.classList.toggle('is-active', a.getAttribute('href') === '#' + id);
+        });
+      });
+    }, { rootMargin: '-45% 0px -45% 0px' });
+    sections.forEach(function (s) { navObs.observe(s); });
+  }
+
+  /* ---------------- ظهور تدريجي للأقسام أثناء التمرير ---------------- */
+  (function setupReveal() {
+    var items = document.querySelectorAll('.fade-up, .program-card, .feature-card');
+    if (!items.length || !('IntersectionObserver' in window)) {
+      items.forEach ? items.forEach(function (el) { el.classList.add('is-revealed'); }) : null;
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    Array.prototype.forEach.call(items, function (el) { io.observe(el); });
+  })();
 
   /* ---------------- بدء التشغيل ---------------- */
   if (S) {
@@ -1163,12 +1538,60 @@
     showToast(T('↺ تم استعادة الإعدادات الافتراضية'));
   });
 
+  /* إعادة إرسال طلب ولي الأمر من صندوق الترحيب (بعد تسجيل الدخول) */
+  on('welcomeWhatsappBtn', 'click', function () {
+    if (!WA) return;
+    var mobile = V.digitsOnly(V.val('loginMobile'));
+    var users = readUsers();
+    var user = users.filter(function (u) { return u.mobile === mobile; })[0];
+    if (!user) { showToast(T('سجّل الدخول أولًا لعرض طلبك'), true); return; }
+    play('success');
+    WA.openLink(WA.buildLink(user));
+    waSent = true;
+    showToast(T('📲 فتحنا واتساب أكاديمية رحيق برسالة طلبك الكاملة'));
+  });
+
+  /* ---------------- المعاينة الحيّة للملخّص ---------------- */
+  (function setupOrderPreview() {
+    var form = $('regForm');
+    if (!form || !$('orderPreviewBody')) return;
+    var t = null;
+    function schedule() {
+      if (t) clearTimeout(t);
+      t = setTimeout(refreshOrderPreview, 160);
+    }
+    form.addEventListener('input', schedule);
+    form.addEventListener('change', schedule);
+    if (programTypeEl) programTypeEl.addEventListener('change', function () { setTimeout(refreshOrderPreview, 0); });
+    refreshOrderPreview();
+  })();
+
+  /* استعادة المسودة عند أول تحميل (بلا كلمات سر ولا مستندات) */
+  (function initDraft() {
+    try {
+      var raw = draftStore() ? draftStore().getItem(DRAFT_KEY) : null;
+      if (!raw) return;
+      var draft = JSON.parse(raw);
+      var fields = Object.keys(draft).filter(function (k) { return k.charAt(0) !== '_'; });
+      if (!fields.length) return;
+      restoreDraft();
+      var step = parseInt(draft._step, 10);
+      if (step === 2 || step === 3) {
+        /* نُرجع الخطوة فقط لو بيانات الخطوة 1 صحيحة فعلًا */
+        var errs1 = V.step1();
+        if (!Object.keys(errs1).length && step === 2) goStep(2, false);
+      }
+    } catch (e) { /* مسودة تالفة = نتجاهلها */ }
+  })();
+
   /* إعادة رسم النصوص التي يبنيها السكربت حسب اللغة الحالية */
   function refreshDynamicTexts() {
     switchMode(mode);
     if (lastSubmission && mode === 'success') {
       showSuccess(lastSubmission);
     }
+    refreshOrderPreview();
+    if (foundationAllBtn) refreshFoundationBtn();
     if (!I || !I.apply) return;
     I.apply(I.lang ? I.lang() : 'ar');
   }

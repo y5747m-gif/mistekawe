@@ -11,6 +11,22 @@
       .replace(/[\u06F0-\u06F9]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); });
   }
   function digitsOnly(v) { return normalizeDigits(v).replace(/\D/g, ''); }
+  function cleanText(v) {
+    return normalizeDigits(v)
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+  }
+  /* تنسيق رقم الموبايل المصري تلقائيًا عند اللصق بصيغة دولية (+20 / 0020) */
+  function cleanMobile(v) {
+    var d = digitsOnly(v);
+    if (d.length === 14 && d.indexOf('00201') === 0) d = d.slice(3);
+    else if (d.length === 12 && d.indexOf('201') === 0) d = d.slice(1);
+    return d;
+  }
+  function cleanEmail(v) {
+    return cleanText(v).replace(/\s+/g, '').toLowerCase();
+  }
   function wordsCount(v) { return String(v || '').trim().split(/\s+/).filter(Boolean).length; }
   function val(id) {
     var el = document.getElementById(id);
@@ -104,10 +120,10 @@
     var errors = {};
     if (wordsCount(val('parentName')) < 4) errors.parentName = MSG.parentName;
     if (hasField('nationalId') && !new RegExp('^\\d{' + NATIONAL_ID_LEN + '}$').test(digitsOnly(val('nationalId')))) errors.nationalId = MSG.nationalId;
-    if (!new RegExp('^\\d{' + MOBILE_LEN + '}$').test(digitsOnly(val('mobile')))) errors.mobile = MSG.mobile;
-    var wa = digitsOnly(val('whatsapp'));
+    if (!new RegExp('^\\d{' + MOBILE_LEN + '}$').test(cleanMobile(val('mobile')))) errors.mobile = MSG.mobile;
+    var wa = cleanMobile(val('whatsapp'));
     if (wa && !new RegExp('^\\d{' + MOBILE_LEN + '}$').test(wa)) errors.whatsapp = MSG.whatsapp;
-    var email = val('email');
+    var email = cleanEmail(val('email'));
     // شرط المنصة: الإيميل لازم يحتوي على @
     if (!email.includes('@') || /^\s|@\s/.test(email) || !/^[^@\s]+@[^@\s]+$/.test(email)) errors.email = MSG.email;
     var pass = val('password');
@@ -173,7 +189,7 @@
   /* تسجيل الدخول */
   function login() {
     var errors = {};
-    if (!new RegExp('^\\d{' + MOBILE_LEN + '}$').test(digitsOnly(val('loginMobile')))) errors.loginMobile = MSG.loginMobile;
+    if (!new RegExp('^\\d{' + MOBILE_LEN + '}$').test(cleanMobile(val('loginMobile')))) errors.loginMobile = MSG.loginMobile;
     if (!val('loginPassword')) errors.loginPassword = MSG.loginPassword;
     return errors;
   }
@@ -181,6 +197,9 @@
   window.RaheeqValidation = {
     normalizeDigits: normalizeDigits,
     digitsOnly: digitsOnly,
+    cleanText: cleanText,
+    cleanMobile: cleanMobile,
+    cleanEmail: cleanEmail,
     wordsCount: wordsCount,
     esc: esc,
     val: val,
