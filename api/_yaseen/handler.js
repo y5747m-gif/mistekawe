@@ -42,6 +42,7 @@ function logAiFailure(where, err) {
 /* نسخة عامة من التشخيص: بلا رسائل المزود الخام (قد تحتوي معرّفات حساب) */
 function publicAiStatus(report) {
   const r = report || {};
+  const last = ai.lastOutcome();
   return {
     ok: true,
     status: r.status,
@@ -54,6 +55,15 @@ function publicAiStatus(report) {
     keyCount: r.keyCount || 0,
     checkedAt: r.checkedAt,
     howTo: r.howTo,
+    lastChat: last ? {
+      at: last.at,
+      ok: !!last.ok,
+      provider: last.provider || null,
+      model: last.model || null,
+      kind: last.kind || null,
+      status: last.status || null,
+      ms: last.ms || null
+    } : null,
     keys: (r.keys || []).map(k => ({
       source: k.source,
       keyType: k.keyType,
@@ -305,7 +315,10 @@ function createHandler(options) {
             : base;
         }
       }
-      ai.pushHistory(session, rawMessage, result.reply, remembered);
+      const NO_HISTORY = { 'ai-down': 1, offtopic: 1, manipulation: 1, blocked: 1, link: 1, toolong: 1, empty: 1 };
+      if (!NO_HISTORY[result.kind]) {
+        ai.pushHistory(session, rawMessage, result.reply, remembered);
+      }
     } else {
       result = { reply: config.messages.empty, expression: 'thinking', action: null, handoff: null };
     }
@@ -519,12 +532,20 @@ function createHandler(options) {
 
   async function nodeHandler(req, res) {
     const url = new URL(req.url || '/', 'http://localhost');
-    const query = {};
+    const query = Object.assign({}, (req.query && typeof req.query === 'object') ? req.query : {});
     url.searchParams.forEach((v, k) => { query[k] = v; });
     const fwd = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
     const parsed = await readBody(req);
     const isChat = url.pathname === '/api/yaseen-chat' || query.__r === 'chat';
-    if (isChat && parsed.body && JSON.stringify(parsed.body).length > system.LIMITS.maxBodyBytes) { parsed.body = undefined; parsed.bodyError = 'too-large'; }
+    if (isChat && parsed.body && typeof parsed.body === 'object' && JSON.stringify(parsed.body).length > system.LIMITS.maxBodyBytes) {
+      if (typeof parsed.body.ctxToken === 'string' && parsed.body.ctxToken.length > 0) {
+        delete parsed.body.ctxToken;
+      }
+      if (JSON.stringify(parsed.body).length > system.LIMITS.maxBodyBytes) {
+        parsed.body = undefined;
+        parsed.bodyError = 'too-large';
+      }
+    }
     const out = await handle({
       method: req.method, path: url.pathname, query, headers: req.headers,
       body: parsed.body, bodyError: parsed.bodyError,

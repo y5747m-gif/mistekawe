@@ -367,24 +367,39 @@ function modelExtras(def, model, meta) {
   return out;
 }
 
-/* حد رموز الرد — موديلات التفكير تحسب رموز التفكير ضمنه فتأخذ هامشًا أكبر */
-function tokenLimit(def, model) {
-  const id = String(model || '').toLowerCase();
-  if (def.name === 'groq' && /gpt-oss|qwen3|minimax|muse/.test(id)) return 2000;
-  if (def.name === 'xai-grok' && /^grok-(4\.([5-9]|1\d)|[5-9])/.test(id) && !/non-reasoning/.test(id)) return 2000;
-  if (def.name === 'openai' && /^(gpt-5|o\d)/.test(id)) return 2400;
-  return 1400;
+/* الموديلات التي تدعم التوليد المقيّد بالمخطط (Structured Outputs strict: true) على Groq */
+function supportsStrictSchema(def, model) {
+  return !!(def && def.name === 'groq' && /^(openai\/gpt-oss-(120|20)b|qwen\/qwen3\.8-27b|meta-models\/muse-spark)/i.test(String(model || '')));
 }
 
-/* opts: { json, extras, sampling } — كل واحد يمكن إسقاطه منفردًا لو رفضه المزود */
+/* حد رموز الرد — متوازن مع حد 8,000 TPM في حسابات Groq المجانية ومع متطلبات التفكير */
+function tokenLimit(def, model, opts) {
+  if (opts && opts.lowTokens) return 650;
+  const id = String(model || '').toLowerCase();
+  if (def.name === 'groq' && /gpt-oss|qwen3|minimax|muse/.test(id)) return 1500;
+  if (def.name === 'xai-grok' && /^grok-(4\.([5-9]|1\d)|[5-9])/.test(id) && !/non-reasoning/.test(id)) return 1800;
+  if (def.name === 'openai' && /^(gpt-5|o\d)/.test(id)) return 2000;
+  return 1200;
+}
+
+/* opts: { json, schema, extras, sampling, lowTokens } — كل واحد يمكن إسقاطه منفردًا لو رفضه المزود */
 function buildPayload(def, model, messages, opts, meta) {
   const o = opts || {};
   const body = { model, messages };
   if (o.sampling !== false) {
     if (!def.noSampling && !(def.name === 'openai' && /^(gpt-5|o\d)/i.test(model))) body.temperature = 0.7;
-    body[def.tokenParam || 'max_tokens'] = tokenLimit(def, model);
+    body[def.tokenParam || 'max_tokens'] = tokenLimit(def, model, o);
   }
-  if (o.json) body.response_format = { type: 'json_object' };
+  if (o.json) {
+    if (o.schema && supportsStrictSchema(def, model)) {
+      body.response_format = {
+        type: 'json_schema',
+        json_schema: { name: 'raheeq_reply', strict: true, schema: o.schema }
+      };
+    } else {
+      body.response_format = { type: 'json_object' };
+    }
+  }
   if (o.extras !== false) Object.assign(body, modelExtras(def, model, meta));
   return body;
 }
@@ -392,10 +407,10 @@ function buildPayload(def, model, messages, opts, meta) {
 /* بعد رفض 400: أسقط المعامل المذكور في رسالة الخطأ فقط (وإلا كل الاختياري) — false لو مفيش حاجة تتشال */
 function relaxPayload(o, code, message) {
   const h = (String(code || '') + ' ' + String(message || '')).toLowerCase();
-  if (o.json && /json|response_format|failed_generation/.test(h)) { o.json = false; return true; }
+  if (o.json && /json|schema|structured|response_format|failed_generation/.test(h)) { o.json = false; o.schema = null; return true; }
   if (o.extras !== false && /reasoning|effort/.test(h)) { o.extras = false; return true; }
   if (o.sampling !== false && /temperature|top_p|max_tokens|max_completion|sampling/.test(h)) { o.sampling = false; return true; }
-  if (o.json || o.extras !== false || o.sampling !== false) { o.json = false; o.extras = false; o.sampling = false; return true; }
+  if (o.json || o.extras !== false || o.sampling !== false) { o.json = false; o.schema = null; o.extras = false; o.sampling = false; return true; }
   return false;
 }
 
@@ -496,7 +511,7 @@ function sanitizeDetail(msg, entries) {
 
 /* ---------------- اكتشاف الموديلات المتاحة فعلًا للمفتاح ---------------- */
 function normalizeModelEntry(m) {
-  if (typeof m === 'string') return { id: m.replace(/^models\//, ''), efforts: null, created: 0 };
+  if (typeof m === 'string') return { id: m.replace(/^models\//, ''), efforts: null, created: 0, contextWindow: 0 };
   if (!m || typeof m !== 'object') return null;
   const id = String(m.id || m.name || '').trim().replace(/^models\//, '');
   if (!id) return null;
@@ -506,6 +521,7 @@ function normalizeModelEntry(m) {
     efforts: caps && Array.isArray(caps.reasoning_effort) ? caps.reasoning_effort.map(String) : null,
     active: m.active,
     created: Number(m.created) || 0,
+    contextWindow: Number(m.context_window) || 0,
     imageOnly: m.image_price != null && m.completion_text_token_price == null
   };
 }
@@ -529,7 +545,13 @@ async function discoverModels(p, key, fetchImpl, timeoutMs, fresh) {
       const d = r.data;
       const list = Array.isArray(d && d.data) ? d.data : (Array.isArray(d && d.models) ? d.models : (Array.isArray(d) ? d : []));
       const all = list.map(normalizeModelEntry).filter(Boolean);
-      const usable = all.filter(m => p.def.chat(m.id) && !isRetired(m.id) && m.active !== false && !m.imageOnly);
+      const usable = all.filter(m =>
+        p.def.chat(m.id) &&
+        !isRetired(m.id) &&
+        m.active !== false &&
+        !m.imageOnly &&
+        !(m.contextWindow > 0 && m.contextWindow < 4096)
+      );
       usable.sort((a, b) => (rankOf(p.def, a.id) - rankOf(p.def, b.id)) || ((b.created || 0) - (a.created || 0)) || (a.id < b.id ? -1 : 1));
       result = { ok: true, status: r.status, kind: null, models: usable, total: all.length };
     }
@@ -540,13 +562,48 @@ async function discoverModels(p, key, fetchImpl, timeoutMs, fresh) {
   return result;
 }
 
+/* ضمان بقاء إجمالي رسائل السجل ضمن ميزانية مريحة لحدود TPM المجانية */
+function fitMessagesBudget(messages, maxChars) {
+  if (!Array.isArray(messages) || messages.length <= 2) return messages;
+  const first = messages[0];
+  const last = messages[messages.length - 1];
+  const baseLen = String((first && first.content) || '').length + String((last && last.content) || '').length;
+  const budget = Math.max(1200, (maxChars || 9500) - baseLen);
+  let used = 0;
+  const kept = [];
+  for (let i = messages.length - 2; i >= 1; i--) {
+    const m = messages[i];
+    const len = String((m && m.content) || '').length + 16;
+    if (used + len > budget) break;
+    used += len;
+    kept.push(m);
+  }
+  kept.reverse();
+  if (kept.length && kept[0].role === 'assistant') kept.shift();
+  return [first].concat(kept, [last]);
+}
+
+function parseRetryDelayMs(detail) {
+  const s = String(detail || '');
+  const m = s.match(/try again in\s+([0-9]+(?:\.[0-9]+)?)\s*(ms|s)\b/i);
+  if (!m) return 900;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n) || n < 0) return 900;
+  return m[2].toLowerCase() === 'ms' ? Math.ceil(n) : Math.ceil(n * 1000);
+}
+
+function sleepMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, Math.max(1, ms)));
+}
+
 /* ---------------- محاولة موديل واحد (مع إسقاط المعاملات المرفوضة) ---------------- */
 async function tryModel(ctx, p, key, model, meta) {
   const t0 = Date.now();
-  const opts = { json: ctx.json, extras: true, sampling: true };
+  const opts = { json: ctx.json, schema: ctx.schema || null, extras: true, sampling: true, lowTokens: !!ctx.lowTokens };
   let msgs = ctx.messages;
   let relaxed = 0;
   let shrunk = false;
+  let lengthRetried = false;
   let last = null;
   for (;;) {
     const left = ctx.deadline - Date.now();
@@ -564,12 +621,28 @@ async function tryModel(ctx, p, key, model, meta) {
       return { ok: false, kind: err.kind || 'network', status: null, detail: err.message, model, ms: Date.now() - t0 };
     }
     if (r.ok) {
+      const ch = r.data && Array.isArray(r.data.choices) ? r.data.choices[0] : null;
+      const finishReason = ch && ch.finish_reason ? String(ch.finish_reason) : '';
       const content = extractContent(r.data);
-      if (!content) return { ok: false, kind: 'empty', status: r.status, detail: 'empty completion', model, ms: Date.now() - t0 };
+      if (!content) {
+        if (finishReason === 'length' && !lengthRetried && opts.json) {
+          lengthRetried = true;
+          opts.json = false;
+          opts.schema = null;
+          continue;
+        }
+        return { ok: false, kind: 'empty', status: r.status, detail: 'empty completion', model, ms: Date.now() - t0 };
+      }
       if (ctx.validate) {
         try {
           return { ok: true, content, parsed: ctx.validate(content), model, status: r.status, ms: Date.now() - t0 };
         } catch (err) {
+          if (finishReason === 'length' && !lengthRetried && opts.json) {
+            lengthRetried = true;
+            opts.json = false;
+            opts.schema = null;
+            continue;
+          }
           return { ok: false, kind: 'bad-output', status: r.status, detail: err && err.message, model, ms: Date.now() - t0 };
         }
       }
@@ -578,9 +651,10 @@ async function tryModel(ctx, p, key, model, meta) {
     const c = classify(r.status, r.data, r.text);
     last = { kind: c.kind, status: r.status };
     if (c.kind === 'request' && relaxed < 3 && relaxPayload(opts, c.code, c.message)) { relaxed += 1; continue; }
-    if (c.kind === 'too-large' && !shrunk && msgs.length > 2) {                       // حد الحساب المجاني => بدون السجل
+    if (c.kind === 'too-large' && !shrunk) {                                             // حد الحساب المجاني => تقليص السجل وحجز الرموز
       shrunk = true;
-      msgs = [msgs[0], msgs[msgs.length - 1]];
+      opts.lowTokens = true;
+      if (msgs.length > 2) msgs = [msgs[0], msgs[msgs.length - 1]];
       continue;
     }
     return { ok: false, kind: c.kind, status: r.status, code: c.code, detail: c.message, model, ms: Date.now() - t0 };
@@ -603,8 +677,10 @@ async function complete(env, opts) {
 
   const ctx = {
     fetchImpl,
-    messages: o.messages,
+    messages: fitMessagesBudget(o.messages, 9500),
     json: o.json !== false,
+    schema: o.schema || null,
+    lowTokens: !!o.lowTokens,
     validate: o.validate,
     deadline: started + (o.budgetMs || clampInt(e.AI_BUDGET_MS, DEFAULT_BUDGET_MS, 4000, 25000)),
     perTry: clampInt(e.GROQ_TIMEOUT_MS || e.AI_TIMEOUT_MS, DEFAULT_TRY_MS, 2500, 20000)
@@ -663,6 +739,27 @@ async function complete(env, opts) {
         }
       }
     }
+
+    /* لو اصطدمت كل الموديلات بضغط مؤقت (429 TPM/RPM) وكان المتبقي من الوقت يسمح، ننتظر لحظة ونعيد محاولة خفيفة */
+    if (!keyFail && lastFail && (lastFail.kind === 'rate' || lastFail.kind === 'too-large') && !o.noRateRetry) {
+      const hintMs = parseRetryDelayMs(lastFail.detail);
+      const waitMs = Math.min(1500, Math.max(350, hintMs));
+      if (hintMs <= 2500 && ctx.deadline - Date.now() >= MIN_TRY_MS + waitMs + 250) {
+        await sleepMs(waitMs);
+        const fastModel = candidates.find(m => /20b|instant|8b|non-reasoning/i.test(m)) || candidates[0];
+        if (fastModel) {
+          const lightCtx = Object.assign({}, ctx, {
+            messages: ctx.messages.length > 2 ? [ctx.messages[0], ctx.messages[ctx.messages.length - 1]] : ctx.messages,
+            lowTokens: true
+          });
+          const r = await tryModel(lightCtx, p, entry.key, fastModel, null);
+          attempts.push({ provider: p.name, model: fastModel, ok: !!r.ok, kind: r.kind || null, status: r.status || null, ms: r.ms || 0, retried: true });
+          if (r.ok) return done(r);
+          lastFail = Object.assign({ provider: p.name, source: entry.source }, r);
+        }
+      }
+    }
+
     if (keyFail) markKeyDead(entry.key);
   }
 
@@ -763,7 +860,16 @@ async function diagnose(env, opts) {
       k.status = disc.kind === 'auth' ? 'invalid-key' : 'no-credits';
     } else if (o.live !== false) {
       try {
-        const out = await complete(e, { fetchImpl, keyEntries: [entry], messages: PROBE_MESSAGES, json: true, validate: probeValidate, budgetMs: 14000, ignoreMemo: true });
+        const out = await complete(e, {
+          fetchImpl,
+          keyEntries: [entry],
+          messages: o.probeMessages || PROBE_MESSAGES,
+          json: true,
+          schema: o.probeSchema || null,
+          validate: o.probeValidate || probeValidate,
+          budgetMs: 14000,
+          ignoreMemo: true
+        });
         k.status = 'working';
         k.chat = { ok: true, model: out.model, ms: out.ms };
       } catch (err) {
@@ -812,6 +918,8 @@ module.exports = {
   enabled,
   isRetired,
   buildPayload,
+  supportsStrictSchema,
+  fitMessagesBudget,
   relaxPayload,
   classify,
   sanitizeDetail,
