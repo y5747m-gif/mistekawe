@@ -309,10 +309,22 @@ function createHandler(options) {
           };
         } catch (err) {
           logAiFailure('chat', err);
-          /* المحرك القاعدي لا يعرف غير التسجيل — لو كان هيرفض بره التسجيل نقدّم اعتذارًا واضحًا مع تحويل للواتساب */
-          result = base.kind === 'offtopic'
-            ? { reply: 'حصلت مشكلة في الاتصال بالمساعد الذكي دلوقتي 🙏 حاول تاني كمان شوية. ولو محتاج متابعة خاصة بالتسجيل أو بطلبك كلّم موظف التسجيل على واتساب الأكاديمية من الزر ده.', expression: 'worried', action: null, handoff: { whatsapp: config.handoff.whatsapp }, kind: 'ai-down' }
-            : base;
+          /* مسألة حسابية: نحسبها محليًا بدقة بدل رسالة اعتذار (أداة الخادم الدقيقة) */
+          const math = (base.kind === 'offtopic' || base.kind === 'answer') ? ai.detectMathTool(rawMessage) : null;
+          if (math) {
+            result = {
+              reply: 'الآلة الحاسبة بتاعتنا حسبتها لك بالظبط: ' + math.expression + ' = ' + math.result + ' ✨ ولو عايز الشرح خطوة بخطوة قولّي وأنا أكمّل معاك.',
+              expression: 'happy',
+              action: null,
+              handoff: null,
+              kind: 'math-tool'
+            };
+          } else {
+            /* المحرك القاعدي لا يعرف غير التسجيل — لو كان هيرفض بره التسجيل نقدّم اعتذارًا واضحًا مع تحويل للواتساب */
+            result = base.kind === 'offtopic'
+              ? { reply: 'حصلت مشكلة في الاتصال بالمساعد الذكي دلوقتي 🙏 حاول تاني كمان شوية. ولو محتاج متابعة خاصة بالتسجيل أو بطلبك كلّم موظف التسجيل على واتساب الأكاديمية من الزر ده.', expression: 'worried', action: null, handoff: { whatsapp: config.handoff.whatsapp }, kind: 'ai-down' }
+              : base;
+          }
         }
       }
       const NO_HISTORY = { 'ai-down': 1, offtopic: 1, manipulation: 1, blocked: 1, link: 1, toolong: 1, empty: 1 };
@@ -331,6 +343,34 @@ function createHandler(options) {
       followUps: result.followUps,
       locked: remaining() === 0
     });
+  }
+
+  /* ------------------------------------------------------------
+     شبكة أمان لمسار المحادثة: لا يرجع 400/413 جافًا ولا 500 بلا رد.
+     أي طلب مشوّه أو جسم كبير أو خطأ داخلي => رد عربي مفهوم + واتساب
+     حتى تظل المحادثة قابلة للاستخدام دائمًا من جهة ولي الأمر.
+     ------------------------------------------------------------ */
+  function chatSafeReply(config, text) {
+    const cfg = config || system.defaultConfig();
+    return {
+      ok: true,
+      reply: text,
+      expression: 'worried',
+      action: null,
+      handoff: { whatsapp: cfg.handoff && cfg.handoff.whatsapp ? cfg.handoff.whatsapp : system.defaultConfig().handoff.whatsapp },
+      followUps: undefined,
+      locked: false
+    };
+  }
+
+  async function chatBodyFallback(req) {
+    let config = null;
+    try { config = effectiveConfig(await store.getState()); } catch (e) { config = null; }
+    const tooLarge = req && req.bodyError === 'too-large';
+    const text = tooLarge
+      ? 'الرسالة طويلة عن المسموح 🙏 اختصرها شوية وأعد الإرسال، أو كلّم فريق التسجيل على واتساب الأكاديمية من الزر الأخضر.'
+      : 'وصلني الطلب مش مكتمل 🙏 جرّب تكتب رسالتك تاني، ولو استمرت المشكلة كلّم فريق التسجيل على واتساب الأكاديمية من الزر الأخضر.';
+    return json(200, chatSafeReply(config, text));
   }
 
   /* ---------------- المدير ---------------- */
@@ -491,9 +531,23 @@ function createHandler(options) {
         else if (p === '/api/yaseen-ai-status') route = 'ai-status';
         else if (p.indexOf('/api/yaseen-admin/') === 0) route = 'admin-' + p.slice('/api/yaseen-admin/'.length);
       }
-      if (req.method === 'POST' && req.bodyError) return json(req.bodyError === 'too-large' ? 413 : 400, { ok: false, error: req.bodyError });
+      if (req.method === 'POST' && req.bodyError) {
+        /* مسار المحادثة لا يرجع جسم خطأ جاف أبدًا: ولي الأمر يرى رسالة مفهومة + واتساب */
+        if (route === 'chat') return await chatBodyFallback(req);
+        return json(req.bodyError === 'too-large' ? 413 : 400, { ok: false, error: req.bodyError });
+      }
       if (route === 'config') return req.method === 'GET' ? await getPublicConfig() : json(405, { ok: false, error: 'method' });
-      if (route === 'chat') return req.method === 'POST' ? await chat(req) : json(405, { ok: false, error: 'method' });
+      if (route === 'chat') {
+        if (req.method !== 'POST') return json(405, { ok: false, error: 'method' });
+        try {
+          return await chat(req);
+        } catch (err) {
+          /* KV/القرص تعثّر: بدل 500 جاف نرد برسالة مفهومة وزر واتساب */
+          console.error('[yaseen] chat error:', err && err.message);
+          const degraded = await chatBodyFallback({ bodyError: 'server' });
+          return degraded;
+        }
+      }
       if (route === 'ai-status') return req.method === 'GET' ? await getAiStatus(req) : json(405, { ok: false, error: 'method' });
       if (/^admin-[a-z]+$/.test(route)) return await admin(req, route.slice(6));
       return json(404, { ok: false, error: 'not-found' });
@@ -506,8 +560,10 @@ function createHandler(options) {
   /* مهايئ Node (http.IncomingMessage / Vercel) */
   async function readBody(req) {
     if (req.method !== 'POST') return {};
-    const type = String(req.headers['content-type'] || '').toLowerCase();
-    if (type.indexOf('application/json') !== 0) return { bodyError: 'json-only' };   // لا رفع ملفات
+    const type = String(req.headers['content-type'] || '').toLowerCase().trim();
+    /* نقبل الصيغ الشائعة: application/json، application/json; charset=utf-8، application/*+json */
+    const isJson = type.indexOf('application/json') === 0 || /^application\/[a-z0-9.+-]+\+json\b/.test(type);
+    if (!isJson) return { bodyError: 'json-only' };   // لا رفع ملفات
     const limit = system.LIMITS.maxBodyBytes * 16;      // إعدادات المدير أكبر من رسالة ولي الأمر
     let raw;
     try {

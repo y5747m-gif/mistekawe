@@ -71,7 +71,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:100px}
+html{scroll-behavior:smooth;scroll-padding-top:100px;overflow-x:hidden;overflow-x:clip;max-width:100%}
 body{
   margin:0;
   font-family:'Cairo','Cairo Local','Segoe UI',Tahoma,sans-serif;
@@ -84,7 +84,10 @@ body{
     linear-gradient(180deg,var(--cream-soft) 0%,var(--cream) 45%,var(--cream-deep) 100%);
   line-height:1.75;
   -webkit-font-smoothing:antialiased;
+  /* clip يمنع أي عنصر عريض من توسيع العرض وتدوير الـ viewport (كان يقطع المحادثة على الجوال) */
   overflow-x:hidden;
+  overflow-x:clip;
+  max-width:100%;
 }
 img,svg{display:block}
 a{color:inherit;text-decoration:none}
@@ -104,10 +107,14 @@ button{cursor:pointer}
   background:var(--maroon-dark);
   border-bottom:2px solid var(--gold);
   box-shadow:0 6px 22px rgba(var(--ink-rgb),.22);
+  width:100%;max-width:100%;
+  overflow:hidden;overflow:clip;
 }
 .site-header.is-scrolled{box-shadow:0 10px 30px rgba(var(--ink-rgb),.36)}
-.header-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:82px}
-.logo{display:flex;align-items:center;gap:12px;flex:none}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:82px;flex-wrap:nowrap;max-width:100%;min-width:0}
+.logo{display:flex;align-items:center;gap:12px;flex:0 1 auto;min-width:0}
+.logo-text{min-width:0}
+.logo-text strong,.logo-text span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 /* الشعار الرسمي: نسخة بيضاء مقصوصة على البرغندي (بدون إطار) — مصدره assets/brand/raheeq-mark-vector-white.svg */
 .logo-mark{
   width:46px;height:55px;object-fit:contain;flex:none;
@@ -123,7 +130,7 @@ button{cursor:pointer}
 .header-nav a::after{content:"";position:absolute;bottom:0;inset-inline-start:0;width:0;height:2px;background:var(--gold);transition:width .25s}
 .header-nav a:hover{color:var(--gold-light)}
 .header-nav a:hover::after{width:100%}
-.header-actions{display:flex;align-items:center;gap:12px;flex:none}
+.header-actions{display:flex;align-items:center;gap:12px;flex:0 0 auto;min-width:0;flex-wrap:nowrap}
 .sound-btn{
   width:46px;height:46px;display:grid;place-items:center;
   font-size:calc(21px*var(--ui-scale,1));line-height:1;
@@ -147,6 +154,8 @@ button{cursor:pointer}
 .btn-primary{background:var(--maroon);color:var(--white);box-shadow:0 8px 20px rgba(var(--maroon-rgb),.22)}
 .btn-primary:hover{background:var(--maroon-hover);box-shadow:0 10px 24px rgba(var(--maroon-hover-rgb),.3)}
 .btn-gold{background:var(--gold);color:var(--maroon-dark);border-color:var(--gold-light)}
+/* زر «تسجيل دخول ولي الأمر» في الهيدر: يتقلّص بدل دفع القائمة خارج الشاشة */
+.site-header .btn-gold{flex:0 1 auto;min-width:0;max-width:100%;white-space:normal;line-height:1.3}
 .btn-gold:hover{background:var(--gold-light);border-color:var(--white)}
 .btn-outline{background:transparent;color:var(--maroon);border-color:var(--maroon)}
 .btn-outline:hover{background:var(--maroon);color:var(--white)}
@@ -388,6 +397,12 @@ button{cursor:pointer}
 
 /* ===================== الفوتر ===================== */
 .site-footer{background:var(--maroon-dark);color:#F7EAD5;border-top:3px solid var(--gold);padding:34px 0 28px}
+/* الجوال: مساحة سفلية حتى لا يغطي شريط الاتصال العائم آخر سطر في الفوتر */
+@media (max-width:700px){
+  .site-footer{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .footer-inner{word-break:break-word}
+  .footer-socials,.footer-whatsapp{max-width:100%}
+}
 .footer-inner{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .footer-brand{display:flex;align-items:center;gap:12px}
 .footer-brand .logo-mark{width:50px;height:60px}
@@ -446,7 +461,14 @@ body.modal-open{overflow:hidden}
 }
 @media (max-width:620px){
   .container{width:min(100% - 24px,1180px)}
-  .header-row{min-height:70px;gap:8px}
+  .header-row{min-height:64px;gap:8px;flex-wrap:nowrap}
+  /* على الجوال: الشعار مصغّر، الأزرار مصغّرة، والزر الذهبي نصّه يلتف بدل أن يخرج */
+  .site-header .logo{gap:8px;flex:0 1 auto}
+  .header-actions{gap:6px;flex:0 1 auto;justify-content:flex-end}
+  .header-actions .lang-btn,.header-actions .settings-btn,.header-actions .sound-btn,.header-actions .menu-toggle{width:36px;height:36px;min-width:36px;border-radius:11px;font-size:15px;padding:0}
+  .header-actions .lang-btn{min-width:38px;font-size:11.5px}
+  .header-actions .settings-btn svg{width:18px;height:18px}
+  .site-header .btn-gold{padding:7px 9px;font-size:11px;line-height:1.25;max-width:104px;border-radius:11px}
   .logo-mark{width:37px;height:44px}
   .logo-text strong{font-size:calc(20px*var(--ui-scale,1))}
   .logo-text span{font-size:calc(10px*var(--ui-scale,1));letter-spacing:3px}
@@ -475,11 +497,47 @@ body.modal-open{overflow:hidden}
   .docs-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
   .doc-modal-card{padding:16px}
 }
+@media (max-width:430px){
+  /* الجوال الصغير (320–430px): صفّان — الشعار وأزرار الأدوات فوق،
+     وزر «تسجيل دخول ولي الأمر» بعرض كامل تحت. لا شيء يخرج عن الشاشة
+     حتى لو ترجم كوروم النصوص وطالت (الإنجليزية/الفرنسية…). */
+  .header-row{
+    flex-wrap:wrap;row-gap:6px;column-gap:6px;
+    min-height:0;padding-block:8px;
+  }
+  .site-header .logo{order:1;margin-inline-end:auto}
+  /* display:contents يجعل أزرار الأدوات عناصر مباشرة في صف الهيدر فتتوزّع بأمان */
+  .header-actions{display:contents}
+  .header-actions>*{order:2}
+  .site-header #menuToggle{order:5}
+  .site-header #langToggle{order:2}
+  .site-header #settingsBtn{order:3}
+  .site-header #soundToggle{order:4}
+  .logo-mark{width:30px;height:36px}
+  .site-header .logo-text strong{font-size:calc(17px*var(--ui-scale,1))}
+  .site-header .logo-text span{font-size:calc(8.5px*var(--ui-scale,1));letter-spacing:.22em}
+  .header-actions .lang-btn{min-width:34px;width:34px;height:34px;font-size:11px}
+  .header-actions .settings-btn,.header-actions .sound-btn,.header-actions .menu-toggle{width:34px;height:34px;min-width:34px;font-size:14px}
+  /* زر الدخول: صف كامل أسفل الشعار — أوضح للمس وأطول نصًا */
+  .site-header .btn-gold{
+    order:6;flex:1 0 100%;max-width:none;width:100%;
+    padding:10px 12px;font-size:calc(12.5px*var(--ui-scale,1));line-height:1.3;
+  }
+  /* الهيدر صار صفّين (~110px): نكبّر مسافة التثبيت حتى لا تختفي العناوين تحته */
+  html{scroll-padding-top:126px}
+  .field input,.field select,.field textarea{scroll-margin-top:120px}
+  .footer-channels{scroll-margin-top:130px}
+  .programs{scroll-margin-top:126px}
+}
 @media (max-width:390px){
   .features-grid{grid-template-columns:1fr}
-  .header-actions{gap:7px}
-  .btn-gold{max-width:100px;font-size:calc(10.5px*var(--ui-scale,1));padding:8px 9px}
-  .logo-text strong{font-size:calc(18px*var(--ui-scale,1))}
+}
+@media (max-width:360px){
+  /* 320px: نخفي زر الصوت ونضيّق الأدوات قليلًا (زر الدخول له صفّه الكامل) */
+  .site-header .sound-btn{display:none}
+  .site-header .logo-text span{display:none}
+  .header-actions .lang-btn,.header-actions .settings-btn,.header-actions .menu-toggle{width:32px;height:32px;min-width:32px}
+  .site-header .btn-gold{font-size:calc(11.5px*var(--ui-scale,1));padding:9px 10px}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
@@ -1085,8 +1143,8 @@ html[lang="en"] .mobile-menu-title{ font-family: var(--font-ui); letter-spacing:
 /* شاشة صغيرة جدًا: أزرار القائمة بعرض كامل */
 @media (max-width: 380px){
   .mobile-menu-panel{ width: 100%; border-inline-start: 0; }
-  .header-actions{ gap: 6px; }
-  .menu-toggle{ width: 40px; height: 40px; border-radius: 12px; }
+  .header-actions{ gap: 5px; }
+  .menu-toggle{ width: 34px; height: 34px; border-radius: 11px; }
 }
 
 /* ===================== بطاقات نوع البرنامج بدل القائمة المنسدلة ===================== */
@@ -1099,3 +1157,54 @@ html.has-js .field[data-field="programType"] > select{
   opacity:0;pointer-events:none;
 }
 html.has-js .field[data-field="programType"]{ position:relative; }
+
+/* ============================================================
+   ثبات التخطيط على كل المقاسات (320px → 1920px)
+   • لا عنصر يتجاوز العرض المرئي ويرفع حجم الـ viewport في RTL
+   • أزرار الهيدر و«من نحن» والحقول تبقى داخل الإطار
+   • لا فراغات عملاقة على الشاشات الكبيرة
+   ============================================================ */
+@media (min-width:1081px){
+  .container{width:min(1220px,100% - 72px)}
+  .hero-grid{gap:56px}
+}
+@media (min-width:1600px){
+  .container{width:min(1320px,100% - 96px)}
+  .hero{padding:76px 0 96px}
+}
+/* الجوال والتابلت: كل صناديق النصوص القابلة للكسر لا تدفع الصفحة أفقيًا */
+@media (max-width:1080px){
+  .header-row,.hero-grid,.programs-grid,.features-grid,.footer-inner{max-width:100%}
+  .hero-copy,.reg-card,.program-card,.feature-card,.footer-channels{min-width:0}
+  .subtitle,.hero-note,.section-sub,.hero-copy h1,.section-title{overflow-wrap:anywhere}
+}
+@media (max-width:700px){
+  /* الشارات والوسوم تلفّ بدل الخروج */
+  .hero-badges,.program-stages,.foundation-pills{flex-wrap:wrap}
+  .hbadge,.stage-chip,.pill{max-width:100%}
+  /* الجداول والصور في النوافذ لا تخرج */
+  .settings-card,.modal-card,.doc-modal-card{max-width:100%}
+  .toast{left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));text-align:center}
+}
+/* بطاقة التسجيل: الهوامش تتنفس على 320px */
+@media (max-width:360px){
+  .reg-card{padding:18px 12px 16px}
+  .card-head h2{font-size:calc(19px*var(--ui-scale,1))}
+  .tabs{gap:4px;padding:4px}
+  .tab{font-size:calc(12.5px*var(--ui-scale,1))}
+  .hero-badges{gap:6px}
+  .hbadge{font-size:calc(11.5px*var(--ui-scale,1));padding:6px 10px}
+  .container{width:calc(100% - 20px)}
+}
+/* مقياس 135% لا يكسر الهيدر أو الأزرار */
+@media (max-width:620px){
+  html[data-scale="1.35"] .site-header .logo-text strong{font-size:calc(16px*var(--ui-scale,1))}
+  html[data-scale="1.35"] .header-actions .lang-btn{min-width:32px;width:32px}
+  html[data-scale="1.35"] .site-header .btn-gold{font-size:calc(11.5px*var(--ui-scale,1));max-width:none}
+}
+@media (max-width:430px){
+  html[data-scale="1.35"] .site-header .btn-gold{font-size:calc(12px*var(--ui-scale,1));padding:9px 10px}
+}
+/* منع أي تمرير أفقي للمحتوى في كل الصفحات */
+body>.container,main,section,footer{max-width:100%}
+

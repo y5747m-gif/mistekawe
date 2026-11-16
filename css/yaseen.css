@@ -74,22 +74,32 @@
 
 /* ---------------- نافذة المحادثة ---------------- */
 .ysn-chat{
-  position:fixed;left:14px;bottom:calc(14px + var(--ysn-w) * 1.32 + 12px);z-index:109;
-  width:min(380px,calc(100vw - 28px));height:min(520px,calc(100vh - var(--ysn-w) * 1.32 - 44px));min-height:320px;
+  position:fixed;z-index:109;
+  /* الحدود محسوبة من العرض المرئي فقط (dvw + safe-area) فلا تخرج النافذة عن الشاشة */
+  left:calc(14px + env(safe-area-inset-left,0px));
+  bottom:calc(14px + var(--ysn-w) * 1.32 + 12px + env(safe-area-inset-bottom,0px));
+  /* لوحة المفاتيح مفتوحة على iOS: js/yaseen.js يرفع النافذة بمقدار ما يغطيه المفتاح */
+  margin-bottom:var(--ysn-chat-bottom,0px);
+  width:min(380px,calc(100dvw - 28px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));
+  height:min(520px,var(--ysn-chat-max,calc(100dvh - var(--ysn-w) * 1.32 - 44px)));
+  min-height:min(320px,var(--ysn-chat-max,320px));
+  max-height:var(--ysn-chat-max,calc(100dvh - 16px));
   display:flex;flex-direction:column;overflow:hidden;
   background:#FFFDF8;border:2px solid var(--ysn-gold);border-radius:20px;
   box-shadow:0 24px 60px rgba(94,12,36,.28);
   animation:ysn-pop .26s cubic-bezier(.34,1.3,.5,1) both;transform-origin:0 100%;
   -webkit-user-select:text;user-select:text;
+  overscroll-behavior:contain;
 }
-.ysn-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,var(--ysn-maroon),var(--ysn-maroon-dark));color:#fff}
+.ysn-head{display:flex;align-items:center;gap:10px;padding:10px 12px;flex:none;background:linear-gradient(135deg,var(--ysn-maroon),var(--ysn-maroon-dark));color:#fff}
+.ysn-head .ysn-icon{flex:none}
 .ysn-avatar{position:relative;flex:none;width:42px;height:42px}
 .ysn-avatar img{width:100%;height:100%;border-radius:50%;border:2px solid var(--ysn-gold);background:var(--ysn-cream);object-fit:cover;display:block}
 .ysn-dot{position:absolute;bottom:0;left:0;width:12px;height:12px;border-radius:50%;background:#2ECC71;border:2px solid #fff}
 .ysn-dot.is-off{background:#9A9184}
 .ysn-title{flex:1;min-width:0;line-height:1.35}
-.ysn-title strong{display:block;font-size:15px;font-weight:800}
-.ysn-title span{font-size:11.5px;opacity:.9;font-weight:600}
+.ysn-title strong{display:block;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ysn-title span{display:block;font-size:11.5px;opacity:.9;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ysn-icon{all:unset;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:10px;font-size:16px;color:#fff;background:rgba(255,255,255,.12)}
 .ysn-icon:hover{background:rgba(255,255,255,.24)}
 .ysn-icon:focus-visible{outline:2px solid var(--ysn-gold)}
@@ -103,6 +113,9 @@
 .ysn-chip{all:unset;cursor:pointer;font-size:12px;font-weight:700;color:var(--ysn-maroon-dark);background:#FFF6E3;border:1px solid var(--ysn-gold);border-radius:999px;padding:3px 10px;line-height:1.6;transition:background .15s,color .15s}
 .ysn-chip:hover{background:var(--ysn-maroon);color:#fff;border-color:var(--ysn-maroon)}
 .ysn-chip:focus-visible{outline:2px solid var(--ysn-gold);outline-offset:2px}
+.ysn-retry{display:inline-block;margin-top:6px;background:#FFF6E3;color:var(--ysn-maroon-dark);border:1.5px solid var(--ysn-gold);border-radius:10px;padding:5px 12px;font:800 12.5px/1.6 inherit;cursor:pointer}
+.ysn-retry:hover{background:var(--ysn-maroon);color:#fff;border-color:var(--ysn-maroon)}
+.ysn-retry:focus-visible{outline:2px solid var(--ysn-gold);outline-offset:2px}
 .ysn-typing{display:inline-flex;gap:4px;align-items:center;height:20px}
 .ysn-typing i{width:6px;height:6px;border-radius:50%;background:var(--ysn-maroon);opacity:.35;animation:ysn-dots 1s infinite}
 .ysn-typing i:nth-child(2){animation-delay:.15s}.ysn-typing i:nth-child(3){animation-delay:.3s}
@@ -117,20 +130,54 @@
 .ysn-captcha{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#FFF6E3;border-top:1px solid var(--ysn-gold);font-size:13px;font-weight:800;color:var(--ysn-maroon-dark)}
 .ysn-captcha input{width:70px;border:1.5px solid var(--ysn-gold);border-radius:10px;padding:5px 8px;font:inherit;text-align:center;direction:ltr}
 
-.ysn-form{display:flex;gap:6px;align-items:center;padding:8px 10px 4px;background:#FFFDF8}
-.ysn-form input{flex:1;min-width:0;border:1.5px solid #D8CBB0;border-radius:12px;padding:8px 10px;font:inherit;font-size:13.5px;font-weight:600;background:#fff;color:#2B2B2B}
+.ysn-form{display:flex;gap:6px;align-items:center;padding:8px 10px 4px;background:#FFFDF8;flex:none}
+.ysn-form input{flex:1 1 auto;min-width:0;width:100%;border:1.5px solid #D8CBB0;border-radius:12px;padding:8px 10px;font:inherit;font-size:16px;font-weight:600;background:#fff;color:#2B2B2B}
 .ysn-form input:focus{outline:none;border-color:var(--ysn-maroon);box-shadow:0 0 0 3px rgba(136,18,52,.14)}
-.ysn-form button{all:unset;cursor:pointer;background:var(--ysn-maroon);color:#fff;border-radius:12px;padding:7px 14px;font-size:13px;font-weight:800}
+.ysn-form button{all:unset;flex:none;cursor:pointer;background:var(--ysn-maroon);color:#fff;border-radius:12px;padding:8px 14px;font-size:13.5px;font-weight:800;white-space:nowrap;text-align:center}
 .ysn-form button:hover{background:#A6193F}
 .ysn-meta{display:flex;justify-content:space-between;padding:0 12px 8px;font-size:11px;font-weight:700;color:#8A7F6C;background:#FFFDF8}
 
 /* ---------------- الشاشات الصغيرة ---------------- */
 @media (max-width:600px){
   .ysn-root{--ysn-w:72px}
-  .ysn{left:8px;bottom:8px}
-  .ysn-chat{left:8px;right:8px;bottom:8px;width:auto;height:min(470px,calc(100vh - 24px));height:min(470px,calc(100dvh - 24px))}
+  .ysn{left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .ysn-chat{
+    left:calc(8px + env(safe-area-inset-left,0px));
+    right:calc(8px + env(safe-area-inset-right,0px));
+    bottom:calc(8px + env(safe-area-inset-bottom,0px));
+    margin-bottom:var(--ysn-chat-bottom,0px);
+    width:auto;
+    height:min(470px,var(--ysn-chat-max,calc(100dvh - 16px)));
+    min-height:min(280px,var(--ysn-chat-max,280px));
+    max-height:var(--ysn-chat-max,calc(100dvh - 16px));
+    /* لوحة المفاتيح مفتوحة: العرض المرئي أقصر، والإزاحة ترفع النافذة لفوق */
+    top:auto;
+    transform:translateY(0);
+  }
   .ysn-root.is-chat-open .ysn{opacity:0;pointer-events:none}
-  .ysn-bubble{font-size:12.5px;max-width:min(200px,calc(100vw - 24px))}
+  .ysn-bubble{font-size:12.5px;max-width:min(200px,calc(100dvw - 24px))}
+  /* حقول الإدخال 16px على الجوال: لا تكبير تلقائي عند التركيز على iOS */
+  .ysn-form input,.ysn-captcha input{font-size:16px}
+  .ysn-form{padding:8px 8px 4px;gap:5px}
+  .ysn-form button{padding:9px 12px;font-size:13px}
+  .ysn-head{padding:9px 10px;gap:8px}
+  .ysn-icon{width:34px;height:34px;font-size:17px}
+  .ysn-msg{max-width:92%}
+}
+/* شاشات قصيرة (لابتوب صغير/جوال في الوضع الأفقي): لا تتجاوز الارتفاع المتاح */
+@media (max-height:800px){
+  .ysn-chat{height:min(470px,var(--ysn-chat-max,calc(100dvh - 16px)))}
+}
+@media (max-height:560px){
+  .ysn-chat{height:var(--ysn-chat-max,calc(100dvh - 16px));min-height:0}
+  .ysn-head{padding:6px 10px}
+  .ysn-avatar{width:34px;height:34px}
+}
+/* أجهزة شديدة الصغر (320px): النص والأزرار تبقى داخل الإطار */
+@media (max-width:360px){
+  .ysn-chat{left:6px;right:6px;width:auto}
+  .ysn-quick button{font-size:12px;padding:4px 9px}
+  .ysn-form button{padding:9px 10px;font-size:12.5px}
 }
 @media (prefers-reduced-motion:reduce){
   .ysn,.ysn *,.ysn-chat,.ysn-msg,.ysn-glow{animation:none !important;transition:none !important}

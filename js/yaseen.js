@@ -21,6 +21,9 @@
   var REFRESH_MS = 45000;
   var POINT_MS = 7000;
   var RETRY_MS = 8000;
+  /* مهلة الطلب الواحد أقل من مهلة دالة Vercel (30 ث) حتى يصل رد واضح لولي الأمر */
+  var REQ_TIMEOUT_MS = 20000;
+  var RETRY_DELAY_MS = 400;      // انتظار قصير قبل المحاولة التلقائية الثانية
 
   /* ------------------------------------------------------------
      الشكل الأساسي لرحيق (BASE)
@@ -137,16 +140,44 @@
   function request(url, options) {
     if (typeof window.fetch !== 'function') return Promise.reject(new Error('unsupported'));
     var ctrl = typeof window.AbortController === 'function' ? new window.AbortController() : null;
-    var opts = Object.assign({ credentials: 'omit', cache: 'no-store' }, options || {});
+    /* same-origin: تُحفظ كوكيز Vercel (فحص WAF/checkpoint) أثناء الاتصال بشبكة خاصة */
+    var opts = Object.assign({ credentials: 'same-origin', cache: 'no-store' }, options || {});
     if (ctrl) opts.signal = ctrl.signal;
-    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 25000);
+    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, REQ_TIMEOUT_MS);
     return window.fetch(url, opts).then(function (res) {
       clearTimeout(t);
       return res.json().then(
         function (body) { return { status: res.status, body: body }; },
-        function () { return { status: res.status, body: {} }; }
+        /* صفحة خطأ HTML (بوابة/حجب) ليست ردًا صالحًا: نعتبرها فشلًا عابرًا قابلًا للإعادة */
+        function () { return { status: res.status, body: {}, badBody: true }; }
       );
     }, function (err) { clearTimeout(t); throw err; });
+  }
+
+  /* هل الخطأ عابر ويستحق محاولة تلقائية ثانية؟ */
+  function transient(res) {
+    if (!res) return true;
+    if (res.badBody) return true;
+    var s = Number(res.status) || 0;
+    return s === 0 || s === 408 || s === 425 || s === 429 || s >= 500;
+  }
+
+  /* محاولة ثانية واحدة تلقائيًا للأخطاء العابرة (شبكة/بوابة/ضغط) بلا أي تدخل من ولي الأمر */
+  function requestWithRetry(url, options) {
+    return request(url, options).then(function (res) {
+      if (!transient(res)) return res;
+      return new Promise(function (resolve, reject) {
+        later(function () {
+          request(url, options).then(resolve, reject);
+        }, RETRY_DELAY_MS);
+      });
+    }, function (err) {
+      return new Promise(function (resolve, reject) {
+        later(function () {
+          request(url, options).then(resolve, reject);
+        }, RETRY_DELAY_MS);
+      }).then(null, function () { throw err; });
+    });
   }
 
   /* ---------------- تحميل الإعدادات الظاهرة من الخادم ---------------- */
@@ -240,6 +271,9 @@
     applyConfig();
     startIdle();
     watchForm();
+    watchViewport();
+    on(document, 'visibilitychange', releaseOnHide);
+    on(window, 'pagehide', releaseOnHide);
 
     var tries = 0;
     (function greet() {                                // ننتظر انتهاء انيميشن البداية ثم تلوّح وترحّب
@@ -683,6 +717,42 @@
     return /^\d{8,15}$/.test(num) ? 'https://wa.me/' + num : '';
   }
 
+  /* إرشاد محلي فوري للأزرار السريعة: يظهر لحظيًا حتى لو تأخر الرد الذكي،
+     ويُغطّى بالرد الكامل أول ما يصل. لا يحتوي أي قواعد أو إجابات من الخادم. */
+  var LOCAL_QUICK = {
+    problem: 'قولّي فين واقف دلوقتي في الاستمارة (ولي الأمر/الطالب/المستندات) وإيه الرسالة اللي ظهرتلك، وأنا أوجّهك للخانة بالظبط.',
+    upload: 'المستندات المطلوبة: شهادة الميلاد + صورة شخصية للطالب، وبيان النجاح اختياري. ارفعها صورًا واضحة (JPG/PNG) من خطوة «المستندات».',
+    password: 'لو نسيت كلمة السر: من صفحة الدخول اضغط «تسجيل جديد» بنفس رقم الموبايل لتحديث بياناتك، أو كلّم فريق التسجيل على واتساب لتأكيد حسابك بأمان.',
+    human: 'تمام، فريق تسجيل أكاديمية رحيق على واتساب جاهز لمساعدتك — اضغط الزر الأخضر تحت وهنكمل معاك على طول.'
+  };
+
+  function whatsappLink() {
+    var href = whatsappHref();
+    if (!href) return null;
+    var link = el('a', 'ysn-wa', 'افتح واتساب الأكاديمية');
+    link.href = href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    return link;
+  }
+
+  /* زر إعادة المحاولة داخل المحادثة: يعيد نفس الطلب فورًا دون كتابة أي شيء */
+  function addRetry(msg, payload) {
+    if (!msg || !payload) return;
+    var btn = el('button', 'ysn-retry', 'إعادة المحاولة ↻');
+    btn.type = 'button';
+    btn.addEventListener('click', function () {
+      if (busy || locked || !root) return;
+      /* نمسح الرسالة الفاشلة وزرها ثم نعيد الإرسال نفسه */
+      if (btn.parentNode) btn.parentNode.removeChild(btn);
+      if (msg.parentNode) msg.parentNode.removeChild(msg);
+      if (payload.quickReply) sendMessage({ quickReply: payload.quickReply }, null);
+      else if (payload.message) sendMessage({ message: payload.message }, null);
+      else if (payload.captcha != null) sendMessage({ captcha: payload.captcha }, null);
+    });
+    msg.appendChild(document.createElement('br'));
+    msg.appendChild(btn);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
   function addMessage(text, who) {
     var msg = el('div', 'ysn-msg ' + (who === 'user' ? 'is-user' : 'is-bot'), text);
     logEl.appendChild(msg);
@@ -706,6 +776,8 @@
     bubble.hidden = true;
     chat.hidden = false;
     root.classList.add('is-chat-open');
+    try { document.body.classList.add('ysn-chat-open'); } catch (e) {}   // يخفي شريط الاتصال العائم
+    fitChatViewport();
     charBtn.setAttribute('aria-expanded', 'true');
     if (!chatGreeted) {
       chatGreeted = true;
@@ -725,9 +797,67 @@
     chatOpen = false;
     chat.hidden = true;
     root.classList.remove('is-chat-open');
+    try { document.body.classList.remove('ysn-chat-open'); } catch (e) {}
+    cssVar(root, '--ysn-chat-max', '');
+    cssVar(root, '--ysn-chat-bottom', '');
     charBtn.setAttribute('aria-expanded', 'false');
   }
+
+  /* ------------------------------------------------------------
+     لوحة المفاتيح على الجوال + الشاشات القصيرة:
+     نضبط ارتفاع نافذة المحادثة على المساحة المرئية الفعلية
+     (visualViewport) حتى لا يختفي حقل الكتابة أو زر الإرسال
+     تحت لوحة المفاتيح، ونرفع النافذة مع إزاحة العرض عند الحاجة.
+     ------------------------------------------------------------ */
+  function fitChatViewport() {
+    if (!root || !chat) return;
+    var vv = window.visualViewport;
+    var layoutH = window.innerHeight || 0;
+    var vh = (vv && vv.height) || layoutH;
+    var top = (vv && vv.offsetTop) || 0;
+    if (!vh) return;
+    /* الارتفاع المتاح داخل الجزء المرئي فقط */
+    var max = Math.max(240, Math.round(vh - 16));
+    cssVar(root, '--ysn-chat-max', max + 'px');
+    /* لوحة المفاتيح مفتوحة (iOS لا يصغّر layout viewport): نرفع النافذة فوقها */
+    var hiddenBelow = Math.max(0, layoutH - vh - top);
+    cssVar(root, '--ysn-chat-bottom', hiddenBelow ? Math.round(hiddenBelow + 8) + 'px' : '');
+  }
+
+  /* تعيين متغيّر CSS بأمان (بيئات الاختبار المصغّرة قد لا توفّر style API) */
+  function cssVar(node, name, value) {
+    var st = node && node.style;
+    if (!st) return;
+    try {
+      if (typeof st.setProperty === 'function') {
+        if (value === '' || value == null) { if (typeof st.removeProperty === 'function') st.removeProperty(name); }
+        else st.setProperty(name, value);
+      } else if (value === '' || value == null) { delete st[name]; }
+      else st[name] = value;
+    } catch (e) {}
+  }
+
+  function watchViewport() {
+    var vv = window.visualViewport;
+    if (vv && typeof vv.addEventListener === 'function') {
+      on(vv, 'resize', function () { if (chatOpen) fitChatViewport(); });
+      on(vv, 'scroll', function () { if (chatOpen) fitChatViewport(); });
+    }
+    on(window, 'resize', function () { if (chatOpen) fitChatViewport(); });
+    on(window, 'orientationchange', function () { later(function () { if (chatOpen) fitChatViewport(); }, 260); });
+  }
   function toggleChat() { if (chatOpen) closeChat(); else openChat(''); }
+
+  /* مغادرة الصفحة/إخفاؤها أثناء انتظار الرد: نحرّر الحالة حتى لا تعود المحادثة مجمّدة */
+  function releaseOnHide() {
+    if (!busy) return;
+    busy = false;
+    if (root && chat) {
+      var dots = chat.querySelector('.ysn-typing');
+      if (dots && dots.parentNode) dots.parentNode.remove();
+      renderLock();
+    }
+  }
 
   function setCaptcha(question) {
     needCaptcha = !!question;
@@ -759,7 +889,30 @@
     var started = Date.now();
 
     function postChat(reqBody) {
-      return request(CHAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody) });
+      return requestWithRetry(CHAT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody) });
+    }
+
+    /* مسار واحد للفشل: يضمن تحرير busy دائمًا ويعطي ولي الأمر مخرجًا فوريًا
+       (إرشاد محلي + واتساب + إعادة المحاولة) بدل رسالة نهاية مسدودة. */
+    function softFail() {
+      if (!root) { busy = false; return; }
+      if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
+      busy = false;
+      if (!serverSeen) {
+        /* لا خادم إطلاقًا (استضافة ثابتة/انقطاع كامل): نفس المسار المعتمد سابقًا */
+        var m0 = addMessage('مش قادر أوصل بمساعد رحيق الذكي دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
+        var l0 = whatsappLink();
+        if (l0) { m0.appendChild(document.createElement('br')); m0.appendChild(l0); }
+        addRetry(m0, payload);
+      } else {
+        var guide = payload && payload.quickReply ? LOCAL_QUICK[payload.quickReply] : '';
+        var m1 = addMessage(guide || 'الرد الذكي اتأخر شوية ومش هسيبك مستني 🙏 اضغط «إعادة المحاولة» تحت، أو كلّم فريق التسجيل على واتساب وهنرد عليك فورًا.', 'bot');
+        var l1 = whatsappLink();
+        if (l1) { m1.appendChild(document.createElement('br')); m1.appendChild(l1); }
+        addRetry(m1, payload);
+      }
+      setPose(anim('expressions') ? 'worried' : 'idle', 2500);
+      renderLock();
     }
 
     postChat(body).then(function (res) {
@@ -775,12 +928,12 @@
     }).then(function (res) {
       if (!root) return;
       var data = res.body || {};
-      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
       busy = false;
       if (data.disabled) { destroy(); return; }             // المدير أوقف البوت
       if (typeof data.sid === 'string') { sid = data.sid; try { window.sessionStorage.setItem('yaseen_sid', sid); } catch (e) {} }
       if (typeof data.ctxToken === 'string' && data.ctxToken) { ctxToken = data.ctxToken; try { window.sessionStorage.setItem('yaseen_ctx', ctxToken); } catch (e) {} }
-      if (typeof data.reply !== 'string') { addMessage('الاتصال ضعيف دلوقتي، جرّب تاني بعد شوية.', 'bot'); setPose('idle'); renderLock(); return; }
+      if (typeof data.reply !== 'string') { softFail(); return; }
 
       var msg = addMessage(data.reply, 'bot');
       if (data.handoff && /^\d{8,15}$/.test(String(data.handoff.whatsapp))) {
@@ -825,23 +978,7 @@
         }
       }
     }, function () {
-      if (!root) return;
-      if (typing.parentNode) typing.parentNode.removeChild(typing);
-      busy = false;
-      if (serverSeen) {
-        addMessage('الاتصال ضعيف دلوقتي، جرّب تاني بعد شوية.', 'bot');
-      } else {
-        var msg = addMessage('مش قادر أوصل بمساعد رحيق الذكي دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
-        var wa = whatsappHref();
-        if (wa) {
-          var link = el('a', 'ysn-wa', 'افتح واتساب الأكاديمية');
-          link.href = wa; link.target = '_blank'; link.rel = 'noopener noreferrer';
-          msg.appendChild(document.createElement('br'));
-          msg.appendChild(link);
-        }
-      }
-      setPose(anim('expressions') ? 'worried' : 'idle', 2500);
-      renderLock();
+      softFail();
     });
   }
 
@@ -863,6 +1000,7 @@
     root = mascot = charBtn = bubble = chat = null;
     frames = {};
     chatOpen = false; chatGreeted = false; busy = false; pointing = null;
+    try { document.body.classList.remove('ysn-chat-open'); } catch (e) {}
   }
 
   function start() {
