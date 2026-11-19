@@ -498,7 +498,7 @@
   function speakAloud(text, requested) {
     if (!cfg || muted || !cfg.sounds.enabled || (!requested && !cfg.sounds.speech) || !canSpeak()) return;
     try {
-      var plain = String(text).replace(/[^\p{L}\p{N}\s.,؟!،:]/gu, ' ');
+      var plain = String(text).replace(/[^\p{L}\p{M}\p{N}\s.,؟!،:+−=÷×%/\-]/gu, ' ');
       if (nativeVoice) {
         nativeVoice.postMessage(JSON.stringify({ action: 'speak', text: plain, volume: cfg.sounds.volume }));
         return;
@@ -834,17 +834,17 @@
   }
 
   /* زر إعادة المحاولة داخل المحادثة: يعيد نفس الطلب فورًا دون كتابة أي شيء */
-  function addRetry(msg, payload) {
+  function addRetry(msg, payload, readReply) {
     if (!msg || !payload) return;
     var btn = el('button', 'ysn-retry', 'إعادة المحاولة ↻');
     btn.type = 'button';
     btn.addEventListener('click', function () {
-      if (busy || locked || !root) return;
+      if (busy || locked || listening || !root || !cfg.online) return;
       /* نمسح الرسالة الفاشلة وزرها ثم نعيد الإرسال نفسه */
       if (btn.parentNode) btn.parentNode.removeChild(btn);
       if (msg.parentNode) msg.parentNode.removeChild(msg);
       if (payload.quickReply) sendMessage({ quickReply: payload.quickReply }, null);
-      else if (payload.message) sendMessage({ message: payload.message }, null);
+      else if (payload.message) sendMessage({ message: payload.message }, null, readReply);
       else if (payload.captcha != null) sendMessage({ captcha: payload.captcha }, null);
     });
     msg.appendChild(document.createElement('br'));
@@ -1006,13 +1006,13 @@
         var m0 = addMessage('مش قادر أوصل بمساعد رحيق الذكي دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
         var l0 = whatsappLink();
         if (l0) { m0.appendChild(document.createElement('br')); m0.appendChild(l0); }
-        addRetry(m0, payload);
+        addRetry(m0, payload, readReply);
       } else {
         var guide = payload && payload.quickReply ? LOCAL_QUICK[payload.quickReply] : '';
         var m1 = addMessage(guide || 'الرد الذكي اتأخر شوية ومش هسيبك مستني 🙏 اضغط «إعادة المحاولة» تحت، أو كلّم فريق التسجيل على واتساب وهنرد عليك فورًا.', 'bot');
         var l1 = whatsappLink();
         if (l1) { m1.appendChild(document.createElement('br')); m1.appendChild(l1); }
-        addRetry(m1, payload);
+        addRetry(m1, payload, readReply);
       }
       setPose(anim('expressions') ? 'worried' : 'idle', 2500);
       renderLock();
@@ -1039,7 +1039,10 @@
       if (typeof data.reply !== 'string') { softFail(); return; }
 
       var msg = addMessage(data.reply, 'bot');
-      if (data.ai === true) msg.appendChild(el('span', 'ysn-ai-label', 'رد بالذكاء الاصطناعي'));
+      if (data.ai === true) {
+        var modelLabel = data.provider === 'groq' ? 'رد بالذكاء الاصطناعي · Groq' : 'رد بالذكاء الاصطناعي';
+        msg.appendChild(el('span', 'ysn-ai-label', modelLabel));
+      }
       if (cfg.sounds.enabled && canSpeak()) {
         var replay = el('button', 'ysn-retry', '🔊 اسمع الرد');
         replay.type = 'button';

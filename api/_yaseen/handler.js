@@ -270,6 +270,7 @@ function createHandler(options) {
             action: (out.pointTo ? { type: 'point', field: out.pointTo, step: system.FIELDS[out.pointTo] } : null) || baseQuick.action,
             handoff: (out.handoff || baseQuick.handoff) ? { whatsapp: config.handoff.whatsapp } : null,
             followUps: out.followUps && out.followUps.length ? out.followUps : undefined,
+            provider: out.provider,
             kind: 'ai'
           };
           ai.pushHistory(session, qPrompt, result.reply, out.remember || null);
@@ -305,6 +306,7 @@ function createHandler(options) {
             action: out.pointTo ? { type: 'point', field: out.pointTo, step: system.FIELDS[out.pointTo] } : null,
             handoff: out.handoff ? { whatsapp: config.handoff.whatsapp } : null,
             followUps: out.followUps && out.followUps.length ? out.followUps : undefined,
+            provider: out.provider,
             kind: 'ai'
           };
         } catch (err) {
@@ -342,6 +344,7 @@ function createHandler(options) {
       handoff: result.handoff,
       followUps: result.followUps,
       ai: result.kind === 'ai',
+      provider: result.kind === 'ai' ? result.provider : undefined,
       locked: remaining() === 0
     });
   }

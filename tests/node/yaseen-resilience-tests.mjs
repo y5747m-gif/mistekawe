@@ -302,7 +302,7 @@ function completion(content) {
   });
   const index = read('index.html');
   ok(!/v20261115-/.test(index), 'index.html: لا بصمات كاش قديمة');
-  ok(/css\/yaseen\.css\?v=voice-1/.test(index) && /js\/yaseen\.js\?v=voice-1/.test(index), 'index.html: بصمة جديدة لكل ملفات رحيق');
+  ok(/css\/yaseen\.css\?v=voice-1/.test(index) && /js\/yaseen\.js\?v=voice-2/.test(index), 'index.html: بصمة جديدة لكل ملفات رحيق');
   ['login.html', 'register.html', 'shop.html', 'cart.html', 'product.html', 'heritage.html', 'majlis.html', 'hall.html', 'studio.html'].forEach(p => {
     ok(read(p).indexOf('?v=v20261116-2') >= 0, p + ': بصمة كاش محدّثة');
   });

@@ -297,5 +297,68 @@ async function settle(env) {
   eq(root.querySelector('.ysn-form input').value, 'صوت من أندرويد', 'الإملاء من أندرويد يدخل نفس حقل المراجعة');
 }
 
+/* إملاء حقيقي على مستوى الواجهات: من منفذ المايك إلى محول Groq ثم النطق.
+   حدود الجهاز ومزود الشبكة فقط تُحاكى؛ معالج المحادثة ومحول Groq الفعليان يعملان. */
+for (const native of [false, true]) {
+  const { createHandler } = require(path.join(ROOT, 'api/_yaseen/handler.js'));
+  const key = 'gsk_fake_0123456789abcdef0123456789abcdef01234567';
+  const question = 'إيه الأوراق المطلوبة للتسجيل؟';
+  const reply = 'أهلًا، للتسجيل نحتاج شهادة ميلاد وصورة شخصية.';
+  const providerCalls = [], posted = [], spoken = [], bridgeMessages = [];
+  let recognition;
+  class SpeechRecognition {
+    start() { recognition = this; }
+    abort() {}
+  }
+  class Utterance { constructor(text) { this.text = text; } }
+  const bridge = { postMessage: raw => {
+    const msg = JSON.parse(raw);
+    bridgeMessages.push(msg);
+    if (msg.action === 'speak') spoken.push(msg.text);
+  } };
+  const browser = native ? { MajlisVoice: bridge } : {
+    SpeechRecognition,
+    SpeechSynthesisUtterance: Utterance,
+    speechSynthesis: { cancel() {}, getVoices: () => [{ lang: 'ar-EG' }], speak: u => spoken.push(u.text) }
+  };
+  const api = createHandler({
+    env: { VERCEL: '1', GROQ_API_KEY: key },
+    now: () => Date.parse('2026-11-19T10:00:00Z'),
+    fetchImpl: async (url, opts) => {
+      providerCalls.push({ url, opts });
+      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: JSON.stringify({
+        reply, expression: 'happy', pointTo: null, handoff: false, remember: null, followUps: []
+      }) } }] }) };
+    }
+  });
+  const ui = loadWidget({ browser, fetch: (url, opts) => {
+    const body = opts.body ? JSON.parse(opts.body) : undefined;
+    return api.handle({ path: url, method: opts.method, body, headers: {}, ip: '127.0.0.1' }).then(res => {
+      posted.push({ body, res });
+      return res;
+    });
+  } });
+  const label = native ? 'APK' : 'ويب';
+  await settle(ui);
+  const root = widget(ui);
+  root.querySelector('.ysn-char').dispatch('click');
+  root.querySelector('.ysn-mic').dispatch('click');
+  if (native) {
+    const request = bridgeMessages.find(x => x.action === 'listen');
+    bridge.onmessage({ data: JSON.stringify({ action: 'result', id: request.id, text: question }) });
+  } else recognition.onresult({ results: [[{ transcript: question }]] });
+  eq(providerCalls.length, 0, label + ': الكلام لا يصل إلى Groq قبل مراجعة النص');
+  root.querySelector('.ysn-form').dispatch('submit');
+  await settle(ui);
+  const provider = providerCalls[0];
+  eq(provider?.url, 'https://api.groq.com/openai/v1/chat/completions', label + ': المتغير يوجّه إلى Groq');
+  ok((provider?.opts.headers.Authorization || provider?.opts.headers.authorization) === 'Bearer ' + key, label + ': المفتاح يرسل من السيرفر إلى Groq فقط');
+  eq(JSON.parse(provider.opts.body).messages.at(-1).content, question, label + ': Groq يستقبل نفس السؤال المملى');
+  eq(posted.at(-1).body.message, question, label + ': الدردشة تستقبل نص السؤال فقط');
+  ok(!JSON.stringify(posted).includes(key), label + ': المفتاح غائب تمامًا عن طلبات ونتائج واجهة المستخدم');
+  ok(root.querySelector('.ysn-ai-label').textContent.includes('Groq'), label + ': الواجهة تقول إن الرد جاء فعلًا من Groq');
+  eq(spoken[0], reply, label + ': نفس رد Groq يُنطق بالعربي');
+}
+
 console.log('\nYaseen widget tests: ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);
