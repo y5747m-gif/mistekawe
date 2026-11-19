@@ -81,7 +81,7 @@ jobs:
           retention-days: 90
 
       - name: Publish verified APK for the website
-        if: success() && github.ref == 'refs/heads/main'
+        if: success() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/'))
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk dist/majlis-debug.apk
