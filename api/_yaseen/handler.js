@@ -341,6 +341,7 @@ function createHandler(options) {
       action: result.action,
       handoff: result.handoff,
       followUps: result.followUps,
+      ai: result.kind === 'ai',
       locked: remaining() === 0
     });
   }

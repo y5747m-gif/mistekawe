@@ -167,9 +167,12 @@ function completion(content) {
   root.querySelector('.ysn-form').dispatch('submit');
   await flushPromises(3);
   ok(!!root.querySelector('.ysn-typing'), 'أثناء الانتظار يظهر مؤشر الكتابة');
+  env.document.hidden = true;
   env.document.dispatch('visibilitychange');                          // المستخدم غادر التطبيق
   eq(root.querySelectorAll('.ysn-typing').length, 0, 'إخفاء الصفحة يزيل مؤشر الانتظار');
   const before = chatCalls;
+  env.document.hidden = false;
+  env.document.dispatch('visibilitychange');
   root.querySelector('.ysn-form input').value = 'سؤال بعد العودة';
   root.querySelector('.ysn-form').dispatch('submit');
   await flushPromises(2);
@@ -299,11 +302,11 @@ function completion(content) {
   });
   const index = read('index.html');
   ok(!/v20261115-/.test(index), 'index.html: لا بصمات كاش قديمة');
-  ok(/css\/yaseen\.css\?v=v20261116-2/.test(index) && /js\/yaseen\.js\?v=v20261116-2/.test(index), 'index.html: بصمة جديدة لكل ملفات رحيق');
+  ok(/css\/yaseen\.css\?v=voice-1/.test(index) && /js\/yaseen\.js\?v=voice-1/.test(index), 'index.html: بصمة جديدة لكل ملفات رحيق');
   ['login.html', 'register.html', 'shop.html', 'cart.html', 'product.html', 'heritage.html', 'majlis.html', 'hall.html', 'studio.html'].forEach(p => {
     ok(read(p).indexOf('?v=v20261116-2') >= 0, p + ': بصمة كاش محدّثة');
   });
-  ok(/majlis-shell-v16/.test(read('sw.js')), 'sw.js: نسخة كاش جديدة بعد التعديلات');
+  ok(/majlis-shell-v17/.test(read('sw.js')), 'sw.js: نسخة كاش جديدة بعد التعديلات');
   ok(read('index.html').includes('family=Cairo'), 'خط Cairo لم يُحذف من index.html');
 }
 

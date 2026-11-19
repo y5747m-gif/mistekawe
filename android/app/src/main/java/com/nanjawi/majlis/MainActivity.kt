@@ -162,6 +162,10 @@ class MainActivity : AppCompatActivity() {
         audioList.layoutManager = LinearLayoutManager(this)
         audioList.adapter = audioAdapter
 
+        findViewById<MaterialButton>(R.id.voiceBtn).setOnClickListener {
+            startActivity(Intent(this, VoiceActivity::class.java))
+        }
+
         // أزرار المشغل
         findViewById<MaterialButton>(R.id.playBtn).setOnClickListener {
             val svc = service ?: return@setOnClickListener
