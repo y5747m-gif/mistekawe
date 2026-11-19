@@ -62,6 +62,7 @@ EXTRA_TYPES = {
     ".woff2": "font/woff2",
     ".woff": "font/woff",
     ".webmanifest": "application/manifest+json",
+    ".apk": "application/vnd.android.package-archive",
     ".mp3": "audio/mpeg",
     ".wav": "audio/wav",
     ".ogg": "audio/ogg",

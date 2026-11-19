@@ -182,6 +182,8 @@ eq(pubCfg.body.ai, true, 'الإعدادات العامة تعلن أن الذك
 let res = await post('/api/yaseen-chat', { message: 'رقم الموبايل مش بيتقبل', context: { step: 1, invalid: ['mobile'] } });
 eq(res.status, 200, 'المحادثة تعمل مع الذكاء الاصطناعي');
 eq(res.body.reply, AI_ANSWER.reply, 'رد الذكاء الاصطناعي يصل للمتصفح');
+eq(res.body.ai, true, 'وسم الرد يظهر عند نجاح الموديل');
+eq(res.body.provider, 'groq', 'الوسم يحدد المزود اللي رد فعلًا');
 eq(res.body.action && res.body.action.field, 'mobile', 'التوجيه يشير للخانة المتعثرة');
 eq(res.body.followUps && res.body.followUps.length, 2, 'اقتراحات المتابعة تصل للواجهة');
 ok(typeof res.body.ctxToken === 'string' && res.body.ctxToken.indexOf('.') > 0, 'رمز السياق الموقّع يُعاد للمتصفح');
@@ -234,6 +236,8 @@ const postDown = (p, body, extra) => appDown.handle(Object.assign({ method: 'POS
 
 res = await postDown('/api/yaseen-chat', { message: 'سؤال غريب محدش يسأله' });
 ok(/مشكلة في الاتصال/.test(res.body.reply), 'فشل الشبكة الكامل => اعتذار واضح بدل رد مضلل');
+eq(res.body.ai, false, 'الرد الاحتياطي ليس رد الموديل حتى مع مفتاح مُعدّ');
+eq(res.body.provider, undefined, 'الرد الاحتياطي لا يدعي أنه جاء من أي مزود');
 eq(res.body.handoff && res.body.handoff.whatsapp, '201151947735', 'فشل الشبكة => تحويل لواتساب الأكاديمية');
 
 /* بلا مفتاح => سلوك القواعد الاحتياطي */

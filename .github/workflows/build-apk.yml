@@ -11,13 +11,15 @@ on:
       - '.github/workflows/build-apk.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     name: Build debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,6 +65,12 @@ jobs:
           gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee ../build.log
           exit ${PIPESTATUS[0]}
 
+      - name: Verify APK integrity and signature
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          unzip -tq "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --min-sdk-version 23 "$APK"
+
       - name: Upload APK artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -72,38 +80,23 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Publish APK in the repo (downloadable link)
-        if: success()
+      - name: Publish verified APK for the website
+        if: success() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/'))
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk dist/majlis-debug.apk
-          ls -la dist
           git config user.name "arena-bot"
           git config user.email "bot@users.noreply.github.com"
           git add -f dist/majlis-debug.apk
-          if git diff --cached --quiet; then
-            echo "الملف لم يتغير"
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "ci: تحديث ملف APK [skip ci]"
-            git push origin "HEAD:$GITHUB_REF_NAME" || echo "تعذّر الدفع"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Save build log on the branch (on failure only)
+      - name: Upload build log on failure
         if: failure()
-        continue-on-error: true
-        run: |
-          mkdir -p ci
-          if [ -f build.log ]; then cp build.log ci/build.log; fi
-          if [ -f android/build.log ]; then cp android/build.log ci/build.log; fi
-          ls -la ci || true
-          git config user.name "arena-bot"
-          git config user.email "bot@users.noreply.github.com"
-          git add -f ci/build.log 2>/dev/null || true
-          if [ -f dist/majlis-debug.apk ]; then git add -f dist/majlis-debug.apk || true; fi
-          git status --short
-          if git diff --cached --quiet; then
-            echo "لا جديد في السجل"
-          else
-            git commit -m "ci: سجل البناء وملف APK [skip ci]"
-            git push origin "HEAD:$GITHUB_REF_NAME" || echo "تعذّر الدفع"
-          fi
+        uses: actions/upload-artifact@v4
+        with:
+          name: majlis-build-log
+          path: build.log
+          if-no-files-found: ignore

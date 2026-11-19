@@ -183,3 +183,10 @@
   .ysn,.ysn *,.ysn-chat,.ysn-msg,.ysn-glow{animation:none !important;transition:none !important}
 }
 @media print{.ysn-root{display:none !important}}
+
+.ysn-form .ysn-mic{padding:8px;min-width:28px;min-height:28px}
+.ysn-form .ysn-mic[aria-pressed="true"]{background:#A6193F;outline:2px solid #D98399}
+.ysn-form button:focus-visible{outline:2px solid #A6193F;outline-offset:2px}
+.ysn-voice-note{background:#FFFDF8;color:#554939;padding:3px 12px;font-size:12px;flex:none}
+.ysn-voice-note:empty{display:none}
+.ysn-ai-label{display:block;font-size:11px;color:#6f2840}

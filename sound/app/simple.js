@@ -203,10 +203,6 @@ session.boot().then(() => {
   $('capsHint').textContent = notes.join(' ');
   $('btBtn').disabled = !caps.bluetooth;
   $('outBtn').disabled = !caps.picker;
-  if (!caps.picker) {
-    const link = $('apkLink');
-    link.textContent = 'تحميل تطبيق APK (الصوت من كل السماعات)';
-  }
   render(view);
   paint(view);
   setInterval(() => paint(session.view()), 250);

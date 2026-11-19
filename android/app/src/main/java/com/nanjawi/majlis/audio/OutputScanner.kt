@@ -79,7 +79,7 @@ object OutputScanner {
 
         for (device in devices) {
             // فلترة حسب النوع المطلوب، لكن اقبل أي جهاز له عنوان بلوتوث حتى لو نوعه غير متوقع
-            val address = try { device.address ?: "" } catch (_: Exception) { "" }
+            val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) device.address.orEmpty() else ""
             val hasBtAddress = address.isNotBlank() && address.contains(":")
 
             if (!isWanted(device.type) && !hasBtAddress) continue
@@ -170,7 +170,7 @@ object OutputScanner {
         AudioDeviceInfo.TYPE_AUX_LINE -> "مخرج خارجي"
         else -> {
             // حاول تخمين من العنوان
-            val addr = try { device.address ?: "" } catch (_: Exception) { "" }
+            val addr = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) device.address.orEmpty() else ""
             if (addr.contains(":")) "سماعة بلوتوث" else "مخرج صوت"
         }
     }

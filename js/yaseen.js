@@ -90,6 +90,9 @@
   var cfg = null;
   var root = null, mascot = null, charBtn = null, bubble = null, chat = null, motion = null;
   var logEl = null, inputEl = null, quickEl = null, captchaEl = null, captchaInput = null, metaLeft = null, metaCount = null, dotEl = null, statusEl = null, soundBtn = null;
+  var micBtn, voiceNote, listening = null, voiceDraft = false, voiceSeq = 0;
+  var nativeVoice = window.MajlisVoice;
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   var frames = {};
   var timers = [];
   var observers = [];
@@ -274,6 +277,8 @@
     watchViewport();
     on(document, 'visibilitychange', releaseOnHide);
     on(window, 'pagehide', releaseOnHide);
+    var voiceEntry = document.querySelector('.ysn-open-voice');
+    if (voiceEntry) on(voiceEntry, 'click', function () { openChat(''); });
 
     var tries = 0;
     (function greet() {                                // ننتظر انتهاء انيميشن البداية ثم تلوّح وترحّب
@@ -324,28 +329,34 @@
     inputEl.placeholder = 'اكتب أي سؤال…';
     inputEl.setAttribute('aria-label', 'اكتب أي سؤال');
     var sendBtn = el('button', null, 'إرسال'); sendBtn.type = 'submit';
-    form.appendChild(inputEl); form.appendChild(sendBtn);
+    micBtn = el('button', 'ysn-mic', '🎙'); micBtn.type = 'button';
+    voiceNote = el('div', 'ysn-voice-note');
+    voiceNote.setAttribute('role', 'status');
+    form.appendChild(inputEl); form.appendChild(micBtn); form.appendChild(sendBtn);
 
     var meta = el('div', 'ysn-meta');
     metaLeft = el('span'); metaCount = el('span');
     meta.appendChild(metaLeft); meta.appendChild(metaCount);
 
-    box.appendChild(head); box.appendChild(logEl); box.appendChild(quickEl); box.appendChild(captchaEl); box.appendChild(form); box.appendChild(meta);
+    box.appendChild(head); box.appendChild(logEl); box.appendChild(quickEl); box.appendChild(captchaEl); box.appendChild(form); box.appendChild(voiceNote); box.appendChild(meta);
 
     on(closeBtn, 'click', function () { closeChat(); });
     on(soundBtn, 'click', function () {
       muted = !muted;                               // كتم فقط — لا يغيّر أي سلوك للبوت
       try { window.localStorage.setItem('yaseen_muted', muted ? '1' : '0'); } catch (e) {}
-      if (muted && window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+      if (muted) stopSpeech();
       renderSound();
     });
+    on(micBtn, 'click', toggleMic);
     on(form, 'submit', function (e) {
       e.preventDefault();
+      if (listening || busy || locked || !cfg.online) return;
       var text = inputEl.value.replace(/\s+/g, ' ').trim();
       if (needCaptcha) { sendMessage({ captcha: captchaInput.value }, null); return; }
       if (!text) return;
+      var readReply = voiceDraft; voiceDraft = false;
       inputEl.value = ''; renderCount();
-      sendMessage({ message: text }, text);
+      sendMessage({ message: text }, text, readReply);
     });
     on(captchaInput, 'keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendMessage({ captcha: captchaInput.value }, null); } });
     on(inputEl, 'input', renderCount);
@@ -366,7 +377,7 @@
     chat.setAttribute('aria-label', 'محادثة ' + cfg.name);
     chat.querySelector('.ysn-name').textContent = cfg.name;
     dotEl.classList.toggle('is-off', !cfg.online);
-    statusEl.textContent = !cfg.online ? 'خارج مواعيد العمل' : (cfg.ai === true ? 'متصل الآن · ذكاء اصطناعي مفعّل ✨' : 'متصل الآن · المساعد الذكي');
+    statusEl.textContent = !cfg.online ? 'خارج مواعيد العمل' : (cfg.ai === true ? 'متصل · الذكاء الاصطناعي مُعدّ' : (serverSeen ? 'متصل · إرشاد التسجيل بدون ذكاء اصطناعي' : 'جارٍ الاتصال…'));
     mascot.classList.toggle('a-idle', anim('idle'));
     mascot.classList.toggle('a-tilt', anim('tilt'));
     if (motion) motion.configure(cfg.animations);
@@ -395,7 +406,11 @@
   function renderLock() {
     var off = locked || !cfg.online || busy;
     inputEl.disabled = locked || !cfg.online;
-    Array.prototype.forEach.call(chat.querySelectorAll('.ysn-quick button, .ysn-form button'), function (b) { b.disabled = off; });
+    Array.prototype.forEach.call(chat.querySelectorAll('.ysn-quick button, .ysn-form button'), function (b) { b.disabled = off || !!listening; });
+    micBtn.disabled = off || needCaptcha || !canListen();
+    micBtn.setAttribute('aria-label', listening ? 'إلغاء الاستماع' : 'استخدم الميكروفون للإملاء بالعربية');
+    micBtn.setAttribute('aria-pressed', String(!!listening));
+    micBtn.title = canListen() ? 'الإملاء بالعربية' : 'الإملاء غير متاح في هذا المتصفح';
   }
 
   /* ---------------- الحركات ---------------- */
@@ -470,14 +485,98 @@
       });
     } catch (e) {}
   }
-  function speakAloud(text) {
-    if (muted || !cfg.sounds.enabled || !cfg.sounds.speech || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+  function canListen() { return !!(nativeVoice || (Recognition && window.isSecureContext !== false)); }
+  function canSpeak() { return !!(nativeVoice || (window.speechSynthesis && window.SpeechSynthesisUtterance)); }
+  function voiceStatus(text) { if (voiceNote) voiceNote.textContent = text; }
+  function voiceHelp() {
+    return canListen() ? 'المايك بيستخدم خدمة الإملاء وقد ترسل الصوت لمزوّدها. راجع النص قبل الإرسال.' : 'الإملاء غير متاح هنا. جرّب Chrome أو تطبيق أندرويد، أو اكتب سؤالك.';
+  }
+  function stopSpeech() {
+    try { if (nativeVoice) nativeVoice.postMessage(JSON.stringify({ action: 'stopSpeech' })); } catch (e) {}
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+  }
+  function speakAloud(text, requested) {
+    if (!cfg || muted || !cfg.sounds.enabled || (!requested && !cfg.sounds.speech) || !canSpeak()) return;
     try {
+      var plain = String(text).replace(/[^\p{L}\p{M}\p{N}\s.,؟!،:+−=÷×%/\-]/gu, ' ');
+      if (nativeVoice) {
+        nativeVoice.postMessage(JSON.stringify({ action: 'speak', text: plain, volume: cfg.sounds.volume }));
+        return;
+      }
       window.speechSynthesis.cancel();
-      var u = new window.SpeechSynthesisUtterance(String(text).replace(/[^\p{L}\p{N}\s.,؟!،:]/gu, ' '));
-      u.lang = 'ar-EG'; u.volume = cfg.sounds.volume; u.rate = 1;
+      var u = new window.SpeechSynthesisUtterance(plain);
+      var voices = window.speechSynthesis.getVoices();
+      var arabic = voices.find(function (v) { return /^ar[-_]EG$/i.test(v.lang); }) || voices.find(function (v) { return /^ar(?:[-_]|$)/i.test(v.lang); });
+      if (voices.length && !arabic) { voiceStatus('مفيش صوت عربي متاح. أضف صوت عربي من إعدادات الجهاز.'); return; }
+      if (arabic) u.voice = arabic;
+      u.lang = arabic ? arabic.lang : 'ar-EG'; u.volume = cfg.sounds.volume;
+      u.onerror = function (e) {
+        if (chatOpen && e.error !== 'canceled' && e.error !== 'interrupted') voiceStatus('تعذّر تشغيل الصوت. جرّب زر «اسمع الرد» أو راجع إعدادات الصوت العربي.');
+      };
       window.speechSynthesis.speak(u);
+    } catch (e) { if (chatOpen) voiceStatus('تعذّر تشغيل الصوت على هذا الجهاز.'); }
+  }
+  function cancelMic() {
+    var run = listening;
+    if (!run) return;
+    listening = null;
+    clearTimeout(run.timer);
+    try {
+      if (run.rec) run.rec.abort();
+      else nativeVoice.postMessage(JSON.stringify({ action: 'cancel', id: run.id }));
     } catch (e) {}
+    if (root && cfg) renderLock();
+    voiceStatus(voiceHelp());
+  }
+  function finishMic(run, text, error) {
+    if (listening !== run) return;
+    listening = null;
+    clearTimeout(run.timer);
+    renderLock();
+    var value = String(text || '').trim();
+    if (!value) {
+      voiceStatus(error === 'not-allowed' || error === 'service-not-allowed' ? 'إذن الميكروفون مرفوض. فعّله من إعدادات الموقع أو التطبيق.'
+        : error === 'unsupported' ? 'خدمة التعرّف على الكلام غير متاحة على جهازك. اكتب سؤالك بدلًا منها.'
+        : 'ما قدرناش نميّز الكلام. جرّب تاني أو اكتب سؤالك.');
+      return;
+    }
+    inputEl.value = (inputEl.value.trim() ? inputEl.value.trim() + ' ' + value : value).slice(0, cfg.limits.maxChars);
+    voiceDraft = true;
+    renderCount();
+    voiceStatus('راجع الكلام واضغط «إرسال»؛ الرد هيتقري لو الصوت متاح ومش مكتوم.');
+  }
+  if (nativeVoice) {
+    nativeVoice.onmessage = function (event) {
+      try {
+        var msg = JSON.parse(event.data);
+        if (msg.action === 'speech-error' && chatOpen) voiceStatus('الصوت العربي مش متاح. راجع إعدادات تحويل النص إلى كلام في أندرويد.');
+        if (msg.action === 'result' && listening && msg.id === listening.id) finishMic(listening, msg.text, msg.error);
+      } catch (e) {}
+    };
+  }
+  function toggleMic() {
+    if (listening) { cancelMic(); return; }
+    if (!chatOpen || micBtn.disabled || !canListen()) return;
+    stopSpeech();
+    var run = { id: ++voiceSeq };
+    listening = run;
+    renderLock();
+    voiceStatus('جاري الاستماع… اتكلم بالعربي. اضغط المايك تاني للإلغاء.');
+    run.timer = setTimeout(function () {
+      if (listening === run) { cancelMic(); voiceStatus('انتهت مهلة الاستماع. اضغط المايك للمحاولة مرة أخرى.'); }
+    }, 30000);
+    try {
+      if (nativeVoice) { nativeVoice.postMessage(JSON.stringify({ action: 'listen', id: run.id })); return; }
+      var rec = run.rec = new Recognition();
+      rec.lang = 'ar-EG'; rec.continuous = false; rec.interimResults = false;
+      rec.onresult = function (event) {
+        var item = event.results[event.resultIndex || 0];
+        finishMic(run, item && item[0] && item[0].transcript);
+      };
+      rec.onerror = function (event) { finishMic(run, '', event.error); };
+      rec.onend = function () { finishMic(run, ''); };
+      rec.start();
+    } catch (e) { finishMic(run, '', 'unsupported'); }
   }
 
   /* ---------------- الكلام (بالون فوق الشخصية) ---------------- */
@@ -735,17 +834,17 @@
   }
 
   /* زر إعادة المحاولة داخل المحادثة: يعيد نفس الطلب فورًا دون كتابة أي شيء */
-  function addRetry(msg, payload) {
+  function addRetry(msg, payload, readReply) {
     if (!msg || !payload) return;
     var btn = el('button', 'ysn-retry', 'إعادة المحاولة ↻');
     btn.type = 'button';
     btn.addEventListener('click', function () {
-      if (busy || locked || !root) return;
+      if (busy || locked || listening || !root || !cfg.online) return;
       /* نمسح الرسالة الفاشلة وزرها ثم نعيد الإرسال نفسه */
       if (btn.parentNode) btn.parentNode.removeChild(btn);
       if (msg.parentNode) msg.parentNode.removeChild(msg);
       if (payload.quickReply) sendMessage({ quickReply: payload.quickReply }, null);
-      else if (payload.message) sendMessage({ message: payload.message }, null);
+      else if (payload.message) sendMessage({ message: payload.message }, null, readReply);
       else if (payload.captcha != null) sendMessage({ captcha: payload.captcha }, null);
     });
     msg.appendChild(document.createElement('br'));
@@ -784,6 +883,7 @@
       addMessage(cfg.greeting, 'bot');
       addMessage(cfg.online ? cfg.chatIntro : cfg.lines.offHours, 'bot');
     }
+    if (!voiceNote.textContent) voiceStatus(voiceHelp());
     renderLock();
     if (quick && cfg.online && !locked) {
       var q = cfg.quickReplies.filter(function (x) { return x.id === quick; })[0];
@@ -795,6 +895,7 @@
   function closeChat() {
     if (!root) return;
     chatOpen = false;
+    cancelMic(); stopSpeech();
     chat.hidden = true;
     root.classList.remove('is-chat-open');
     try { document.body.classList.remove('ysn-chat-open'); } catch (e) {}
@@ -849,7 +950,9 @@
   function toggleChat() { if (chatOpen) closeChat(); else openChat(''); }
 
   /* مغادرة الصفحة/إخفاؤها أثناء انتظار الرد: نحرّر الحالة حتى لا تعود المحادثة مجمّدة */
-  function releaseOnHide() {
+  function releaseOnHide(event) {
+    if (event && event.type === 'visibilitychange' && !document.hidden) return;
+    cancelMic(); stopSpeech();
     if (!busy) return;
     busy = false;
     if (root && chat) {
@@ -869,8 +972,8 @@
     }
   }
 
-  function sendMessage(payload, shownText) {
-    if (!cfg || busy || locked || !cfg.online) return;
+  function sendMessage(payload, shownText, readReply) {
+    if (listening || !cfg || busy || locked || !cfg.online) return;
     if (needCaptcha && payload.captcha == null) { try { captchaInput.focus(); } catch (e) {} return; }
     busy = true; renderLock();
     if (shownText) addMessage(shownText, 'user');
@@ -903,13 +1006,13 @@
         var m0 = addMessage('مش قادر أوصل بمساعد رحيق الذكي دلوقتي 🙏 تقدر تكمّل الاستمارة عادي، ولو محتاج مساعدة كلّم فريق الأكاديمية على واتساب.', 'bot');
         var l0 = whatsappLink();
         if (l0) { m0.appendChild(document.createElement('br')); m0.appendChild(l0); }
-        addRetry(m0, payload);
+        addRetry(m0, payload, readReply);
       } else {
         var guide = payload && payload.quickReply ? LOCAL_QUICK[payload.quickReply] : '';
         var m1 = addMessage(guide || 'الرد الذكي اتأخر شوية ومش هسيبك مستني 🙏 اضغط «إعادة المحاولة» تحت، أو كلّم فريق التسجيل على واتساب وهنرد عليك فورًا.', 'bot');
         var l1 = whatsappLink();
         if (l1) { m1.appendChild(document.createElement('br')); m1.appendChild(l1); }
-        addRetry(m1, payload);
+        addRetry(m1, payload, readReply);
       }
       setPose(anim('expressions') ? 'worried' : 'idle', 2500);
       renderLock();
@@ -936,6 +1039,21 @@
       if (typeof data.reply !== 'string') { softFail(); return; }
 
       var msg = addMessage(data.reply, 'bot');
+      if (data.ai === true) {
+        var modelLabel = data.provider === 'groq' ? 'رد بالذكاء الاصطناعي · Groq' : 'رد بالذكاء الاصطناعي';
+        msg.appendChild(el('span', 'ysn-ai-label', modelLabel));
+      }
+      if (cfg.sounds.enabled && canSpeak()) {
+        var replay = el('button', 'ysn-retry', '🔊 اسمع الرد');
+        replay.type = 'button';
+        replay.addEventListener('click', function () {
+          cancelMic();
+          if (muted) { voiceStatus('الصوت مكتوم. فعّله من زر الصوت فوق.'); return; }
+          speakAloud(data.reply, true);
+        });
+        msg.appendChild(document.createElement('br'));
+        msg.appendChild(replay);
+      }
       if (data.handoff && /^\d{8,15}$/.test(String(data.handoff.whatsapp))) {
         var a = el('a', 'ysn-wa', 'افتح واتساب الأكاديمية');
         a.href = 'https://wa.me/' + data.handoff.whatsapp;
@@ -964,7 +1082,8 @@
       setCaptcha(data.captcha && typeof data.captcha.question === 'string' ? data.captcha.question : '');
       if (typeof data.remaining === 'number') metaLeft.textContent = 'باقي ' + data.remaining + ' رسالة';
       talk(Math.min(3000, Math.max(900, data.reply.length * 45)));
-      blip(); speakAloud(data.reply);
+      blip();
+      if (chatOpen && !document.hidden) speakAloud(data.reply, readReply);
       express(data.expression, 3600);
       renderLock();
 
@@ -972,7 +1091,7 @@
       if (act && act.type === 'point' && typeof act.field === 'string' && anim('point')) {
         var target = fieldTarget(act.field);
         if (target && visible(target)) {
-          if (window.innerWidth <= 600) closeChat();        // على الجوال نفسح المجال لرؤية الخانة
+          if (window.innerWidth <= 600 && !readReply) closeChat(); // لا نقطع الصوت بعد سؤال مملى
           pointTo(act.field, '', 'point');
           if (!chatOpen) say(data.reply);
         }
@@ -984,6 +1103,7 @@
 
   /* ---------------- الإزالة (مفتاح الإيقاف) ---------------- */
   function destroy() {
+    cancelMic(); stopSpeech(); voiceDraft = false;
     cfg = null;
     clearTimeout(offlineRetry);
     if (!root) return;

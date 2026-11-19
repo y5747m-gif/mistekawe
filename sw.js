@@ -1,5 +1,5 @@
 /* غلاف التطبيق فقط. الشبكة أولًا حتى لا يعلق صوت أو صفحة على نسخة قديمة. */
-const CACHE = 'majlis-shell-v16-raheeq-ai-fix';
+const CACHE = 'majlis-shell-v17-raheeq-voice';
 /* نُخزّن فقط ما لا يتغيّر بين الإصدارات (أصول ثابتة).
    صفحات HTML وسكربتات/تنسيقات النموذج تتغيّر مع كل تحديث، وتخزينها مسبقًا
    كان يسبّب نسخة قديمة من الاستمارة — لذلك لا تُحجز هنا إطلاقًا. */
@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   /* واجهات الخادم ولوحة مدير رحيق لا تُخزَّن أبدًا (مفتاح الإيقاف يجب أن يسري فورًا) */
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin-yaseen')) return;
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin-yaseen') || url.pathname.endsWith('.apk')) return;
   /* صفحات التنقّل تُجلب من الشبكة دائمًا بلا كاش (نسخة الاستمارة يجب أن تكون حديثة) */
   if (req.mode === 'navigate') {
     event.respondWith((async () => {
