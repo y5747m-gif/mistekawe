@@ -350,6 +350,7 @@
     on(micBtn, 'click', toggleMic);
     on(form, 'submit', function (e) {
       e.preventDefault();
+      if (listening || busy || locked || !cfg.online) return;
       var text = inputEl.value.replace(/\s+/g, ' ').trim();
       if (needCaptcha) { sendMessage({ captcha: captchaInput.value }, null); return; }
       if (!text) return;
@@ -1087,7 +1088,7 @@
       if (act && act.type === 'point' && typeof act.field === 'string' && anim('point')) {
         var target = fieldTarget(act.field);
         if (target && visible(target)) {
-          if (window.innerWidth <= 600) closeChat();        // على الجوال نفسح المجال لرؤية الخانة
+          if (window.innerWidth <= 600 && !readReply) closeChat(); // لا نقطع الصوت بعد سؤال مملى
           pointTo(act.field, '', 'point');
           if (!chatOpen) say(data.reply);
         }

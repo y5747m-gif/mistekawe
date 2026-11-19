@@ -228,5 +228,74 @@ async function settle(env) {
   ok(botMsgs.some(t => /تمت إعادة المحاولة تلقائيًا/.test(t)), 'المستخدم يرى الرد الذكي الفعلي بدل رسالة ضعف الاتصال');
 }
 
+/* الإملاء يطلب المايك عند الضغط فقط؛ عيّنة الصوت لا تُرسل لخادم الدردشة. */
+{
+  const requests = [], utterances = [];
+  let lastRecognition;
+  class MockRecognition {
+    constructor() { lastRecognition = this; }
+    start() { this.started = true; }
+    abort() { this.aborted = true; }
+  }
+  class MockUtterance { constructor(text) { this.text = text; } }
+  const pub = { ...system.publicConfig(system.defaultConfig(), new Date()), online: true, ai: true };
+  const env = loadWidget({
+    browser: {
+      SpeechRecognition: MockRecognition,
+      SpeechSynthesisUtterance: MockUtterance,
+      speechSynthesis: { cancel() {}, getVoices: () => [{ lang: 'ar-EG' }], speak: u => utterances.push(u) }
+    },
+    fetch: (url, opts) => {
+      if (url.endsWith('-config')) return { status: 200, body: pub };
+      requests.push(JSON.parse(opts.body));
+      return { status: 200, body: { reply: 'أهلا بيك في رحيق', ai: true } };
+    }
+  });
+  await settle(env);
+  const root = widget(env);
+  root.querySelector('.ysn-char').dispatch('click');
+  eq(lastRecognition, undefined, 'فتح المحادثة لا يبدأ التسجيل');
+  const mic = root.querySelector('.ysn-mic');
+  mic.dispatch('click');
+  eq(lastRecognition.lang, 'ar-EG', 'إملاء باللهجة المصرية');
+  ok(lastRecognition.started, 'الضغط على المايك يبدأ التعرّف على الكلام');
+  lastRecognition.onresult({ results: [[{ transcript: 'إزاي أسجل؟' }]] });
+  eq(root.querySelector('.ysn-form input').value, 'إزاي أسجل؟', 'نتيجة الإملاء تُعرض للمراجعة');
+  eq(requests.length, 0, 'لا إرسال قبل موافقة المستخدم');
+  root.querySelector('.ysn-form').dispatch('submit');
+  await settle(env);
+  eq(requests[0]?.message, 'إزاي أسجل؟', 'نفس مسار الدردشة يستقبل النص فقط');
+  eq(utterances[0]?.text, 'أهلا بيك في رحيق', 'رد السؤال المملى يُقرأ آليًا');
+  ok(!!root.querySelector('.ysn-ai-label'), 'الواجهة تعرض وسم إجابة الموديل');
+  root.querySelector('.ysn-retry').dispatch('click');
+  eq(utterances.length, 2, 'زر الاستماع يشغّل الرد مرة تانية');
+  mic.dispatch('click');
+  lastRecognition.onerror({ error: 'not-allowed' });
+  ok(root.querySelector('.ysn-voice-note').textContent.includes('مرفوض'), 'رفض المايك يظهر بوضوح');
+  ok(!root.querySelector('.ysn-form input').disabled, 'الكتابة تعمل بعد رفض الإذن');
+  mic.dispatch('click');
+  env.document.hidden = true;
+  env.document.dispatch('visibilitychange');
+  ok(lastRecognition.aborted, 'إخفاء الصفحة يوقف الإملاء');
+  lastRecognition.onresult({ results: [[{ transcript: 'نتيجة متأخرة' }]] });
+  eq(root.querySelector('.ysn-form input').value, '', 'نتيجة جلسة الإملاء الملغاة تُتجاهل');
+}
+
+/* بديل APK يستخدم جسر أندرويد بدل الاعتماد على Web Speech داخل WebView. */
+{
+  const sent = [];
+  const bridge = { postMessage: text => sent.push(JSON.parse(text)) };
+  const pub = { ...system.publicConfig(system.defaultConfig(), new Date()), online: true };
+  const env = loadWidget({ browser: { MajlisVoice: bridge }, fetch: () => ({ status: 200, body: pub }) });
+  await settle(env);
+  const root = widget(env);
+  root.querySelector('.ysn-char').dispatch('click');
+  root.querySelector('.ysn-mic').dispatch('click');
+  const last = sent.find(x => x.action === 'listen');
+  ok(!!last, 'زر المايك يوجّه الطلب لأندرويد');
+  bridge.onmessage({ data: JSON.stringify({ action: 'result', id: last.id, text: 'صوت من أندرويد' }) });
+  eq(root.querySelector('.ysn-form input').value, 'صوت من أندرويد', 'الإملاء من أندرويد يدخل نفس حقل المراجعة');
+}
+
 console.log('\nYaseen widget tests: ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

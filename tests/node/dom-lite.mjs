@@ -216,6 +216,7 @@ export function loadWidget(opts = {}) {
     addEventListener: () => {},
     removeEventListener: () => {}
   };
+  Object.assign(win, opts.browser || {});
   win.window = win;
 
   const context = vm.createContext(win);
